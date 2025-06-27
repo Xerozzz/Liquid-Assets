@@ -21,9 +21,25 @@ Project Requirements:
 DB Tables:
 
 - Cocktail/Mocktail Recipes
-- Ingredients Costs
+- Ingredients Costs and Stock
 - Homemade Ingredient Recipes + Cost
-- Ingredients and Quantity
+
+Pages:
+
+1. Home Page
+2. Cocktails/Mocktails Page
+3. Ingredients Page
+4. Homemade Ingredients Page
+
+Features:
+
+1. Creating cocktail/mocktail recipe
+2. Creating ingredients and associated costs
+3. Editing whether ingredients in stock
+4. Creating homemade ingredient recipes
+5. Cost of cocktails and HM ingredients automatically calculated
+6. Comparison of homemade vs store-bought ingredient prices
+7. Automatically adjusting of volumes based on ratio (i.e. how much to use when making 2x or 3x of drink, or when making a drink with different total volume/individual volume)
 
 ## Project Setup
 
