@@ -4,34 +4,62 @@
 
 Cocktail app for bartenders to input their own custom recipes, note the prices of their ingredients/cocktails and even homemade recipes.
 
-Key features:
+### Key features:
 
 - Ingredient Management: Add, edit, delete, and search ingredients (with cost per unit)
 - Recipe Management: Add, edit, delete, and search cocktail recipes (with ingredient amounts, costs, and instructions)
 - Inventory Tracking: See current stock and what cocktails you can make
 - Cost Calculation: Automatic calculation of each drink’s cost
 
-Project Requirements:
+### Project Requirements:
 
 - All-in-one vue.js frontend application
 - Multi-page (require router)
 - TODO: Need to think about how to store data (MySQL?)
 - No need for authentication (meant for local hosting and private use)
 
-DB Tables:
+### DB Tables:
 
 - Cocktail/Mocktail Recipes
 - Ingredients Costs and Stock
 - Homemade Ingredient Recipes + Cost
 
-Pages:
+### DB Schema
+
+1. Recipes
+   - Name
+   - Glass
+   - Ingredients and ML and cost (to be automatically calculated)
+   - Step to Make
+   - Garnish
+   - Notes
+   - Image
+   - ABV (to be auto calculated)
+   - Ratio
+2. Ingredients
+   - Cost
+   - Ratio
+   - Original Quantity per item
+   - cost/ml/g/item
+   - In stock?
+3. HM Ingredients
+   - Name
+   - Steps to Make
+   - Ingredients and ML and cost (to be automatically calculated)
+   - Notes
+   - Cost/ML (auto calculated)
+4. Glassware
+   - Volume
+   - Volume with ice
+
+### Pages:
 
 1. Home Page
 2. Cocktails/Mocktails Page
 3. Ingredients Page
 4. Homemade Ingredients Page
 
-Features:
+### Features:
 
 1. Creating cocktail/mocktail recipe
 2. Creating ingredients and associated costs
