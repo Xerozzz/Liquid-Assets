@@ -50,7 +50,7 @@ Cocktail app for bartenders to input their own custom recipes, note the prices o
    - Cost/ML (auto calculated)
 4. Glassware
    - Volume
-   - Volume with ice
+   - Volume to fill
    - Brand
    - Model
 
