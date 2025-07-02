@@ -37,17 +37,21 @@ Cocktail app for bartenders to input their own custom recipes, note the prices o
    - ABV (to be auto calculated)
    - Ratio
 2. Ingredients
+
    - Cost
-   - Ratio
    - Original Quantity per item
    - cost/ml/g/item
    - In stock?
+
 3. HM Ingredients
+
    - Name
    - Steps to Make
    - Ingredients and ML and cost (to be automatically calculated)
    - Notes
+   - Ratio
    - Cost/ML (auto calculated)
+
 4. Glassware
    - Volume
    - Volume to fill
