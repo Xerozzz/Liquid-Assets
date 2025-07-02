@@ -51,6 +51,7 @@ Cocktail app for bartenders to input their own custom recipes, note the prices o
    - Notes
    - Ratio
    - Cost/ML (auto calculated)
+   - In stock?
 
 4. Glassware
    - Volume
