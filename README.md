@@ -34,7 +34,6 @@ Cocktail app for bartenders to input their own custom recipes, note the prices o
    - Garnish
    - Notes
    - Image
-   - ABV (to be auto calculated)
    - Ratio
 2. Ingredients
 
