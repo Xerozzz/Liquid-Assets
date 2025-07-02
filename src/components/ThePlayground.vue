@@ -1,11 +1,11 @@
-<script setup lang="js">
+<script setup lang="ts">
 import { useSQLite } from '@/composables/useSQLite'
 import { ref } from 'vue'
 
 const { isLoading, error, executeQuery } = useSQLite()
 const sqlQuery = ref('SELECT * FROM test_table')
-const queryResult = ref([])
-const queryError = ref(null)
+const queryResult = ref<any[]>([])
+const queryError = ref<string | null>(null)
 
 const exampleQueries = [
   { title: 'Select all', query: 'SELECT * FROM test_table' },
