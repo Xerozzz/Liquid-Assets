@@ -46,13 +46,14 @@ export const databaseConfig = {
     hm_ingredients: {
       name: 'hm_ingredients',
       schema: `
+        drop table hm_ingredients;
         CREATE TABLE IF NOT EXISTS hm_ingredients (
           hm_ingredient_id INTEGER PRIMARY KEY AUTOINCREMENT,
           name TEXT NOT NULL,
           cost REAL NOT NULL,
           unit_cost REAL NOT NULL,
           notes TEXT,
-          photo BLOB,
+          image BLOB,
           is_deleted BOOLEAN DEFAULT 0,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           deleted_at TIMESTAMP
@@ -74,6 +75,25 @@ export const databaseConfig = {
           FOREIGN KEY (ingredient_id) REFERENCES ingredients(ingredient_id)
         )
       `
-    }
+    },
+    recipe: {
+      name: 'recipe',
+      schema: `
+        CREATE TABLE IF NOT EXISTS recipe (
+          recipe_id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          glass_id INTEGER NOT NULL,
+          step_to_make TEXT NOT NULL,
+          garnish TEXT,
+          notes TEXT,
+          image BLOB,
+          is_deleted BOOLEAN DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          deleted_at TIMESTAMP,
+          FOREIGN KEY (glass_id) REFERENCES glassware(glass_id)
+        )
+      `
+    },
+
   },
 } 

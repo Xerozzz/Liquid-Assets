@@ -40,12 +40,12 @@ export const queries = [
     {
         title: 'insert hm_ingredients',
         query:
-            "INSERT INTO hm_ingredients (name, cost, unit_cost, notes, photo) VALUES ('test',1.1,1.1,'hello world','base64 images is cursed') ",
+            "INSERT INTO hm_ingredients (name, cost, unit_cost, notes, image) VALUES ('test',1.1,1.1,'hello world','base64 images is cursed') ",
     },
     {
         title: 'update hm_ingredients',
         query:
-            "UPDATE hm_ingredients SET photo = 'base64 images is awesome' WHERE hm_ingredient_id = 1; ",
+            "UPDATE hm_ingredients SET image = 'base64 images is awesome' WHERE hm_ingredient_id = 1; ",
     },
     {
         title: 'delete hm_ingredients',
@@ -68,5 +68,22 @@ export const queries = [
         title: 'delete hm_ingredient_components',
         query:
             "DELETE FROM hm_ingredient_components WHERE hm_ingredient_component_id = 1;",
+    },
+    /** recipe */
+    { title: 'select recipe', query: 'SELECT * FROM recipe' },
+    {
+        title: 'insert recipe',
+        query:
+            "INSERT INTO recipe (name, glass_id, step_to_make, image) VALUES ('cocktail', 1, 'mix it', 'no image') ",
+    },
+    {
+        title: 'update recipe',
+        query:
+            "UPDATE recipe SET name = 'cocktail2' WHERE recipe_id = 1;",
+    },
+    {
+        title: 'delete recipe',
+        query:
+            "DELETE FROM recipe WHERE recipe_id = 1;",
     },
 ]
