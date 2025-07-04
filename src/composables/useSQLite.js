@@ -1,21 +1,6 @@
 import { sqlite3Worker1Promiser } from '@sqlite.org/sqlite-wasm'
 import { ref } from 'vue'
-
-const databaseConfig = {
-  filename: 'file:mydb.sqlite3?vfs=opfs',
-  tables: {
-    test: {
-      name: 'test_table',
-      schema: `
-          CREATE TABLE IF NOT EXISTS test_table (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          );
-        `,
-    },
-  },
-}
+import { databaseConfig } from '@/config/database'
 
 const isInitialized = ref(false)
 
@@ -60,17 +45,27 @@ export function useSQLite() {
       dbId = await openDatabase(promiser)
       log('Database opened successfully with ID:', dbId)
 
+      // sqllite before v4 will not enforce foreign key constraints, so it needs to be manually set on whenever the database initialise
       await promiser('exec', {
         dbId,
-        sql: databaseConfig.tables.test.schema,
+        sql: 'PRAGMA foreign_keys = ON;'
       })
+
+      for (const tableKey of Object.keys(databaseConfig.tables)) {
+        const table = databaseConfig.tables[tableKey];
+        await promiser('exec', {
+          dbId,
+          sql: table.schema,
+        })
+      }
+
 
       isInitialized.value = true
       return true
     }
     catch (err) {
       console.log(err);
-      
+
       error.value = err instanceof Error
         ? `Failed to initialize SQLite database: ${err.message}`
         : 'Failed to initialize SQLite database'
@@ -94,6 +89,7 @@ export function useSQLite() {
         dbId: dbId,
         sql,
         bind: params,
+        rowMode: 'object',
         returnValue: 'resultRows',
       })
       log('Query result:', result)
@@ -104,6 +100,8 @@ export function useSQLite() {
       return result
     }
     catch (err) {
+      console.log(err);
+
       error.value = err instanceof Error
         ? `Query execution failed: ${err.message}`
         : 'Query execution failed'
