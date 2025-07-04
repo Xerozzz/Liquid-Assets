@@ -46,7 +46,6 @@ export const databaseConfig = {
     hm_ingredients: {
       name: 'hm_ingredients',
       schema: `
-        drop table hm_ingredients;
         CREATE TABLE IF NOT EXISTS hm_ingredients (
           hm_ingredient_id INTEGER PRIMARY KEY AUTOINCREMENT,
           name TEXT NOT NULL,
@@ -94,6 +93,37 @@ export const databaseConfig = {
         )
       `
     },
-
+    recipe_ingredient: {
+      name: 'recipe_ingredient',
+      schema: `
+        CREATE TABLE IF NOT EXISTS recipe_ingredient (
+          recipe_ingredient_id INTEGER PRIMARY KEY AUTOINCREMENT,
+          recipe_id INTEGER NOT NULL,
+          ingredient_id INTEGER NOT NULL,
+          quantity INTEGER NOT NULL,
+          is_deleted BOOLEAN DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          deleted_at TIMESTAMP,
+          FOREIGN KEY (recipe_id) REFERENCES recipe(recipe_id),
+          FOREIGN KEY (ingredient_id) REFERENCES ingredients(ingredient_id)
+      )
+      `
+    },
+    recipe_hm_ingredient: {
+      name: 'recipe_hm_ingredient',
+      schema: `
+        CREATE TABLE IF NOT EXISTS recipe_hm_ingredient (
+          recipe_hm_ingredient_id INTEGER PRIMARY KEY AUTOINCREMENT,
+          recipe_id INTEGER NOT NULL,
+          hm_ingredient_id INTEGER NOT NULL,
+          quantity INTEGER NOT NULL,
+          is_deleted BOOLEAN DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          deleted_at TIMESTAMP,
+          FOREIGN KEY (recipe_id) REFERENCES recipe(recipe_id),
+          FOREIGN KEY (hm_ingredient_id) REFERENCES hm_ingredients(hm_ingredient_id)
+        )
+      `
+    }
   },
 } 
