@@ -86,4 +86,34 @@ export const queries = [
         query:
             "DELETE FROM recipe WHERE recipe_id = 1;",
     },
+    /** recipe ingredients */
+    { title: 'select recipe_ingredient', query: 'SELECT * FROM recipe_ingredient' },
+    {
+        title: 'insert recipe_ingredient',
+        query:
+            "INSERT INTO recipe_ingredient (recipe_id, ingredient_id, quantity) VALUES (1,1,1) ",
+    },
+    {
+        title: 'update recipe_ingredient',
+        query:
+            "UPDATE recipe_ingredient SET recipe_id = 2 WHERE recipe_ingredient_id = 1;",
+    },
+    {
+        title: 'delete recipe_ingredient',
+        query:
+            "DELETE FROM recipe_ingredient WHERE recipe_ingredient = 1;",
+    },
+    /**  recipe hm ingredients */
+    { title: 'select recipe_hm_ingredient', query: 'SELECT * FROM recipe_hm_ingredient' },
+    { title: 'insert recipe_hm_ingredient', query: 'INSERT INTO recipe_hm_ingredient (recipe_id, hm_ingredient_id, quantity) VALUES (1,1,1) '},
+        {
+        title: 'update recipe_hm_ingredient',
+        query:
+            "UPDATE recipe_hm_ingredient SET recipe_id = 2 WHERE recipe_hm_ingredient_id = 1;",
+    },
+    {
+        title: 'delete recipe_hm_ingredient',
+        query:
+            "DELETE FROM recipe_hm_ingredient WHERE recipe_hm_ingredient_id = 1;",
+    },
 ]

@@ -34,23 +34,29 @@ Cocktail app for bartenders to input their own custom recipes, note the prices o
    - Garnish
    - Notes
    - Image
-   - ABV (to be auto calculated)
    - Ratio
 2. Ingredients
+
    - Cost
-   - Ratio
    - Original Quantity per item
    - cost/ml/g/item
    - In stock?
+
 3. HM Ingredients
+
    - Name
    - Steps to Make
    - Ingredients and ML and cost (to be automatically calculated)
    - Notes
+   - Ratio
    - Cost/ML (auto calculated)
+   - In stock?
+
 4. Glassware
    - Volume
-   - Volume with ice
+   - Volume to fill
+   - Brand
+   - Model
 
 ### Pages:
 
@@ -58,6 +64,7 @@ Cocktail app for bartenders to input their own custom recipes, note the prices o
 2. Cocktails/Mocktails Page
 3. Ingredients Page
 4. Homemade Ingredients Page
+5. Glassware Page
 
 ### Features:
 
@@ -68,6 +75,9 @@ Cocktail app for bartenders to input their own custom recipes, note the prices o
 5. Cost of cocktails and HM ingredients automatically calculated
 6. Comparison of homemade vs store-bought ingredient prices
 7. Automatically adjusting of volumes based on ratio (i.e. how much to use when making 2x or 3x of drink, or when making a drink with different total volume/individual volume)
+8. Conversion of units (Oz -> ML etc)
+9. Show what kind of drinks can be made by ingredients present
+10. Show what drinks can be made from a specific ingredient
 
 ## Project Setup
 
