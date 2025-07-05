@@ -34,7 +34,6 @@ export const databaseConfig = {
         ingredient_id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         cost REAL NOT NULL,
-        unit_cost REAL NOT NULL,
         quantity INTEGER NOT NULL,
         is_stocked BOOLEAN,
         is_deleted BOOLEAN DEFAULT 0,
@@ -46,14 +45,13 @@ export const databaseConfig = {
     hm_ingredients: {
       name: 'hm_ingredients',
       schema: `
-        drop table hm_ingredients;
         CREATE TABLE IF NOT EXISTS hm_ingredients (
           hm_ingredient_id INTEGER PRIMARY KEY AUTOINCREMENT,
           name TEXT NOT NULL,
           cost REAL NOT NULL,
-          unit_cost REAL NOT NULL,
           notes TEXT,
           image BLOB,
+          is_stocked BOOLEAN,
           is_deleted BOOLEAN DEFAULT 0,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           deleted_at TIMESTAMP

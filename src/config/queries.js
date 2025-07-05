@@ -25,7 +25,7 @@ export const queries = [
     {
         title: 'insert ingredients',
         query:
-            "INSERT INTO ingredients (name, cost, unit_cost, quantity, is_stocked) VALUES ('test',1.1,1.1,1,1) ",
+            "INSERT INTO ingredients (name, cost, quantity, is_stocked) VALUES ('test',1.1,1,1) ",
     },
     {
         title: 'update ingredients',
@@ -40,7 +40,7 @@ export const queries = [
     {
         title: 'insert hm_ingredients',
         query:
-            "INSERT INTO hm_ingredients (name, cost, unit_cost, notes, image) VALUES ('test',1.1,1.1,'hello world','base64 images is cursed') ",
+            "INSERT INTO hm_ingredients (name, cost, notes, image, is_stocked) VALUES ('test',1.1,'hello world','base64 images is cursed', 1) ",
     },
     {
         title: 'update hm_ingredients',

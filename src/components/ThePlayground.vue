@@ -3,7 +3,7 @@ import { useSQLite } from '@/composables/useSQLite'
 import { ref } from 'vue'
 import { queries } from '@/config/queries'
 
-const { isLoading, error, executeQuery } = useSQLite()
+const { isLoading, error, executeQuery, initialize, setIsInitialized } = useSQLite()
 const sqlQuery = ref('SELECT * FROM glassware')
 const sqlTable = ref('test_table')
 const queryResult = ref([])
@@ -23,6 +23,25 @@ async function runQuery() {
       let table = sqlTable.value.split(' ')
       queryResult.value = (await executeQuery(`SELECT * FROM ${table[1]}`))?.result.resultRows || []
     }
+  } catch (err) {
+    queryError.value = err instanceof Error ? err.message : 'An error occurred'
+  }
+}
+
+async function resetDatabase() {
+  queryError.value = null
+  queryResult.value = []
+  try {
+    const query = `
+        PRAGMA writable_schema = 1;
+        delete from sqlite_master where type in ('table', 'index', 'trigger');
+        PRAGMA writable_schema = 0;
+        VACUUM;
+        PRAGMA INTEGRITY_CHECK;
+    `
+    await executeQuery(query)
+    setIsInitialized()
+    await initialize()
   } catch (err) {
     queryError.value = err instanceof Error ? err.message : 'An error occurred'
   }
@@ -68,6 +87,13 @@ async function runQuery() {
           @click="runQuery"
         >
           {{ isLoading ? 'Running...' : 'Run Query' }}
+        </button>
+        <button
+          :disabled="isLoading"
+          class="px-4 py-2 rounded-lg text-sm font-medium text-white ml-2 bg-red-600 hover:bg-primary-700 disabled:bg-gray-400 transition-colors duration-200"
+          @click="resetDatabase"
+        >
+          {{ isLoading ? 'Running...' : 'Reset database' }}
         </button>
       </div>
 

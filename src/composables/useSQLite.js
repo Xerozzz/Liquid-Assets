@@ -21,6 +21,10 @@ export function useSQLite() {
     })
   }
 
+  const setIsInitialized = () => {
+    isInitialized.value = false;
+  }
+
   const openDatabase = async (p) => {
     const response = await p('open', { filename: databaseConfig.filename })
     if (response.type === 'error')
@@ -117,5 +121,7 @@ export function useSQLite() {
     error,
     isInitialized,
     executeQuery,
+    initialize,
+    setIsInitialized
   }
 }
