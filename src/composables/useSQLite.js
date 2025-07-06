@@ -95,6 +95,7 @@ export function useSQLite() {
         bind: params,
         rowMode: 'object',
         returnValue: 'resultRows',
+        lastInsertRowId: true
       })
       log('Query result:', result)
 

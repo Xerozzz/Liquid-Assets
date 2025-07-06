@@ -1,9 +1,10 @@
 <script>
+import CocktailCreate from '@/components/cocktail/CocktailCreate.vue';
 export default {
   data() {
     return {
       pages: [
-        { name: 'Cocktails', path: '/cocktail' },
+        { name: 'Cocktails', path: '/cocktail'},
         { name: 'Homemade Ingredients', path: '/hm' },
         { name: 'Ingredients', path: '/ingredient' },
         { name: 'Glassware', path: '/glassware' },
