@@ -5,7 +5,7 @@ export default {
       pages: [
         { name: 'Cocktails', path: '/cocktails' },
         { name: 'Homemade Ingredients', path: '/hm' },
-        { name: 'Ingredients', path: '/ingredients' },
+        { name: 'Ingredients', path: '/ingredient' },
         { name: 'Glassware', path: '/glassware' },
       ],
     }
