@@ -31,7 +31,7 @@ const router = createRouter({
       ],
     },
     {
-      path: '/',
+      path: '/ingredient',
       name: 'ingredient',
       component: IngredientView,
       children: [
@@ -47,7 +47,7 @@ const router = createRouter({
       ],
     },
     {
-      path: '/',
+      path: '/hm',
       name: 'hm',
       component: HmView,
       children: [
@@ -63,7 +63,7 @@ const router = createRouter({
       ],
     },
     {
-      path: '/',
+      path: '/glassware',
       name: 'glassware',
       component: GlasswareView,
       children: [
@@ -78,7 +78,7 @@ const router = createRouter({
         },
       ],
     },
-        {
+    {
       path: '/playground',
       name: 'playground',
       component: PlaygroundView,
