@@ -1,9 +1,17 @@
-<script setup>
-import TheWelcome from '../components/TheWelcome.vue'
+<script>
+export default {
+  data() {
+    return {
+      pages: [
+        { name: 'Cocktails', path: '/cocktails' },
+        { name: 'Ingredients', path: '/ingredients' },
+        { name: 'Glassware', path: '/glassware' },
+      ],
+    }
+  },
+}
 </script>
 
 <template>
-  <main>
-    <TheWelcome />
-  </main>
+  <h1>Cocktail App</h1>
 </template>
