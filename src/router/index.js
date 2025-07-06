@@ -15,7 +15,7 @@ const router = createRouter({
       component: HomeView,
     },
     {
-      path: '/',
+      path: '/cocktail',
       name: 'cocktail',
       component: CocktailView,
       children: [
