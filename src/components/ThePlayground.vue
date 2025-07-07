@@ -83,7 +83,7 @@ async function resetDatabase() {
         />
         <button
           :disabled="isLoading"
-          class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 transition-colors duration-200"
+          class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-green-600 hover:bg-primary-700 disabled:bg-gray-400 transition-colors duration-200"
           @click="runQuery"
         >
           {{ isLoading ? 'Running...' : 'Run Query' }}
