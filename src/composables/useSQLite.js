@@ -14,11 +14,7 @@ export function useSQLite() {
   const log = (...args) => console.log(...args)
 
   const initializePromiser = async () => {
-    return new Promise((resolve) => {
-      const _promiser = sqlite3Worker1Promiser({
-        onready: () => resolve(_promiser),
-      })
-    })
+    return await sqlite3Worker1Promiser.v2()
   }
 
   const setIsInitialized = () => {
