@@ -14,21 +14,54 @@ export default {
 </script>
 
 <template>
-  <h1>Cocktail App</h1>
-  <div>
-    <button v-for="page in pages" :key="page.name" @click="$router.push(page.path)">
-      {{ page.name }}
-    </button>
+  <div class="app">
+    <h1>Cocktail App</h1>
+    <div class="grid">
+      <button v-for="page in pages" :key="page.name" @click="$router.push(page.path)">
+        {{ page.name }}
+      </button>
+    </div>
   </div>
 </template>
 
 <style scoped>
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #fce5e5;
+  margin: 0;
+  padding: 0;
+}
+
+h1 {
+  text-align: center;
+  margin: 10px 0;
+  flex: 0 0 auto;
+}
+
+.grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 10px;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
 button {
-  margin: 5px;
-  padding: 10px 20px;
-  font-size: 16px;
+  width: 100%;
+  height: 100%;
+  font-size: 18px;
+  background-color: #d88c8c;
+  border: none;
+  border-radius: 6px;
   cursor: pointer;
-  background-color: black;
-  color: white;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #c67676;
 }
 </style>
