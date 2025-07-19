@@ -33,10 +33,26 @@ export default {
   </div>
   <div v-else>
     <h1>Cocktails</h1>
-    <ol>
-      <li v-for="cocktail in queryResult" :key="cocktail.recipe_id">
+    <div class="grid-container">
+      <div class="cocktails" v-for="cocktail in queryResult" :key="cocktail.recipe_id">
+        <div class="image"><br />{{ cocktail.image }}</div>
         {{ cocktail.name }}
-      </li>
-    </ol>
+      </div>
+    </div>
   </div>
 </template>
+
+<style scoped>
+.cocktails {
+  display: flex;
+  flex-direction: row;
+  margin: 10px;
+  border: 1px solid black;
+}
+
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+</style>
