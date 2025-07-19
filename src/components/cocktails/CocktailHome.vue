@@ -31,7 +31,7 @@ export default {
     <p>Loading...</p>
   </div>
   <div v-else>
-    <a href="/"><- Back</a>
+    <router-link to="/"><- Back</router-link>
     <h1>Cocktails</h1>
     <div class="grid-container">
       <div class="cocktails" v-for="cocktail in queryResult" :key="cocktail.recipe_id">
