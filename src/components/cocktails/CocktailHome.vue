@@ -8,7 +8,6 @@ export default {
     return {
       loading: true,
       sqlQuery: 'SELECT * FROM recipe',
-      sqlTable: 'test_table',
       queryResult: [],
       queryError: null,
     }
