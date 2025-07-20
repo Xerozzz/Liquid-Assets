@@ -1,11 +1,11 @@
 <script setup lang="js">
 import { useSQLite } from '@/composables/useSQLite'
 import { ref } from 'vue'
-import { queries } from '@/config/queries'
+import { queries } from '../config/queries'
 
 const { isLoading, error, executeQuery, initialize, setIsInitialized } = useSQLite()
 const sqlQuery = ref('SELECT * FROM glassware')
-const sqlTable = ref('test_table')
+const sqlTable = ref('glassware')
 const queryResult = ref([])
 const queryError = ref(null)
 
