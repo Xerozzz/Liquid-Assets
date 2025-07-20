@@ -1,4 +1,8 @@
-<script></script>
+<script setup>
+import CocktailHome from '@/components/cocktails/CocktailHome.vue'
+</script>
 <template>
-  <h1>Cocktails</h1>
+  <main>
+    <CocktailHome />
+  </main>
 </template>
