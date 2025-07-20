@@ -1,7 +1,8 @@
-<script>
-import { RouterView } from 'vue-router'
+<script setup>
+import CocktailHome from '@/components/cocktails/CocktailHome.vue'
 </script>
 <template>
-  <h1>Cocktails</h1>
-    <RouterView />
+  <main>
+    <CocktailHome />
+  </main>
 </template>
