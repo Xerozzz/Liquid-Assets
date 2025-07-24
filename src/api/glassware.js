@@ -11,11 +11,11 @@ export const getGlassware = async () => {
     }
 }
 
-export const getGlasswareById = async () => {
+export const getGlasswareById = async (glassware_id) => {
     try {
         let result = await executeQuery(
             'SELECT * FROM glassware WHERE glass_id = 1;',
-            [ingredient_id])
+            [glassware_id])
         return result?.result.resultRows[0]
     } catch (error) {
         console.log(error);
@@ -47,7 +47,7 @@ export const updateGlassware = async (name, brand, model, volume, volume_w_ice, 
     }
 }
 
-export const deleteGlassware = async () => {
+export const deleteGlassware = async (glassware_id) => {
     try {
         let result = await executeQuery(
             'DELETE FROM glassware WHERE glassware_id = ?;',

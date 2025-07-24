@@ -1,5 +1,5 @@
 import { useSQLite } from "@/composables/useSQLite";
-const { executeQuery } = useSQLite()
+const { executeQuery } = useSQLite();
 
 export const getIngredients = async () => {
     try {
