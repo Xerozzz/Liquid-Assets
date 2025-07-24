@@ -22,6 +22,9 @@ const router = createRouter({
       component: CocktailView,
       children: [
         {
+          path: 'view/:id ',
+        },
+        {
           path: 'create',
           name: 'create',
           component: CocktailCreate

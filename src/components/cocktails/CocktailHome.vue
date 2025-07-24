@@ -1,5 +1,6 @@
 <script>
 import { useSQLite } from '@/composables/useSQLite'
+import router from '@/router'
 const { executeQuery } = useSQLite()
 
 export default {
@@ -33,10 +34,11 @@ export default {
   <div v-else>
     <router-link to="/"><- Back</router-link>
     <h1>Cocktails</h1>
+    <button @click="$router.push('/cocktail/create')">Create Cocktail</button>
     <div class="grid-container">
       <div class="cocktails" v-for="cocktail in queryResult" :key="cocktail.recipe_id">
         <div class="image"><br />{{ cocktail.image }}</div>
-        {{ cocktail.name }}
+        <router-link :to="`/cocktail/view/${cocktail.recipe_id}`">{{ cocktail.name }}</router-link>
       </div>
     </div>
   </div>
