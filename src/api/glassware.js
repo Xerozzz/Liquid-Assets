@@ -14,7 +14,7 @@ export const getGlassware = async () => {
 export const getGlasswareById = async (glassware_id) => {
     try {
         let result = await executeQuery(
-            'SELECT * FROM glassware WHERE glass_id = 1;',
+            'SELECT * FROM glassware WHERE glass_id = ?;',
             [glassware_id])
         return result?.result.resultRows[0]
     } catch (error) {
