@@ -1,6 +1,7 @@
 import { sqlite3Worker1Promiser } from '@sqlite.org/sqlite-wasm'
 import { ref } from 'vue'
 import { databaseConfig } from '@/config/database'
+import { dumps } from '@/config/dumps'
 
 const isInitialized = ref(false)
 
@@ -14,11 +15,15 @@ export function useSQLite() {
   const log = (...args) => console.log(...args)
 
   const initializePromiser = async () => {
-    return new Promise((resolve) => {
-      const _promiser = sqlite3Worker1Promiser({
-        onready: () => resolve(_promiser),
-      })
-    })
+    return await sqlite3Worker1Promiser.v2()
+  }
+
+  /** This fucking stupid sql libary can't run multiple promiser at once so the only way is to kill the promiser
+   * instance everytime the page is navigated away on the frontend
+  */
+  const destory = () => {
+    promiser = null;
+    isInitialized.value = false
   }
 
   const setIsInitialized = () => {
@@ -55,6 +60,7 @@ export function useSQLite() {
         sql: 'PRAGMA foreign_keys = ON;'
       })
 
+      // Creating tables
       for (const tableKey of Object.keys(databaseConfig.tables)) {
         const table = databaseConfig.tables[tableKey];
         await promiser('exec', {
@@ -63,6 +69,14 @@ export function useSQLite() {
         })
       }
 
+      // Dumping data into table
+      for (const dump of dumps) {
+        let insert = dump.query;
+        await promiser('exec', {
+          dbId,
+          sql: insert
+        })
+      }
 
       isInitialized.value = true
       return true
@@ -95,6 +109,7 @@ export function useSQLite() {
         bind: params,
         rowMode: 'object',
         returnValue: 'resultRows',
+        lastInsertRowId: true
       })
       log('Query result:', result)
 
@@ -122,6 +137,7 @@ export function useSQLite() {
     isInitialized,
     executeQuery,
     initialize,
+    destory,
     setIsInitialized
   }
 }

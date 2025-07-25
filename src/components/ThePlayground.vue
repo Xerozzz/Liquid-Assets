@@ -1,11 +1,11 @@
 <script setup lang="js">
 import { useSQLite } from '@/composables/useSQLite'
 import { ref } from 'vue'
-import { queries } from '@/config/queries'
+import { queries } from '../config/queries'
 
 const { isLoading, error, executeQuery, initialize, setIsInitialized } = useSQLite()
 const sqlQuery = ref('SELECT * FROM glassware')
-const sqlTable = ref('test_table')
+const sqlTable = ref('glassware')
 const queryResult = ref([])
 const queryError = ref(null)
 
@@ -83,7 +83,7 @@ async function resetDatabase() {
         />
         <button
           :disabled="isLoading"
-          class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 transition-colors duration-200"
+          class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-green-600 hover:bg-primary-700 disabled:bg-gray-400 transition-colors duration-200"
           @click="runQuery"
         >
           {{ isLoading ? 'Running...' : 'Run Query' }}

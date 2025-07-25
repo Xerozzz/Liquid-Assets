@@ -2,9 +2,11 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import PlaygroundView from '@/views/PlaygroundView.vue'
 import CocktailView from '../views/CocktailView.vue'
+import CocktailCreate from '@/components/cocktail/CocktailCreate.vue'
 import IngredientView from '../views/IngredientView.vue'
 import HmView from '../views/HmView.vue'
 import GlasswareView from '../views/GlasswareView.vue'
+import CocktailEdit from '@/components/cocktail/CocktailEdit.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -21,9 +23,13 @@ const router = createRouter({
       children: [
         {
           path: 'create',
+          name: 'create',
+          component: CocktailCreate
         },
         {
-          path: 'edit',
+          path: 'edit/:id',
+          name: 'edit',
+          component: CocktailEdit
         },
         {
           path: 'card',
