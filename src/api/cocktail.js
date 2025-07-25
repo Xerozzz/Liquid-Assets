@@ -32,7 +32,7 @@ export const getCocktailById = async (recipe_id) => {
       WHERE
           r.is_deleted = false
           AND ri.is_deleted = false
-          AND r.recipe_id = 1
+          AND r.recipe_id = ?
       ORDER BY
           i.name;
       `
