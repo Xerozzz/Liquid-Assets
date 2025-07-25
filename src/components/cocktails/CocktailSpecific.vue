@@ -18,6 +18,7 @@ export default {
         const data = await getCocktailById(cocktailId)
         this.cocktail = data[0]
         this.ingredients = data.map((row) => ({
+          id: row.ingredient_id,
           ingredient: row.ingredient_name,
           quantity: row.quantity,
           cost: row.quantity * row.ingredient_cost,
@@ -46,7 +47,7 @@ export default {
     <p>Notes: {{ cocktail.notes }}</p>
     <img :src="cocktail.image" alt="Cocktail Image" />
     <p>Ingredients:</p>
-    <p v-for="ingredient in ingredients" :key="ingredient">
+    <p v-for="ingredient in ingredients" :key="ingredient.id">
       {{ ingredient.ingredient }} - {{ ingredient.quantity }}
     </p>
   </div>

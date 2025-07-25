@@ -19,6 +19,7 @@ export const getCocktailById = async (recipe_id) => {
           g.name AS glass_name,
           r.garnish AS garnish,
           r.notes AS notes,
+          i.ingredient_id AS ingredient_id,
           i.name AS ingredient_name,
           i.cost AS ingredient_cost,
           i.is_stocked AS ingredient_stock,
