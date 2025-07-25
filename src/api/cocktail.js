@@ -13,22 +13,29 @@ export const getCocktail = async () => {
 
 export const getCocktailById = async (recipe_id) => {
   try {
-    let result = await executeQuery(
-      `SELECT
-        r.name AS recipe_name,
-        g.name AS glass_name,
-        i.name AS ingredient_name,
-        ri.quantity
-     FROM recipe r
-     JOIN glassware g ON r.glass_id = g.glass_id
-     JOIN recipe_ingredient ri ON r.recipe_id = ri.recipe_id
-     JOIN ingredients i ON ri.ingredient_id = i.ingredient_id
-     WHERE r.is_deleted = false
-       AND ri.is_deleted = false
-       AND r.recipe_id = ?
-     ORDER BY i.name;`,
-      [recipe_id],
-    )
+    const query = `
+      SELECT
+          r.name AS recipe_name,
+          g.name AS glass_name,
+          r.garnish AS garnish,
+          r.notes AS notes,
+          i.name AS ingredient_name,
+          i.cost AS ingredient_cost,
+          i.is_stocked AS ingredient_stock,
+          ri.quantity
+      FROM
+          recipe r
+          JOIN glassware g ON r.glass_id = g.glass_id
+          JOIN recipe_ingredient ri ON r.recipe_id = ri.recipe_id
+          JOIN ingredients i ON ri.ingredient_id = i.ingredient_id
+      WHERE
+          r.is_deleted = false
+          AND ri.is_deleted = false
+          AND r.recipe_id = 1
+      ORDER BY
+          i.name;
+      `
+    let result = await executeQuery(query, [recipe_id])
 
     return result?.result.resultRows
   } catch (error) {
