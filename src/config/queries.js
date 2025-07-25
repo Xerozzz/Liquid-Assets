@@ -105,8 +105,8 @@ export const queries = [
     },
     /**  recipe hm ingredients */
     { title: 'select recipe_hm_ingredient', query: 'SELECT * FROM recipe_hm_ingredient' },
-    { title: 'insert recipe_hm_ingredient', query: 'INSERT INTO recipe_hm_ingredient (recipe_id, hm_ingredient_id, quantity) VALUES (1,1,1) '},
-        {
+    { title: 'insert recipe_hm_ingredient', query: 'INSERT INTO recipe_hm_ingredient (recipe_id, hm_ingredient_id, quantity) VALUES (1,1,1) ' },
+    {
         title: 'update recipe_hm_ingredient',
         query:
             "UPDATE recipe_hm_ingredient SET recipe_id = 2 WHERE recipe_hm_ingredient_id = 1;",

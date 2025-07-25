@@ -4,5 +4,6 @@ import CocktailHome from '@/components/cocktails/CocktailHome.vue'
 <template>
   <main>
     <CocktailHome />
+    <RouterView/>
   </main>
 </template>
