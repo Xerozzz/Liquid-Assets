@@ -1,7 +1,5 @@
 <script>
-import { useSQLite } from '@/composables/useSQLite'
-import router from '@/router'
-const { executeQuery } = useSQLite()
+import { getCocktail } from '@/api/cocktail.js'
 
 export default {
   name: 'CocktailView',
@@ -16,8 +14,7 @@ export default {
   methods: {
     async retrieveCocktails() {
       this.loading = true
-      const result = await executeQuery(this.sqlQuery)
-      this.queryResult = result?.result.resultRows || []
+      this.queryResult = await getCocktail()
       this.loading = false
     },
   },
@@ -32,7 +29,7 @@ export default {
     <p>Loading...</p>
   </div>
   <div v-else>
-    <router-link to="/"><- Back</router-link>
+    <router-link to="/">Back</router-link>
     <h1>Cocktails</h1>
     <button @click="$router.push('/cocktail/create')">Create Cocktail</button>
     <div class="grid-container">
