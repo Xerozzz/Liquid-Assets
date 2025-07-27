@@ -7,6 +7,8 @@ import IngredientView from '../views/IngredientView.vue'
 import HmView from '../views/HmView.vue'
 import GlasswareView from '../views/GlasswareView.vue'
 import CocktailEdit from '@/components/cocktail/CocktailEdit.vue'
+import CocktailSpecific from '@/components/cocktails/CocktailSpecific.vue'
+import CocktailHome from '@/components/cocktails/CocktailHome.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -22,14 +24,22 @@ const router = createRouter({
       component: CocktailView,
       children: [
         {
+          path: '',
+          component: CocktailHome,
+        },
+        {
+          path: 'view/:id',
+          component: CocktailSpecific,
+        },
+        {
           path: 'create',
           name: 'create',
-          component: CocktailCreate
+          component: CocktailCreate,
         },
         {
           path: 'edit/:id',
           name: 'edit',
-          component: CocktailEdit
+          component: CocktailEdit,
         },
         {
           path: 'card',
