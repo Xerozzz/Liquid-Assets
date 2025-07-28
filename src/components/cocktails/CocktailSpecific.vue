@@ -28,7 +28,7 @@ export default {
             ingredient: row.ingredient_name,
             quantity: row.quantity,
             cost,
-            stock: row.ingredient_stock ? 'In Stock' : 'Out of Stock',
+            stock: row.ingredient_stock ? '✅' : '❌',
           }
         })
       } catch (error) {
@@ -36,9 +36,6 @@ export default {
       } finally {
         this.loading = false
       }
-    },
-    genIcon(stock) {
-      return stock === 'In Stock' ? '✅' : '❌'
     },
   },
   mounted() {
@@ -74,9 +71,25 @@ export default {
     </div>
     <div class="sectionbox">
       <h3>Ingredients:</h3>
-      <p v-for="ingredient in ingredients" :key="ingredient.id">
-        {{ ingredient.ingredient }} - {{ ingredient.quantity }} {{ genIcon(ingredient.stock) }}
-      </p>
+      <p>Total Cost: ${{ this.totalCost.toFixed(2) }}</p>
+      <table class="text-center">
+        <thead>
+          <tr>
+            <th>Ingredient</th>
+            <th>Quantity</th>
+            <th>Cost</th>
+            <th>Stock Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="ingredient in ingredients" :key="ingredient.id">
+            <td>{{ ingredient.ingredient }}</td>
+            <td>{{ ingredient.quantity }}</td>
+            <td>${{ ingredient.cost.toFixed(2) }}</td>
+            <td>{{ ingredient.stock }}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </template>
