@@ -27,5 +27,9 @@ button {
 }
 
 .sectionbox {
-  @apply border-1 rounded-lg p-3 shadow-md
+  @apply border-1 rounded-lg p-3 shadow-md;
+}
+
+h3 {
+  @apply text-lg font-semibold my-2;
 }

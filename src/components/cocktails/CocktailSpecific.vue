@@ -9,6 +9,7 @@ export default {
       cocktail: null,
       error: null,
       ingredients: [],
+      totalCost: 0,
     }
   },
   methods: {
@@ -17,18 +18,27 @@ export default {
         const cocktailId = this.$route.params.id
         const data = await getCocktailById(cocktailId)
         this.cocktail = data[0]
-        this.ingredients = data.map((row) => ({
-          id: row.ingredient_id,
-          ingredient: row.ingredient_name,
-          quantity: row.quantity,
-          cost: row.quantity * row.ingredient_cost,
-          stock: row.ingredient_stock ? 'In Stock' : 'Out of Stock',
-        }))
+
+        this.ingredients = data.map((row) => {
+          const cost = row.quantity * row.ingredient_cost
+          this.totalCost += cost
+
+          return {
+            id: row.ingredient_id,
+            ingredient: row.ingredient_name,
+            quantity: row.quantity,
+            cost,
+            stock: row.ingredient_stock ? 'In Stock' : 'Out of Stock',
+          }
+        })
       } catch (error) {
         this.error = error
       } finally {
         this.loading = false
       }
+    },
+    genIcon(stock) {
+      return stock === 'In Stock' ? '✅' : '❌'
     },
   },
   mounted() {
@@ -49,18 +59,23 @@ export default {
         alt="Cocktail Image"
         v-if="cocktail.image"
       />
-      <p>Glass: {{ cocktail.glass_name }}</p>
-      <p>Garnish: {{ cocktail.garnish }}</p>
-      <p>Notes: {{ cocktail.notes }}</p>
+      <h3>Glass:</h3>
+      <p>{{ cocktail.glass_name }}</p>
+      <h3>Garnish:</h3>
+      <p>{{ cocktail.garnish }}</p>
+      <h3>Total Cost:</h3>
+      <p>${{ this.totalCost.toFixed(2) }}</p>
+      <h3>Notes:</h3>
+      <p>{{ cocktail.notes }}</p>
     </div>
     <div class="sectionbox">
-      <p>Steps to make:</p>
+      <h3>Steps to make:</h3>
       <p>{{ cocktail.step_to_make }}</p>
     </div>
     <div class="sectionbox">
-      <p>Ingredients:</p>
+      <h3>Ingredients:</h3>
       <p v-for="ingredient in ingredients" :key="ingredient.id">
-        {{ ingredient.ingredient }} - {{ ingredient.quantity }}
+        {{ ingredient.ingredient }} - {{ ingredient.quantity }} {{ genIcon(ingredient.stock) }}
       </p>
     </div>
   </div>
