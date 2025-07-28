@@ -40,15 +40,28 @@ export default {
 <template>
   <div v-if="loading">Loading...</div>
   <div v-else-if="error">{{ error.message }}</div>
-  <div v-else>
-    <h2>Name: {{ cocktail.recipe_name }}</h2>
-    <p>Glass: {{ cocktail.glass_name }}</p>
-    <p>Garnish: {{ cocktail.garnish }}</p>
-    <p>Notes: {{ cocktail.notes }}</p>
-    <img :src="cocktail.image" alt="Cocktail Image" />
-    <p>Ingredients:</p>
-    <p v-for="ingredient in ingredients" :key="ingredient.id">
-      {{ ingredient.ingredient }} - {{ ingredient.quantity }}
-    </p>
+  <div v-else class="bodysection grid grid-cols-3 gap-11">
+    <div class="sectionbox">
+      <h2 class="title">{{ cocktail.recipe_name }}</h2>
+      <img
+        class="w-80 h-auto"
+        v-bind:src="cocktail.image"
+        alt="Cocktail Image"
+        v-if="cocktail.image"
+      />
+      <p>Glass: {{ cocktail.glass_name }}</p>
+      <p>Garnish: {{ cocktail.garnish }}</p>
+      <p>Notes: {{ cocktail.notes }}</p>
+    </div>
+    <div class="sectionbox">
+      <p>Steps to make:</p>
+      <p>{{ cocktail.step_to_make }}</p>
+    </div>
+    <div class="sectionbox">
+      <p>Ingredients:</p>
+      <p v-for="ingredient in ingredients" :key="ingredient.id">
+        {{ ingredient.ingredient }} - {{ ingredient.quantity }}
+      </p>
+    </div>
   </div>
 </template>
