@@ -25,3 +25,7 @@ button {
 .title {
   @apply text-2xl font-bold mb-4 mt-2;
 }
+
+.sectionbox {
+  @apply border-1 rounded-lg p-3 shadow-md
+}
