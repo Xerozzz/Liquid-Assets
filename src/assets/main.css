@@ -19,7 +19,7 @@ button {
 }
 
 .nav_button {
-  @apply bg-[#f5cbcb] hover:bg-[#c67676] ease-in-out duration-300 mr-4 px-3 py-1 rounded-2xl hover:cursor-pointer;
+  @apply bg-[#f5cbcb] hover:bg-[#c67676] ease-in-out duration-300 mr-4 px-3 py-1 rounded-2xl hover:cursor-pointer mb-2;
 }
 
 .title {
