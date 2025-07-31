@@ -99,6 +99,13 @@ const router = createRouter({
       name: 'playground',
       component: PlaygroundView,
     },
+    {
+      path: '/docs',
+      beforeEnter() {
+        // Redirect to the static HTML file
+        window.location.href = '/docs/index.html'
+      },
+    },
   ],
 })
 
