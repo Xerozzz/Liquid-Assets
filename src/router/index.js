@@ -41,9 +41,6 @@ const router = createRouter({
           name: 'edit',
           component: CocktailEdit,
         },
-        {
-          path: 'card',
-        },
       ],
     },
     {
