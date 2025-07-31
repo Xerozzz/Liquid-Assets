@@ -41,7 +41,13 @@ export default {
           cocktail.name
         }}</router-link>
         <br />
-        <router-link :to="`/cocktail/view/${cocktail.recipe_id}`"><img v-bind:src="cocktail.image" :alt="'Image of ' + cocktail.name" v-if="cocktail.image" /></router-link>
+        <router-link :to="`/cocktail/view/${cocktail.recipe_id}`">
+          <img
+            v-bind:src="cocktail.image"
+            :alt="'Image of ' + cocktail.name"
+            v-if="cocktail.image"
+          />
+        </router-link>
       </div>
     </div>
   </div>
