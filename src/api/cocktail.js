@@ -46,6 +46,8 @@ export const getCocktailById = async (recipe_id) => {
           r.garnish AS garnish,
           r.notes AS notes,
           i.ingredient_id AS ingredient_id,
+          r.image AS image,
+          r.step_to_make AS step_to_make,
           i.name AS ingredient_name,
           i.cost AS ingredient_cost,
           i.is_stocked AS ingredient_stock,

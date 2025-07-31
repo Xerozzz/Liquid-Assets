@@ -1,6 +1,5 @@
 <script>
 import { getCocktail } from '@/api/cocktail.js'
-
 export default {
   name: 'CocktailView',
   data() {
@@ -28,30 +27,28 @@ export default {
   <div v-if="loading" class="text-center">
     <p>Loading...</p>
   </div>
-  <div v-else>
-    <router-link to="/">Back</router-link>
-    <h1>Cocktails</h1>
-    <button @click="$router.push('/cocktail/create')">Create Cocktail</button>
-    <div class="grid-container">
-      <div class="cocktails" v-for="cocktail in queryResult" :key="cocktail.recipe_id">
-        <div class="image"><br />{{ cocktail.image }}</div>
-        <router-link :to="`/cocktail/view/${cocktail.recipe_id}`">{{ cocktail.name }}</router-link>
+  <div class="bodysection" v-else>
+    <button class="nav_button" @click="$router.push('/')">Back</button>
+    <button class="nav_button" @click="$router.push('/cocktail/create')">Create Cocktail</button>
+    <h1 class="title">Cocktails</h1>
+    <div class="grid grid-cols-5 justify-center gap-8">
+      <div
+        class="border-1 rounded-md text-center pt-1"
+        v-for="cocktail in queryResult"
+        :key="cocktail.recipe_id"
+      >
+        <router-link :to="`/cocktail/view/${cocktail.recipe_id}`" class="font-bold text-md">{{
+          cocktail.name
+        }}</router-link>
+        <br />
+        <router-link :to="`/cocktail/view/${cocktail.recipe_id}`">
+          <img
+            v-bind:src="cocktail.image"
+            :alt="'Image of ' + cocktail.name"
+            v-if="cocktail.image"
+          />
+        </router-link>
       </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-.cocktails {
-  display: flex;
-  flex-direction: row;
-  margin: 10px;
-  border: 1px solid black;
-}
-
-.grid-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 10px;
-}
-</style>
