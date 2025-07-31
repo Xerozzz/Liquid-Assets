@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "docs": "jsdoc -c jsdoc.json",
+    "dev": "npm run docs && vite",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint . --fix",
@@ -13,6 +14,7 @@
   "dependencies": {
     "@sqlite.org/sqlite-wasm": "^3.50.1-build1",
     "@tailwindcss/postcss": "^4.1.11",
+    "jsdoc": "^4.0.4",
     "pinia": "^3.0.3",
     "postcss": "^8.5.6",
     "primevue": "^4.3.6",
