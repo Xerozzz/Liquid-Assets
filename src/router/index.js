@@ -1,14 +1,20 @@
 import { createRouter, createWebHistory } from 'vue-router'
+
+// Import Views
 import HomeView from '../views/HomeView.vue'
 import PlaygroundView from '@/views/PlaygroundView.vue'
-import CocktailView from '../views/CocktailView.vue'
-import CocktailCreate from '@/components/cocktails/CocktailCreate.vue'
-import IngredientView from '../views/IngredientView.vue'
-import HmView from '../views/HmView.vue'
-import GlasswareView from '../views/GlasswareView.vue'
-import CocktailEdit from '@/components/cocktails/CocktailEdit.vue'
-import CocktailSpecific from '@/components/cocktails/CocktailSpecific.vue'
-import CocktailHome from '@/components/cocktails/CocktailHome.vue'
+import IngredientView from '@/views/IngredientView.vue'
+import HmView from '@/views/HmView.vue'
+import GlasswareView from '@/views/GlasswareView.vue'
+
+// Import Cocktail Components
+import CocktailView from '@/views/CocktailView.vue'
+import {
+  CocktailCreate,
+  CocktailEdit,
+  CocktailSpecific,
+  CocktailHome, 
+} from '@/components/cocktails'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
