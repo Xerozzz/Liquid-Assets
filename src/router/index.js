@@ -14,7 +14,7 @@ import {
   CocktailEdit,
   CocktailSpecific,
   CocktailHome, 
-} from '@/components/cocktails'
+} from '@/components/cocktails/'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
