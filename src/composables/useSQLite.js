@@ -71,11 +71,27 @@ export function useSQLite() {
 
       // Dumping data into table
       for (const dump of dumps) {
-        let insert = dump.query;
-        await promiser('exec', {
+        const tableName = dump.schema;
+
+        const result = await promiser('exec', {
           dbId,
-          sql: insert
-        })
+          sql: `SELECT EXISTS(SELECT 1 FROM ${tableName} LIMIT 1) AS isExist;`,
+          rowMode: 'object',
+          returnValue: 'resultRows',
+        });
+
+        let exists = result?.result.resultRows[0].isExist
+
+        if (!exists) {
+          let insert = dump.query;
+          await promiser('exec', {
+            dbId,
+            sql: insert
+          })
+        } else {
+          log(`Skipping dump for table ${tableName} because it already contains data.`);
+        }
+
       }
 
       isInitialized.value = true

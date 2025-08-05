@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@primeuix/themes": "^1.2.3",
+    "@primevue/forms": "^4.3.7",
     "@sqlite.org/sqlite-wasm": "^3.50.1-build1",
     "@tailwindcss/postcss": "^4.1.11",
     "jsdoc": "^4.0.4",
