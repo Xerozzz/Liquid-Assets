@@ -88,10 +88,7 @@ export function useSQLite() {
             dbId,
             sql: insert
           })
-        } else {
-          log(`Skipping dump for table ${tableName} because it already contains data.`);
         }
-
       }
 
       isInitialized.value = true
