@@ -9,7 +9,6 @@ import { createMultipleRecipeHmIngredient } from '@/api/recipe_hm_ingredient'
 import { useSQLite } from '@/composables/useSQLite'
 import { useNotificationStore } from '@/stores/notification.store'
 
-import ProgressSpinner from "primevue/progressspinner";
 
 export default {
   setup() {
