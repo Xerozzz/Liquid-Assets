@@ -6,6 +6,8 @@ import { getIngredients } from '@/api/ingredients'
 import { useSQLite } from '@/composables/useSQLite'
 import { useNotificationStore } from '@/stores/notification.store'
 
+import ProgressSpinner from "primevue/progressspinner";
+
 export default {
   setup() {
     const notification = useNotificationStore()
@@ -83,4 +85,10 @@ export default {
 
 <template>
   <h1>create</h1>
+          <ProgressSpinner
+          style="width: 50px; height: 50px"
+          fill="transparent"
+          animationDuration=".5s"
+          aria-label="Custom ProgressSpinner"
+        />
 </template>
