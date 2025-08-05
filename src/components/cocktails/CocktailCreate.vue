@@ -38,7 +38,7 @@ export default {
         step_to_make: '',
         garnish: '',
         notes: '',
-        image: null,
+        image: '',
       },
     }
   },
@@ -130,6 +130,17 @@ export default {
       }, 250)
     },
 
+    onFileSelect(event) {
+      const file = event.files[0]
+      const reader = new FileReader()
+
+      reader.onload = async (e) => {
+        this.initialValues.image = e.target.result
+      }
+
+      reader.readAsDataURL(file)
+    },
+
     onIngredientOptionClick(event) {
       const exists = this.recipe_ingredients.some(
         (item) => item.ingredient_id === event.value.ingredient_id,
@@ -172,7 +183,8 @@ export default {
 
     onFormSubmit({ valid, values }) {
       console.log(values)
-
+      console.log(this.initialValues.image);
+      
       if (valid) {
         this.notification.notify({
           message: `Form is submitted`,
@@ -221,7 +233,6 @@ export default {
           <Message v-if="$form.glass?.invalid" severity="error" size="small" variant="simple">
             {{ $form.glass.error?.message }}
           </Message>
-          <!-- {{ $form.glass.value.glass_id }} -->
         </div>
 
         <div class="flex flex-col gap-1">
@@ -241,7 +252,7 @@ export default {
         <div class="flex flex-col gap-1">
           <FileUpload
             name="image"
-            @upload="onAdvancedUpload($event)"
+            @select="onFileSelect"
             :showUploadButton="false"
             :showCancelButton="false"
             :multiple="false"
