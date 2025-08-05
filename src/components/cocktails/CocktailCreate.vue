@@ -9,21 +9,11 @@ import { createMultipleRecipeHmIngredient } from '@/api/recipe_hm_ingredient'
 import { useSQLite } from '@/composables/useSQLite'
 import { useNotificationStore } from '@/stores/notification.store'
 
-import { Form } from '@primevue/forms'
-
-import FileUpload from 'primevue/fileupload'
-import Textarea from 'primevue/textarea'
-import Select from 'primevue/select'
-import Card from 'primevue/card'
-import AutoComplete from 'primevue/autocomplete'
-import DataTable from 'primevue/datatable'
-import InputNumber from 'primevue/inputnumber'
-
 export default {
   setup() {
     const notification = useNotificationStore()
-    const { destroy } = useSQLite()
-    return { notification, destroy }
+    const { destory } = useSQLite()
+    return { notification, destory }
   },
   data() {
     return {
@@ -261,6 +251,11 @@ export default {
         }
       } catch (error) {
         console.log(error)
+        this.notification.notify({
+          message: `${error}`,
+          summary: 'Error',
+          severity: 'error',
+        })
       }
     },
   },
