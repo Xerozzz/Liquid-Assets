@@ -47,14 +47,16 @@ export default {
     }
   },
   methods: {
-    /** For some reason stacking the queries in 1 function call will cause sqllite to complain
-     * and crash as it cannot handle multiple queries at once. Instead it needs to be seperated into
-     * its own functions so things may look a little ugly here.
-     */
+    async getData() {
+      await this.getIngredientData()
+      await this.getGlasswareData()
+      await this.getHmIngredientData()
+    },
     async getIngredientData() {
       try {
         this.ingredients = await getIngredients()
         this.filtered_ingredients = this.ingredients
+        this.destory()
       } catch (error) {
         console.log(error)
         this.notification.notify({
@@ -68,7 +70,7 @@ export default {
       try {
         this.hm_ingredients = await getHmIngredient()
         this.filtered_hm_ingredients = this.hm_ingredients
-        console.log(this.hm_ingredients)
+        this.destory()
       } catch (error) {
         console.log(error)
         this.notification.notify({
@@ -81,6 +83,7 @@ export default {
     async getGlasswareData() {
       try {
         this.glassware = await getGlassware()
+        this.destory()
       } catch (error) {
         console.log(error)
         this.notification.notify({
@@ -90,6 +93,7 @@ export default {
         })
       }
     },
+    /** This is for validating form data */
     resolver: ({ values }) => {
       const errors = {}
 
@@ -110,6 +114,7 @@ export default {
         errors,
       }
     },
+    /** This is a search function for ingredient with a debounce of 250ms */
     searchIngredients(event) {
       setTimeout(() => {
         if (!event.query.trim().length) {
@@ -121,7 +126,7 @@ export default {
         }
       }, 250)
     },
-
+    /** This is a search function for homemade ingredient with a debounce of 250ms */
     searchHMIngredients(event) {
       setTimeout(() => {
         if (!event.query.trim().length) {
@@ -144,7 +149,7 @@ export default {
 
       reader.readAsDataURL(file)
     },
-
+    /** This is for when the options in the homemade ingredient autocomplete is clicked */
     onIngredientOptionClick(event) {
       const exists = this.recipe_ingredients.some(
         (item) => item.ingredient_id === event.value.ingredient_id,
@@ -158,7 +163,7 @@ export default {
 
       this.ingredientInput = ''
     },
-
+    /** This is for when the options in the homemade ingredient autocomplete is clicked */
     onHmIngredientOptionClick(event) {
       const exists = this.recipe_hm_ingredients.some(
         (item) => item.hm_ingredient_id === event.value.hm_ingredient_id,
@@ -187,6 +192,7 @@ export default {
     async insertIngredientData(rows) {
       try {
         let result = await createMultipleRecipeIngredient(rows)
+        this.destory()
         return result
       } catch (error) {
         console.log(error)
@@ -196,6 +202,7 @@ export default {
     async insertHmIngredientData(rows) {
       try {
         let result = await createMultipleRecipeHmIngredient(rows)
+        this.destory()
         return result
       } catch (error) {
         console.log(error)
@@ -226,7 +233,6 @@ export default {
 
               let result = await this.insertIngredientData(ingredients_data)
               console.log(result)
-              this.destory()
             }
             if (this.recipe_hm_ingredients > 0) {
               let ingredients_data = this.recipe_hm_ingredients.map(
@@ -239,7 +245,6 @@ export default {
 
               let result = await this.insertHmIngredientData(ingredients_data)
               console.log(result)
-              this.destory()
             }
             this.$router.push('/cocktail')
           }
@@ -250,9 +255,7 @@ export default {
     },
   },
   mounted() {
-    this.getIngredientData()
-    this.getHmIngredientData()
-    this.getGlasswareData()
+    this.getData()
   },
   unmounted() {
     this.destory()
