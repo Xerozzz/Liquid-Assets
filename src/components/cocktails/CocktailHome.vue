@@ -1,7 +1,15 @@
 <script>
 import { getCocktail } from '@/api/cocktail.js'
+import { useSQLite } from '@/composables/useSQLite'
+import { useNotificationStore } from '@/stores/notification.store'
+
 export default {
   name: 'CocktailView',
+  setup() {
+    const notification = useNotificationStore()
+    const { destory } = useSQLite()
+    return { notification, destory }
+  },
   data() {
     return {
       loading: true,
@@ -19,6 +27,9 @@ export default {
   },
   mounted() {
     this.retrieveCocktails()
+  },
+  unmounted() {
+    this.destory()
   },
 }
 </script>
