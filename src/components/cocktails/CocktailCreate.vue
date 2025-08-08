@@ -264,177 +264,258 @@ export default {
 </script>
 
 <template>
-  <Form v-slot="$form" :initialValues :resolver @submit="onFormSubmit" class="">
-    <div class="flex mt-5">
-      <div class="w-32 flex-1">
-        <Textarea name="step_to_make" placeholder="Steps to Make" rows="10" fluid />
-        <Message v-if="$form.step_to_make?.invalid" severity="error" size="small" variant="simple">
-          {{ $form.step_to_make.error?.message }}
-        </Message>
-      </div>
-      <div class="w-14 flex-1">
-        <div class="flex flex-col gap-2">
-          <InputText name="name" type="text" placeholder="Name" fluid />
-          <Message v-if="$form.name?.invalid" severity="error" size="small" variant="simple">
-            {{ $form.name.error?.message }}
-          </Message>
-        </div>
+  <Form
+    v-slot="$form"
+    :initialValues
+    :resolver
+    @submit="onFormSubmit"
+    class="space-y-8 max-w-7xl mx-auto m-5"
+  >
+    <!-- Name input -->
+    <div>
+      <InputText
+        name="name"
+        type="text"
+        placeholder="Name"
+        fluid
+        class="w-full rounded-md border border-gray-300 p-2"
+      />
+      <Message
+        v-if="$form.name?.invalid"
+        severity="error"
+        size="small"
+        variant="simple"
+        class="mt-1 text-red-600"
+      >
+        {{ $form.name.error?.message }}
+      </Message>
+    </div>
 
-        <div class="flex flex-col gap-1">
-          <Select
-            name="glass"
-            :options="glassware"
-            optionLabel="name"
-            placeholder="Select Glass"
-            fluid
-          />
-          <Message v-if="$form.glass?.invalid" severity="error" size="small" variant="simple">
-            {{ $form.glass.error?.message }}
-          </Message>
-        </div>
+    <!-- Glass Select -->
+    <div>
+      <Select
+        name="glass"
+        :options="glassware"
+        optionLabel="name"
+        placeholder="Select Glass"
+        fluid
+        class="w-full rounded-md border border-gray-300"
+      />
+      <Message
+        v-if="$form.glass?.invalid"
+        severity="error"
+        size="small"
+        variant="simple"
+        class="mt-1 text-red-600"
+      >
+        {{ $form.glass.error?.message }}
+      </Message>
+    </div>
 
-        <div class="flex flex-col gap-1">
-          <InputText name="garnish" type="text" placeholder="Garnish (Optional)" fluid />
-          <Message v-if="$form.garnish?.invalid" severity="error" size="small" variant="simple">
-            {{ $form.garnish.error?.message }}
-          </Message>
-        </div>
+    <!-- Steps to Make textarea -->
+    <div>
+      <Textarea
+        name="step_to_make"
+        placeholder="Steps to Make"
+        rows="10"
+        fluid
+        class="w-full rounded-md border border-gray-300 p-2 resize-y"
+      />
+      <Message
+        v-if="$form.step_to_make?.invalid"
+        severity="error"
+        size="small"
+        variant="simple"
+        class="mt-1 text-red-600"
+      >
+        {{ $form.step_to_make.error?.message }}
+      </Message>
+    </div>
 
-        <div class="flex flex-col gap-1">
-          <Textarea name="notes" placeholder="Notes (Optional)" rows="2" fluid />
-          <Message v-if="$form.notes?.invalid" severity="error" size="small" variant="simple">
-            {{ $form.notes.error?.message }}
-          </Message>
-        </div>
+    <!-- Garnish input -->
+    <div>
+      <InputText
+        name="garnish"
+        type="text"
+        placeholder="Garnish (Optional)"
+        fluid
+        class="w-full rounded-md border border-gray-300 p-2"
+      />
+      <Message
+        v-if="$form.garnish?.invalid"
+        severity="error"
+        size="small"
+        variant="simple"
+        class="mt-1 text-red-600"
+      >
+        {{ $form.garnish.error?.message }}
+      </Message>
+    </div>
 
-        <div class="flex flex-col gap-1">
-          <FileUpload
-            name="image"
-            @select="onFileSelect"
-            :showUploadButton="false"
-            :showCancelButton="false"
-            :multiple="false"
-            :fileLimit="1"
-            accept="image/*"
-            :maxFileSize="1000000"
+    <!-- Notes textarea -->
+    <div>
+      <Textarea
+        name="notes"
+        placeholder="Notes (Optional)"
+        rows="2"
+        fluid
+        class="w-full rounded-md border border-gray-300 p-2 resize-y"
+      />
+      <Message
+        v-if="$form.notes?.invalid"
+        severity="error"
+        size="small"
+        variant="simple"
+        class="mt-1 text-red-600"
+      >
+        {{ $form.notes.error?.message }}
+      </Message>
+    </div>
+
+    <!-- Image upload -->
+    <div>
+      <FileUpload
+        name="image"
+        @select="onFileSelect"
+        :showUploadButton="false"
+        :showCancelButton="false"
+        :multiple="false"
+        :fileLimit="1"
+        accept="image/*"
+        :maxFileSize="1000000"
+        class="w-full"
+      >
+        <template #empty>
+          <span
+            class="block p-4 border-2 border-dashed border-gray-300 rounded-md text-center text-gray-500 cursor-pointer hover:border-gray-400"
           >
-            <template #empty>
-              <span>Drag and drop files to here to upload.</span>
-            </template>
-          </FileUpload>
-
-          <Message v-if="$form.image?.invalid" severity="error" size="small" variant="simple">
-            {{ $form.image.error?.message }}
-          </Message>
-        </div>
-      </div>
-    </div>
-    <div class="w-full">
-      <div class="flex justify-center items-center">
-        <Card class="w-full">
-          <template #title>Ingredients</template>
-          <template #subtitle>
-            <div class="w-full">
-              <AutoComplete
-                v-model="ingredientInput"
-                :suggestions="filtered_ingredients"
-                optionLabel="name"
-                @complete="searchIngredients"
-                @option-select="onIngredientOptionClick"
-              />
-            </div>
-          </template>
-          <template #content>
-            <div v-if="recipe_ingredients.length !== 0">
-              <DataTable
-                :value="recipe_ingredients"
-                tableStyle="min-width: 50rem; cursor: default;"
-              >
-                <Column field="name" header="Name"></Column>
-                <Column field="selected_quantity" header="Quantity">
-                  <template #body="slotProps">
-                    <InputNumber
-                      v-model="slotProps.data.selected_quantity"
-                      id="selected_quantity"
-                      :suffix="` ${slotProps.data.unit}`"
-                      fluid
-                      :min="1"
-                    />
-                  </template>
-                </Column>
-                <Column field="is_deleted" header="Delete">
-                  <template #body="slotProps">
-                    <Button
-                      icon="pi pi-times"
-                      severity="danger"
-                      rounded
-                      aria-label="Cancel"
-                      @click="onDeleteIngredient(slotProps.data.ingredient_id)"
-                    />
-                  </template>
-                </Column>
-              </DataTable>
-            </div>
-            <div v-else>
-              <h1>No ingredient added</h1>
-            </div>
-          </template>
-        </Card>
-      </div>
+            Drag and drop files here to upload.
+          </span>
+        </template>
+      </FileUpload>
+      <Message
+        v-if="$form.image?.invalid"
+        severity="error"
+        size="small"
+        variant="simple"
+        class="mt-1 text-red-600"
+      >
+        {{ $form.image.error?.message }}
+      </Message>
     </div>
 
-    <div class="w-full">
-      <div class="flex justify-center items-center">
-        <Card class="w-full">
-          <template #title>Homemade Ingredients</template>
-          <template #subtitle>
-            <div class="w-full">
-              <AutoComplete
-                v-model="hmIngredientInput"
-                :suggestions="filtered_hm_ingredients"
-                optionLabel="name"
-                @complete="searchHMIngredients"
-                @option-select="onHmIngredientOptionClick"
-              />
-            </div>
-          </template>
-          <template #content>
-            <div v-if="recipe_hm_ingredients.length !== 0">
-              <DataTable
-                :value="recipe_hm_ingredients"
-                tableStyle="min-width: 50rem; cursor: default;"
-              >
-                <Column field="name" header="Name"></Column>
-                <Column field="selected_quantity" header="Quantity">
-                  <template #body="slotProps">
-                    <InputNumber
-                      v-model="slotProps.data.selected_quantity"
-                      id="selected_quantity"
-                      :suffix="` ${slotProps.data.unit}`"
-                      fluid
-                    />
-                  </template>
-                </Column>
-                <Column field="is_deleted" header="Delete">
-                  <template #body="slotProps">
-                    <Button
-                      icon="pi pi-times"
-                      severity="danger"
-                      rounded
-                      aria-label="Cancel"
-                      @click="onDeleteHmIngredient(slotProps.data.hm_ingredient_id)"
-                    />
-                  </template>
-                </Column>
-              </DataTable>
-            </div>
-            <div v-else>
-              <h1>No homemade ingredient added</h1>
-            </div>
-          </template>
-        </Card>
-      </div>
+    <!-- Ingredients Card -->
+    <div>
+      <Card class="w-full">
+        <template #title>Ingredients</template>
+        <template #subtitle>
+          <AutoComplete
+            v-model="ingredientInput"
+            :suggestions="filtered_ingredients"
+            optionLabel="name"
+            @complete="searchIngredients"
+            @option-select="onIngredientOptionClick"
+            class="w-full"
+            placeholder="Search Ingredients"
+          />
+        </template>
+        <template #content>
+          <div v-if="recipe_ingredients.length !== 0">
+            <DataTable
+              :value="recipe_ingredients"
+              tableStyle="min-width: 50rem; cursor: default;"
+              class="mt-4"
+            >
+              <Column field="name" header="Name"></Column>
+              <Column field="selected_quantity" header="Quantity">
+                <template #body="slotProps">
+                  <InputNumber
+                    v-model="slotProps.data.selected_quantity"
+                    id="selected_quantity"
+                    :suffix="` ${slotProps.data.unit}`"
+                    fluid
+                    :min="1"
+                    class="w-full"
+                  />
+                </template>
+              </Column>
+              <Column field="is_deleted" header="Delete">
+                <template #body="slotProps">
+                  <Button
+                    icon="pi pi-times"
+                    severity="danger"
+                    rounded
+                    aria-label="Cancel"
+                    @click="onDeleteIngredient(slotProps.data.ingredient_id)"
+                    class="p-2"
+                  />
+                </template>
+              </Column>
+            </DataTable>
+          </div>
+          <div class="py-8 text-center text-gray-500 font-semibold" v-else>No ingredient added</div>
+        </template>
+      </Card>
     </div>
-    <Button type="submit" severity="secondary" label="Submit" />
+
+    <!-- Homemade Ingredients Card -->
+    <div>
+      <Card class="w-full">
+        <template #title>Homemade Ingredients</template>
+        <template #subtitle>
+          <AutoComplete
+            v-model="hmIngredientInput"
+            :suggestions="filtered_hm_ingredients"
+            optionLabel="name"
+            @complete="searchHMIngredients"
+            @option-select="onHmIngredientOptionClick"
+            class="w-full"
+            placeholder="Search Homemade Ingredients"
+          />
+        </template>
+        <template #content>
+          <div v-if="recipe_hm_ingredients.length !== 0">
+            <DataTable
+              :value="recipe_hm_ingredients"
+              tableStyle="min-width: 50rem; cursor: default;"
+              class="mt-4"
+            >
+              <Column field="name" header="Name"></Column>
+              <Column field="selected_quantity" header="Quantity">
+                <template #body="slotProps">
+                  <InputNumber
+                    v-model="slotProps.data.selected_quantity"
+                    id="selected_quantity"
+                    :suffix="` ${slotProps.data.unit}`"
+                    fluid
+                    class="w-full"
+                  />
+                </template>
+              </Column>
+              <Column field="is_deleted" header="Delete">
+                <template #body="slotProps">
+                  <Button
+                    icon="pi pi-times"
+                    severity="danger"
+                    rounded
+                    aria-label="Cancel"
+                    @click="onDeleteHmIngredient(slotProps.data.hm_ingredient_id)"
+                    class="p-2"
+                  />
+                </template>
+              </Column>
+            </DataTable>
+          </div>
+          <div class="py-8 text-center text-gray-500 font-semibold" v-else>
+            No homemade ingredient added
+          </div>
+        </template>
+      </Card>
+    </div>
+
+    <!-- Submit button -->
+    <div class="flex justify-center">
+      <Button type="submit" severity="secondary" label="Submit" class="w-48" />
+    </div>
   </Form>
 </template>
