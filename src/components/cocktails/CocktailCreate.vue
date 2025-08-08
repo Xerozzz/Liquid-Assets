@@ -193,7 +193,7 @@ export default {
     async insertHmIngredientData(rows) {
       try {
         let result = await createMultipleRecipeHmIngredient(rows)
-        this.destroy()
+        this.destory()
         return result
       } catch (error) {
         console.log(error)
