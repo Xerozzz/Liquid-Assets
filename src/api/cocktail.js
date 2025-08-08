@@ -84,11 +84,11 @@ export const getCocktailById = async (recipe_id) => {
  * @returns {Promise<number|Error>} A promise that resolves to the `recipe_id` of the newly inserted cocktail or an error object.
  * @throws Will log and return an error object if the insert fails.
  */
-export const createCocktail = async (name, glass_id, step_to_make, image) => {
+export const createCocktail = async (name, glass_id, step_to_make, garnish = "", notes = "", image) => {
   try {
     let result = await executeQuery(
-      'INSERT INTO recipe (name, glass_id, step_to_make, image) VALUES (?, ?, ?, ?);',
-      [name, glass_id, step_to_make, image],
+      'INSERT INTO recipe (name, glass_id, step_to_make, garnish, notes, image) VALUES (?, ?, ?, ?, ?, ?);',
+      [name, glass_id, step_to_make, garnish, notes, image],
     )
     return Number(result?.result.lastInsertRowId)
   } catch (error) {

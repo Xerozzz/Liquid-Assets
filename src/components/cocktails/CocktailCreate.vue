@@ -2,6 +2,12 @@
 import { getGlassware } from '@/api/glassware'
 import { getHmIngredient } from '@/api/hm_ingredients'
 import { getIngredients } from '@/api/ingredients'
+import { createCocktail } from '@/api/cocktail'
+import { createRecipeIngredient, createMultipleRecipeIngredient } from '@/api/recipe_ingredient'
+import {
+  createRecipeHmIngredient,
+  createMultipleRecipeHmIngredient,
+} from '@/api/recipe_hm_ingredient'
 
 import { useSQLite } from '@/composables/useSQLite'
 import { useNotificationStore } from '@/stores/notification.store'
@@ -14,6 +20,7 @@ import Select from 'primevue/select'
 import Card from 'primevue/card'
 import AutoComplete from 'primevue/autocomplete'
 import DataTable from 'primevue/datatable'
+import InputNumber from 'primevue/inputnumber'
 
 export default {
   setup() {
@@ -147,8 +154,7 @@ export default {
       )
 
       if (!exists) {
-        this.recipe_ingredients.push({ selected_quantity: 0, ...event.value })
-        console.log(this.recipe_ingredient)
+        this.recipe_ingredients.push({ selected_quantity: 1, ...event.value })
       } else {
         console.log('Ingredient already exists in the list.')
       }
@@ -162,7 +168,7 @@ export default {
       )
 
       if (!exists) {
-        this.recipe_hm_ingredients.push({ selected_quantity: 0, ...event.value })
+        this.recipe_hm_ingredients.push({ selected_quantity: 1, ...event.value })
         console.log(this.recipe_hm_ingredients)
       } else {
         console.log('Ingredient already exists in the list.')
@@ -181,16 +187,71 @@ export default {
       )
     },
 
-    onFormSubmit({ valid, values }) {
-      console.log(values)
-      console.log(this.initialValues.image);
-      
-      if (valid) {
-        this.notification.notify({
-          message: `Form is submitted`,
-          summary: 'Form is submitted',
-          severity: 'success',
-        })
+    async insertIngredientData(rows) {
+      try {
+        let result = await createMultipleRecipeIngredient(rows)
+        return result
+      } catch (error) {
+        console.log(error)
+      }
+    },
+
+    async insertHmIngredientData(rows) {
+      try {
+        let result = await createMultipleRecipeHmIngredient(rows)
+        return result
+      } catch (error) {
+        console.log(error)
+      }
+    },
+
+    async onFormSubmit({ valid, values }) {
+      try {
+        console.log(values)
+        console.log(this.initialValues.image)
+        if (valid) {
+          let recipe_id = await createCocktail(
+            values.name,
+            values.glass.glass_id,
+            values.step_to_make,
+            values.garnish,
+            values.notes,
+            this.initialValues.image,
+          )
+          if (recipe_id) {
+            console.log(this.recipe_ingredients)
+            console.log(this.recipe_hm_ingredients)
+            if (this.recipe_ingredients.length > 0) {
+              let ingredients_data = this.recipe_ingredients.map(
+                ({ ingredient_id, selected_quantity }) => ({
+                  recipe_id,
+                  ingredient_id,
+                  selected_quantity,
+                }),
+              )
+
+              let result = await this.insertIngredientData(ingredients_data)
+              console.log(result)
+              this.destory()
+            }
+            if (this.recipe_hm_ingredients > 0) {
+              let ingredients_data = this.recipe_hm_ingredients.map(
+                ({ hm_ingredient_id, selected_quantity }) => ({
+                  recipe_id,
+                  hm_ingredient_id,
+                  selected_quantity,
+                }),
+              )
+
+              let result = await this.insertHmIngredientData(ingredients_data)
+              console.log(result)
+              this.destory()
+            }
+            this.$router.push('/cocktail')
+          }
+        }
+      } catch (error) {
+        console.log(error)
       }
     },
   },
@@ -295,18 +356,24 @@ export default {
                 <Column field="name" header="Name"></Column>
                 <Column field="selected_quantity" header="Quantity">
                   <template #body="slotProps">
-                    <InputText
+                    <InputNumber
                       v-model="slotProps.data.selected_quantity"
                       id="selected_quantity"
-                      class="w-full"
+                      :suffix="` ${slotProps.data.unit}`"
+                      fluid
+                      :min="1"
                     />
                   </template>
                 </Column>
                 <Column field="is_deleted" header="Delete">
                   <template #body="slotProps">
-                    <button @click="onDeleteIngredient(slotProps.data.ingredient_id)">
-                      Remove
-                    </button>
+                    <Button
+                      icon="pi pi-times"
+                      severity="danger"
+                      rounded
+                      aria-label="Cancel"
+                      @click="onDeleteIngredient(slotProps.data.ingredient_id)"
+                    />
                   </template>
                 </Column>
               </DataTable>
@@ -343,18 +410,23 @@ export default {
                 <Column field="name" header="Name"></Column>
                 <Column field="selected_quantity" header="Quantity">
                   <template #body="slotProps">
-                    <InputText
+                    <InputNumber
                       v-model="slotProps.data.selected_quantity"
                       id="selected_quantity"
-                      class="w-full"
+                      :suffix="` ${slotProps.data.unit}`"
+                      fluid
                     />
                   </template>
                 </Column>
                 <Column field="is_deleted" header="Delete">
                   <template #body="slotProps">
-                    <button @click="onDeleteHmIngredient(slotProps.data.hm_ingredient_id)">
-                      Remove
-                    </button>
+                    <Button
+                      icon="pi pi-times"
+                      severity="danger"
+                      rounded
+                      aria-label="Cancel"
+                      @click="onDeleteHmIngredient(slotProps.data.hm_ingredient_id)"
+                    />
                   </template>
                 </Column>
               </DataTable>
