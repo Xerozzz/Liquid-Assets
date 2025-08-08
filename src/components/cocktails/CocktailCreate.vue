@@ -3,11 +3,8 @@ import { getGlassware } from '@/api/glassware'
 import { getHmIngredient } from '@/api/hm_ingredients'
 import { getIngredients } from '@/api/ingredients'
 import { createCocktail } from '@/api/cocktail'
-import { createRecipeIngredient, createMultipleRecipeIngredient } from '@/api/recipe_ingredient'
-import {
-  createRecipeHmIngredient,
-  createMultipleRecipeHmIngredient,
-} from '@/api/recipe_hm_ingredient'
+import { createMultipleRecipeIngredient } from '@/api/recipe_ingredient'
+import { createMultipleRecipeHmIngredient } from '@/api/recipe_hm_ingredient'
 
 import { useSQLite } from '@/composables/useSQLite'
 import { useNotificationStore } from '@/stores/notification.store'
@@ -207,8 +204,6 @@ export default {
 
     async onFormSubmit({ valid, values }) {
       try {
-        console.log(values)
-        console.log(this.initialValues.image)
         if (valid) {
           let recipe_id = await createCocktail(
             values.name,
@@ -218,9 +213,8 @@ export default {
             values.notes,
             this.initialValues.image,
           )
+          this.destory()
           if (recipe_id) {
-            console.log(this.recipe_ingredients)
-            console.log(this.recipe_hm_ingredients)
             if (this.recipe_ingredients.length > 0) {
               let ingredients_data = this.recipe_ingredients.map(
                 ({ ingredient_id, selected_quantity }) => ({
