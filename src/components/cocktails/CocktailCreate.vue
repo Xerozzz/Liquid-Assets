@@ -13,8 +13,8 @@ import { useNotificationStore } from '@/stores/notification.store'
 export default {
   setup() {
     const notification = useNotificationStore()
-    const { destory } = useSQLite()
-    return { notification, destory }
+    const { destroy } = useSQLite()
+    return { notification, destroy }
   },
   data() {
     return {
@@ -193,7 +193,7 @@ export default {
     async insertHmIngredientData(rows) {
       try {
         let result = await createMultipleRecipeHmIngredient(rows)
-        this.destory()
+        this.destroy()
         return result
       } catch (error) {
         console.log(error)
