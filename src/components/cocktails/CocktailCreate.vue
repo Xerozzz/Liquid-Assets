@@ -22,8 +22,8 @@ import InputNumber from 'primevue/inputnumber'
 export default {
   setup() {
     const notification = useNotificationStore()
-    const { destory } = useSQLite()
-    return { notification, destory }
+    const { destroy } = useSQLite()
+    return { notification, destroy }
   },
   data() {
     return {
@@ -56,7 +56,7 @@ export default {
       try {
         this.ingredients = await getIngredients()
         this.filtered_ingredients = this.ingredients
-        this.destory()
+        this.destroy()
       } catch (error) {
         console.log(error)
         this.notification.notify({
@@ -70,7 +70,7 @@ export default {
       try {
         this.hm_ingredients = await getHmIngredient()
         this.filtered_hm_ingredients = this.hm_ingredients
-        this.destory()
+        this.destroy()
       } catch (error) {
         console.log(error)
         this.notification.notify({
@@ -83,7 +83,7 @@ export default {
     async getGlasswareData() {
       try {
         this.glassware = await getGlassware()
-        this.destory()
+        this.destroy()
       } catch (error) {
         console.log(error)
         this.notification.notify({
@@ -192,7 +192,7 @@ export default {
     async insertIngredientData(rows) {
       try {
         let result = await createMultipleRecipeIngredient(rows)
-        this.destory()
+        this.destroy()
         return result
       } catch (error) {
         console.log(error)
@@ -202,7 +202,7 @@ export default {
     async insertHmIngredientData(rows) {
       try {
         let result = await createMultipleRecipeHmIngredient(rows)
-        this.destory()
+        this.destroy()
         return result
       } catch (error) {
         console.log(error)
@@ -220,7 +220,7 @@ export default {
             values.notes,
             this.initialValues.image,
           )
-          this.destory()
+          this.destroy()
           if (recipe_id) {
             if (this.recipe_ingredients.length > 0) {
               let ingredients_data = this.recipe_ingredients.map(
@@ -234,7 +234,7 @@ export default {
               let result = await this.insertIngredientData(ingredients_data)
               console.log(result)
             }
-            if (this.recipe_hm_ingredients > 0) {
+            if (this.recipe_hm_ingredients.length > 0) {
               let ingredients_data = this.recipe_hm_ingredients.map(
                 ({ hm_ingredient_id, selected_quantity }) => ({
                   recipe_id,
@@ -258,7 +258,7 @@ export default {
     this.getData()
   },
   unmounted() {
-    this.destory()
+    this.destroy()
   },
 }
 </script>

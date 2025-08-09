@@ -21,7 +21,7 @@ export function useSQLite() {
   /** This fucking stupid sql libary can't run multiple promiser at once so the only way is to kill the promiser
    * instance everytime the page is navigated away on the frontend
   */
-  const destory = () => {
+  const destroy  = () => {
     promiser = null;
     isInitialized.value = false
   }
@@ -150,7 +150,7 @@ export function useSQLite() {
     isInitialized,
     executeQuery,
     initialize,
-    destory,
+    destroy,
     setIsInitialized
   }
 }

@@ -7,8 +7,8 @@ export default {
   name: 'CocktailView',
   setup() {
     const notification = useNotificationStore()
-    const { destory } = useSQLite()
-    return { notification, destory }
+    const { destroy  } = useSQLite()
+    return { notification, destroy  }
   },
   data() {
     return {
@@ -29,7 +29,7 @@ export default {
     this.retrieveCocktails()
   },
   unmounted() {
-    this.destory()
+    this.destroy()
   },
 }
 </script>
