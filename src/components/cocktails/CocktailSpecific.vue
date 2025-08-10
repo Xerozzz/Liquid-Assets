@@ -1,8 +1,14 @@
 <script>
 import { getCocktailById } from '@/api/cocktail.js'
 
+import { useSQLite } from '@/composables/useSQLite'
+
 export default {
   name: 'CocktailSpecific',
+  setup() {
+    const { destroy } = useSQLite()
+    return { destroy }
+  },
   data() {
     return {
       loading: true,
@@ -56,6 +62,9 @@ export default {
   },
   mounted() {
     this.fetchCocktail()
+  },
+  unmounted() {
+    this.destroy()
   },
 }
 </script>
