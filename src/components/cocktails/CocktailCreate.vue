@@ -209,7 +209,9 @@ export default {
       }
     },
 
-    async onFormSubmit({ valid, values }) {
+    async onFormSubmit({ valid, values, originalEvent }) {
+      console.log(originalEvent)
+
       try {
         if (this.recipe_ingredients.length === 0 && this.recipe_hm_ingredients.length === 0) {
           valid = false
@@ -277,6 +279,7 @@ export default {
     :initialValues
     :resolver
     @submit="onFormSubmit"
+    @keydown.enter="$event.preventDefault()"
     class="space-y-8 max-w-7xl mx-auto m-5"
   >
     <!-- Name input -->
