@@ -211,6 +211,14 @@ export default {
 
     async onFormSubmit({ valid, values }) {
       try {
+        if (this.recipe_ingredients.length === 0 && this.recipe_hm_ingredients.length === 0) {
+          valid = false
+          this.notification.notify({
+            message: `Cocktail cannot be made without any ingredients.`,
+            summary: 'No ingredients added',
+            severity: 'error',
+          })
+        }
         if (valid) {
           let recipe_id = await createCocktail(
             values.name,
@@ -341,15 +349,6 @@ export default {
         fluid
         class="w-full rounded-md border border-gray-300 p-2"
       />
-      <Message
-        v-if="$form.garnish?.invalid"
-        severity="error"
-        size="small"
-        variant="simple"
-        class="mt-1 text-red-600"
-      >
-        {{ $form.garnish.error?.message }}
-      </Message>
     </div>
 
     <!-- Notes textarea -->
@@ -361,48 +360,38 @@ export default {
         fluid
         class="w-full rounded-md border border-gray-300 p-2 resize-y"
       />
-      <Message
-        v-if="$form.notes?.invalid"
-        severity="error"
-        size="small"
-        variant="simple"
-        class="mt-1 text-red-600"
-      >
-        {{ $form.notes.error?.message }}
-      </Message>
     </div>
 
-    <!-- Image upload -->
-    <div>
-      <FileUpload
-        name="image"
-        @select="onFileSelect"
-        :showUploadButton="false"
-        :showCancelButton="false"
-        :multiple="false"
-        :fileLimit="1"
-        accept="image/*"
-        :maxFileSize="1000000"
-        class="w-full"
-      >
-        <template #empty>
-          <span
-            class="block p-4 border-2 border-dashed border-gray-300 rounded-md text-center text-gray-500 cursor-pointer hover:border-gray-400"
+    <Card>
+      <template #title>Image</template>
+      <template #content>
+        <!-- Image upload -->
+        <div>
+          <FileUpload
+            v-model="$form.image"
+            name="image"
+            @select="onFileSelect"
+            @uploader=""
+            :showUploadButton="false"
+            :showCancelButton="false"
+            :multiple="false"
+            :fileLimit="1"
+            accept="image/*"
+            :maxFileSize="1000000"
+            class="w-full"
+            :auto="false"
           >
-            Drag and drop files here to upload.
-          </span>
-        </template>
-      </FileUpload>
-      <Message
-        v-if="$form.image?.invalid"
-        severity="error"
-        size="small"
-        variant="simple"
-        class="mt-1 text-red-600"
-      >
-        {{ $form.image.error?.message }}
-      </Message>
-    </div>
+            <template #empty>
+              <span
+                class="block p-4 border-2 border-dashed border-gray-300 rounded-md text-center text-gray-500 cursor-pointer hover:border-gray-400"
+              >
+                Drag and drop files here to upload.
+              </span>
+            </template>
+          </FileUpload>
+        </div>
+      </template>
+    </Card>
 
     <!-- Ingredients Card -->
     <div>
