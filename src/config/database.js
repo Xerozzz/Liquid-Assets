@@ -35,6 +35,7 @@ export const databaseConfig = {
         name TEXT NOT NULL,
         cost REAL NOT NULL,
         quantity INTEGER NOT NULL,
+        unit TEXT NOT NULL,
         is_stocked BOOLEAN,
         is_deleted BOOLEAN DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -50,6 +51,7 @@ export const databaseConfig = {
           name TEXT NOT NULL,
           cost REAL NOT NULL,
           notes TEXT,
+          unit TEXT NOT NULL,
           image BLOB,
           is_stocked BOOLEAN,
           is_deleted BOOLEAN DEFAULT 0,
@@ -105,6 +107,7 @@ export const databaseConfig = {
           deleted_at TIMESTAMP,
           FOREIGN KEY (recipe_id) REFERENCES recipe(recipe_id),
           FOREIGN KEY (ingredient_id) REFERENCES ingredients(ingredient_id)
+          UNIQUE(recipe_id, ingredient_id)
       )
       `
     },
@@ -121,6 +124,7 @@ export const databaseConfig = {
           deleted_at TIMESTAMP,
           FOREIGN KEY (recipe_id) REFERENCES recipe(recipe_id),
           FOREIGN KEY (hm_ingredient_id) REFERENCES hm_ingredients(hm_ingredient_id)
+          UNIQUE(recipe_id, hm_ingredient_id)
         )
       `
     }
