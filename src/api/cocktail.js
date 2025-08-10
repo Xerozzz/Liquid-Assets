@@ -50,6 +50,7 @@ export const getCocktailById = async (recipe_id) => {
           r.step_to_make AS step_to_make,
           i.name AS ingredient_name,
           i.cost AS ingredient_cost,
+          i.unit AS ingredient_unit,
           i.is_stocked AS ingredient_stock,
           ri.quantity
       FROM

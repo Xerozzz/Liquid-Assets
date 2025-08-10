@@ -1,8 +1,16 @@
 <script>
 import { getCocktailById } from '@/api/cocktail.js'
 
+import { useSQLite } from '@/composables/useSQLite'
+
+import { Button } from 'primevue'
+
 export default {
   name: 'CocktailSpecific',
+  setup() {
+    const { destroy } = useSQLite()
+    return { destroy }
+  },
   data() {
     return {
       loading: true,
@@ -18,7 +26,8 @@ export default {
         const cocktailId = this.$route.params.id
         const data = await getCocktailById(cocktailId)
         this.cocktail = data[0]
-
+        console.log(data);
+        
         this.ingredients = data.map((row) => {
           const cost = row.quantity * row.ingredient_cost
           this.totalCost += cost
@@ -28,6 +37,7 @@ export default {
             ingredient: row.ingredient_name,
             quantity: row.quantity,
             cost,
+            unit: row.ingredient_unit,
             stock: row.ingredient_stock ? '✅' : '❌',
           }
         })
@@ -40,6 +50,9 @@ export default {
   },
   mounted() {
     this.fetchCocktail()
+  },
+  unmounted() {
+    this.destroy()
   },
 }
 </script>
@@ -86,7 +99,7 @@ export default {
           <tbody>
             <tr v-for="ingredient in ingredients" :key="ingredient.id">
               <td>{{ ingredient.ingredient }}</td>
-              <td>{{ ingredient.quantity }}</td>
+              <td>{{ ingredient.quantity }} {{ ingredient.unit }}</td>
               <td>${{ ingredient.cost.toFixed(2) }}</td>
               <td>{{ ingredient.stock }}</td>
             </tr>

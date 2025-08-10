@@ -8,7 +8,9 @@ export const dumps = [
     {
         schema: "ingredients",
         query:
-            `INSERT INTO ingredients (name, cost, quantity, unit, is_stocked) VALUES ('orange',1.1,1,'pc',1);`
+            `INSERT INTO ingredients (name, cost, quantity, unit, is_stocked) VALUES 
+                ('orange',1.1,1,'pc',1), 
+                ('water',0.5,100,'ml',1);`
     },
     {
         schema: "hm_ingredients",
