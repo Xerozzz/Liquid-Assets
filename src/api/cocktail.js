@@ -1,5 +1,5 @@
 import { useSQLite } from '@/composables/useSQLite'
-const { executeQuery } = useSQLite()
+const { executeQuery, destroy } = useSQLite()
 
 /**
  * Retrieves all cocktails from the `recipe` table.
@@ -11,7 +11,8 @@ const { executeQuery } = useSQLite()
  */
 export const getCocktail = async () => {
   try {
-    let result = await executeQuery('SELECT * FROM recipe;')
+    let result = await executeQuery('SELECT * FROM recipe WHERE is_deleted = 0;')
+    destroy()
     return result?.result.resultRows
   } catch (error) {
     console.log(error)
@@ -59,14 +60,14 @@ export const getCocktailById = async (recipe_id) => {
           JOIN recipe_ingredient ri ON r.recipe_id = ri.recipe_id
           JOIN ingredients i ON ri.ingredient_id = i.ingredient_id
       WHERE
-          r.is_deleted = false
-          AND ri.is_deleted = false
+          r.is_deleted = 0
+          AND ri.is_deleted = 0
           AND r.recipe_id = ?
       ORDER BY
           i.name;
       `
     let result = await executeQuery(query, [recipe_id])
-
+    destroy()
     return result?.result.resultRows
   } catch (error) {
     console.log(error)
@@ -91,6 +92,7 @@ export const createCocktail = async (name, glass_id, step_to_make, garnish = "",
       'INSERT INTO recipe (name, glass_id, step_to_make, garnish, notes, image) VALUES (?, ?, ?, ?, ?, ?);',
       [name, glass_id, step_to_make, garnish, notes, image],
     )
+    destroy()
     return Number(result?.result.lastInsertRowId)
   } catch (error) {
     console.log(error)
@@ -117,6 +119,7 @@ export const updateCocktail = async (name, glass_id, step_to_make, image, recipe
       'UPDATE recipe SET name = ?, glass_id = ?, step_to_make = ?, image = ? WHERE recipe_id = ?;',
       [name, glass_id, step_to_make, image, recipe_id],
     )
+    destroy()
     return result
   } catch (error) {
     console.log(error)
@@ -125,7 +128,7 @@ export const updateCocktail = async (name, glass_id, step_to_make, image, recipe
 }
 
 /**
- * Deletes a cocktail recipe from the database by ID.
+ * Updates a cocktail recipe is_deleted flag from the database by ID.
  *
  * @async
  * @function deleteCocktail
@@ -135,7 +138,8 @@ export const updateCocktail = async (name, glass_id, step_to_make, image, recipe
  */
 export const deleteCocktail = async (recipe_id) => {
   try {
-    let result = await executeQuery('DELETE FROM recipe WHERE recipe_id = ?;', [recipe_id])
+    let result = await executeQuery('UPDATE recipe SET is_deleted = 1 WHERE recipe_id = ?;', [recipe_id])
+    destroy()
     return result
   } catch (error) {
     console.log(error)

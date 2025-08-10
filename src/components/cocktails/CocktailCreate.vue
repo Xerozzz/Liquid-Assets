@@ -11,13 +11,16 @@ import { useNotificationStore } from '@/stores/notification.store'
 
 import { Form } from '@primevue/forms'
 
-import FileUpload from 'primevue/fileupload'
-import Textarea from 'primevue/textarea'
-import Select from 'primevue/select'
-import Card from 'primevue/card'
-import AutoComplete from 'primevue/autocomplete'
-import DataTable from 'primevue/datatable'
-import InputNumber from 'primevue/inputnumber'
+import {
+  AutoComplete,
+  Button,
+  Card,
+  DataTable,
+  FileUpload,
+  InputNumber,
+  Select,
+  Textarea,
+} from 'primevue'
 
 export default {
   setup() {
@@ -56,7 +59,6 @@ export default {
       try {
         this.ingredients = await getIngredients()
         this.filtered_ingredients = this.ingredients
-        this.destroy()
       } catch (error) {
         console.log(error)
         this.notification.notify({
@@ -70,7 +72,6 @@ export default {
       try {
         this.hm_ingredients = await getHmIngredient()
         this.filtered_hm_ingredients = this.hm_ingredients
-        this.destroy()
       } catch (error) {
         console.log(error)
         this.notification.notify({
@@ -83,7 +84,6 @@ export default {
     async getGlasswareData() {
       try {
         this.glassware = await getGlassware()
-        this.destroy()
       } catch (error) {
         console.log(error)
         this.notification.notify({
@@ -171,7 +171,6 @@ export default {
 
       if (!exists) {
         this.recipe_hm_ingredients.push({ selected_quantity: 1, ...event.value })
-        console.log(this.recipe_hm_ingredients)
       } else {
         console.log('Ingredient already exists in the list.')
       }

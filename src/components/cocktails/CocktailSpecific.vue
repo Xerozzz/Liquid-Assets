@@ -1,15 +1,22 @@
 <script>
-import { getCocktailById } from '@/api/cocktail.js'
+import { deleteCocktail, getCocktailById } from '@/api/cocktail.js'
 
 import { useSQLite } from '@/composables/useSQLite'
+import { useNotificationStore } from '@/stores/notification.store'
 
 import { Button } from 'primevue'
 
+import DeleteDialog from '../DeleteDialog.vue'
+import { deleteRecipeHmIngredientByRecipeId } from '@/api/recipe_hm_ingredient'
+import { deleteRecipeIngredientByRecipeId } from '@/api/recipe_ingredient'
+
 export default {
   name: 'CocktailSpecific',
+  components: { DeleteDialog },
   setup() {
+    const notification = useNotificationStore()
     const { destroy } = useSQLite()
-    return { destroy }
+    return { notification, destroy }
   },
   data() {
     return {
@@ -26,27 +33,67 @@ export default {
         const cocktailId = this.$route.params.id
         const data = await getCocktailById(cocktailId)
         this.cocktail = data[0]
-        console.log(data);
-        
-        this.ingredients = data.map((row) => {
-          const cost = row.quantity * row.ingredient_cost
-          this.totalCost += cost
+        if (data.length == 0) {
+          this.notification.notify({
+            message: `Cocktail does not exist`,
+            summary: 'No Cocktail found',
+            severity: 'error',
+          })
+          this.$router.replace('/cocktail')
+        } else {
+          this.ingredients = data.map((row) => {
+            const cost = row.quantity * row.ingredient_cost
+            this.totalCost += cost
 
-          return {
-            id: row.ingredient_id,
-            ingredient: row.ingredient_name,
-            quantity: row.quantity,
-            cost,
-            unit: row.ingredient_unit,
-            stock: row.ingredient_stock ? '✅' : '❌',
-          }
-        })
+            return {
+              id: row.ingredient_id,
+              ingredient: row.ingredient_name,
+              quantity: row.quantity,
+              cost,
+              unit: row.ingredient_unit,
+              stock: row.ingredient_stock ? '✅' : '❌',
+            }
+          })
+        }
       } catch (error) {
         this.error = error
       } finally {
         this.loading = false
       }
     },
+    confirmDelete() {
+      this.$confirm.require({
+        header: 'Delete Cocktail',
+        message: 'This action cannot be undone. Do you want to proceed?',
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: 'Yes, Delete',
+        rejectLabel: 'Cancel',
+        acceptClass: 'p-button-danger',
+        rejectClass: 'p-button-text',
+        accept: () => {
+          this.deleteItem()
+        },
+        reject: () => {
+          this.cancelAction()
+        },
+      })
+    },
+    async deleteItem() {
+      try {
+        await deleteCocktail(this.$route.params.id)
+        await deleteRecipeHmIngredientByRecipeId(this.$route.params.id)
+        await deleteRecipeIngredientByRecipeId(this.$route.params.id)
+        this.notification.notify({
+          message: `Cocktail deleted successfully`,
+          summary: 'Delete Sucess',
+          severity: 'success',
+        })
+        this.$router.replace('/cocktail')
+      } catch (error) {
+        console.log(error)
+      }
+    },
+    cancelAction() {},
   },
   mounted() {
     this.fetchCocktail()
@@ -58,9 +105,12 @@ export default {
 </script>
 
 <template>
+  <DeleteDialog />
   <div v-if="loading">Loading...</div>
   <div v-else-if="error">{{ error.message }}</div>
   <div v-else class="bodysection">
+    <Button label="Delete Item" icon="pi pi-trash" @click="confirmDelete" />
+
     <button class="nav_button" @click="$router.push('/cocktail')">Back</button>
     <div class="grid grid-cols-3 gap-11">
       <div class="sectionbox">
