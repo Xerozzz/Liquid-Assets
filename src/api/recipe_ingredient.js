@@ -35,10 +35,32 @@ export const createRecipeIngredient = async (recipe_id, ingredient_id, quantity)
     }
 }
 
+export const createMultipleRecipeIngredient = async (rows) => {
+    try {
+        const placeholders = rows.map(() => '(?, ?, ?)').join(', ');
+        const values = rows.flatMap(row => [row.recipe_id, row.ingredient_id, row.selected_quantity
+        ]);
+
+        let result = await executeQuery(
+            `INSERT INTO recipe_ingredient (recipe_id, ingredient_id, quantity) VALUES ${placeholders} 
+            ON CONFLICT(recipe_id, ingredient_id) 
+            DO UPDATE SET 
+                recipe_id = excluded.recipe_id, 
+                ingredient_id = excluded.ingredient_id,
+                quantity = quantity
+            `, values)
+        console.log(result);
+        return result
+    } catch (error) {
+        console.log(error);
+        return error
+    }
+}
+
 export const updateRecipeIngredient = async (recipe_id, ingredient_id, quantity, recipe_ingredient_id) => {
     try {
         let result = await executeQuery('UPDATE recipe_ingredient SET recipe_id = ?, ingredient_id = ?, quantity = ?, WHERE recipe_ingredient_id = 1;',
-            [recipe_id, ingredient_id, quantity,  recipe_ingredient_id]
+            [recipe_id, ingredient_id, quantity, recipe_ingredient_id]
         )
         return result
     } catch (error) {

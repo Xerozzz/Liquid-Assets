@@ -1,25 +1,8 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config';
-
-import {
-    Accordion,
-    AccordionPanel,
-    AccordionHeader,
-    AccordionContent,
-    Button,
-    Card,
-    Column,
-    DataTable,
-    Tabs,
-    TabList,
-    Tab,
-    TabPanels,
-    TabPanel,
-    InputText,
-    IftaLabel,
-    Textarea
-} from 'primevue';
+import ToastService from 'primevue/toastservice';
+import Aura from '@primeuix/themes/aura';
 
 
 import App from './App.vue'
@@ -29,12 +12,14 @@ import './index.css'
 import './assets/main.css'
 const app = createApp(App)
 app.use(PrimeVue, {
-    unstyled: true
+    theme: {
+        preset: Aura
+    }
 });
 
 app.use(createPinia())
 app.use(router)
 
-app.component('InputText', InputText);
+app.use(ToastService);
 
 app.mount('#app')
