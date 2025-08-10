@@ -13,7 +13,6 @@ export default {
   data() {
     return {
       loading: true,
-      sqlQuery: 'SELECT * FROM recipe',
       queryResult: [],
       queryError: null,
     }
