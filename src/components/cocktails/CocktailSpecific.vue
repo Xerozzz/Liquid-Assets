@@ -95,7 +95,7 @@ export default {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in ingredients" :key="`${item.kind}-${item.id}`">
+            <tr v-for="item in ingredients" :key="`${item.kind}-${item.item_id}`">
               <td><span v-if="item.kind === 'hm'">(HM) </span>{{ item.name }}</td>
               <td>
                 {{ item.quantity }}<span v-if="item.unit"> {{ item.unit }}</span>
