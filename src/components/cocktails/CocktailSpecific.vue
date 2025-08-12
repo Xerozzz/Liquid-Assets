@@ -16,7 +16,12 @@ export default {
     async fetchCocktail() {
       try {
         const cocktailId = this.$route.params.id
-        const rows = await getCocktailById(cocktailId) // returns rows from the query above
+        const rows = await getCocktailById(cocktailId) // returns rows from your query
+
+        if (!rows || rows.length === 0) {
+          this.error = new Error('Cocktail not found')
+          return
+        }
 
         // recipe-level info is identical on every row
         const r = rows[0]
@@ -29,19 +34,19 @@ export default {
           step_to_make: r.step_to_make,
         }
 
-        // one flat list of items
+        // one flat list of items (you said mapping happens here, so keeping it)
         const items = rows.map((row) => ({
           kind: row.kind, // 'ingredient' | 'hm'
           id: row.item_id,
           name: row.item_name,
           quantity: row.item_quantity,
-          unit: row.unit ?? null, // if you add it later
-          cost: row.item_quantity * row.item_cost,
+          unit: row.unit ?? null,
+          cost: Number(row.item_quantity) * Number(row.item_cost || 0),
           stock: row.item_stock ? '✅' : '❌',
         }))
 
         this.ingredients = items
-        this.totalCost = items.reduce((sum, x) => sum + x.cost, 0)
+        this.totalCost = items.reduce((sum, x) => sum + (Number.isFinite(x.cost) ? x.cost : 0), 0)
       } catch (error) {
         this.error = error
       } finally {
@@ -62,29 +67,26 @@ export default {
     <button class="nav_button" @click="$router.push('/cocktail')">Back</button>
     <div class="grid grid-cols-3 gap-11">
       <div class="sectionbox">
-        <h2 class="title">{{ cocktail.recipe_name }}</h2>
-        <img
-          class="w-80 h-auto"
-          v-bind:src="cocktail.image"
-          alt="Cocktail Image"
-          v-if="cocktail.image"
-        />
+        <h2 class="title">{{ cocktail.name }}</h2>
+        <img class="w-80 h-auto" :src="cocktail.image" alt="Cocktail Image" v-if="cocktail.image" />
         <h3>Glass:</h3>
-        <p>{{ cocktail.glass_name }}</p>
+        <p>{{ cocktail.glass }}</p>
         <h3>Garnish:</h3>
         <p>{{ cocktail.garnish }}</p>
         <h3>Total Cost:</h3>
-        <p>${{ this.totalCost.toFixed(2) }}</p>
+        <p>${{ totalCost.toFixed(2) }}</p>
         <h3>Notes:</h3>
         <p>{{ cocktail.notes }}</p>
       </div>
+
       <div class="sectionbox">
         <h3>Steps to make:</h3>
         <p>{{ cocktail.step_to_make }}</p>
       </div>
+
       <div class="sectionbox">
         <h3>Ingredients:</h3>
-        <p>Total Cost: ${{ this.totalCost.toFixed(2) }}</p>
+        <p>Total Cost: ${{ totalCost.toFixed(2) }}</p>
         <table class="text-center">
           <thead>
             <tr>
