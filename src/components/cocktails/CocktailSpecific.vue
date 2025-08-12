@@ -16,21 +16,32 @@ export default {
     async fetchCocktail() {
       try {
         const cocktailId = this.$route.params.id
-        const data = await getCocktailById(cocktailId)
-        this.cocktail = data[0]
+        const rows = await getCocktailById(cocktailId) // returns rows from the query above
 
-        this.ingredients = data.map((row) => {
-          const cost = row.quantity * row.ingredient_cost
-          this.totalCost += cost
+        // recipe-level info is identical on every row
+        const r = rows[0]
+        this.cocktail = {
+          name: r.recipe_name,
+          glass: r.glass_name,
+          garnish: r.garnish,
+          notes: r.notes,
+          image: r.image,
+          step_to_make: r.step_to_make,
+        }
 
-          return {
-            id: row.ingredient_id,
-            ingredient: row.ingredient_name,
-            quantity: row.quantity,
-            cost,
-            stock: row.ingredient_stock ? '✅' : '❌',
-          }
-        })
+        // one flat list of items
+        const items = rows.map((row) => ({
+          kind: row.kind, // 'ingredient' | 'hm'
+          id: row.item_id,
+          name: row.item_name,
+          quantity: row.item_quantity,
+          unit: row.unit ?? null, // if you add it later
+          cost: row.item_quantity * row.item_cost,
+          stock: row.item_stock ? '✅' : '❌',
+        }))
+
+        this.ingredients = items
+        this.totalCost = items.reduce((sum, x) => sum + x.cost, 0)
       } catch (error) {
         this.error = error
       } finally {
@@ -84,11 +95,13 @@ export default {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="ingredient in ingredients" :key="ingredient.id">
-              <td>{{ ingredient.ingredient }}</td>
-              <td>{{ ingredient.quantity }}</td>
-              <td>${{ ingredient.cost.toFixed(2) }}</td>
-              <td>{{ ingredient.stock }}</td>
+            <tr v-for="item in ingredients" :key="`${item.kind}-${item.id}`">
+              <td><span v-if="item.kind === 'hm'">(HM) </span>{{ item.name }}</td>
+              <td>
+                {{ item.quantity }}<span v-if="item.unit"> {{ item.unit }}</span>
+              </td>
+              <td>${{ Number(item.cost).toFixed(2) }}</td>
+              <td>{{ item.stock }}</td>
             </tr>
           </tbody>
         </table>

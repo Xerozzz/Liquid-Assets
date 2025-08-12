@@ -40,29 +40,47 @@ export const getCocktail = async () => {
 export const getCocktailById = async (recipe_id) => {
   try {
     const query = `
-      SELECT
-          r.name AS recipe_name,
-          g.name AS glass_name,
-          r.garnish AS garnish,
-          r.notes AS notes,
-          i.ingredient_id AS ingredient_id,
-          r.image AS image,
-          r.step_to_make AS step_to_make,
-          i.name AS ingredient_name,
-          i.cost AS ingredient_cost,
-          i.is_stocked AS ingredient_stock,
-          ri.quantity
-      FROM
-          recipe r
-          JOIN glassware g ON r.glass_id = g.glass_id
-          JOIN recipe_ingredient ri ON r.recipe_id = ri.recipe_id
-          JOIN ingredients i ON ri.ingredient_id = i.ingredient_id
-      WHERE
-          r.is_deleted = false
-          AND ri.is_deleted = false
-          AND r.recipe_id = ?
-      ORDER BY
-          i.name;
+      WITH base AS (
+  SELECT r.recipe_id,
+         r.name  AS recipe_name,
+         g.name  AS glass_name,
+         r.garnish,
+         r.notes,
+         r.image,
+         r.step_to_make
+  FROM recipe r
+  JOIN glassware g ON r.glass_id = g.glass_id
+  WHERE r.is_deleted = false
+    AND r.recipe_id = $1
+),
+items AS (
+  SELECT 'ingredient' AS kind,
+         i.ingredient_id AS item_id,
+         i.name          AS item_name,
+         i.cost          AS item_cost,
+         i.is_stocked    AS item_stock,
+         ri.quantity     AS item_quantity
+  FROM recipe_ingredient ri
+  JOIN ingredients i ON i.ingredient_id = ri.ingredient_id
+  WHERE ri.is_deleted = false
+    AND ri.recipe_id = $1
+
+  UNION ALL
+
+  SELECT 'hm'         AS kind,
+         hmi.hm_ingredient_id AS item_id,
+         hmi.name             AS item_name,
+         hmi.cost             AS item_cost,
+         hmi.is_stocked       AS item_stock,
+         rhi.quantity         AS item_quantity
+  FROM recipe_hm_ingredient rhi
+  JOIN hm_ingredients hmi ON hmi.hm_ingredient_id = rhi.hm_ingredient_id
+  WHERE rhi.recipe_id = $1
+)
+SELECT b.*, i.*
+FROM base b
+JOIN items i ON i.item_quantity IS NOT NULL   -- just to attach base data to each item
+ORDER BY i.item_name;
       `
     let result = await executeQuery(query, [recipe_id])
 
@@ -84,7 +102,14 @@ export const getCocktailById = async (recipe_id) => {
  * @returns {Promise<number|Error>} A promise that resolves to the `recipe_id` of the newly inserted cocktail or an error object.
  * @throws Will log and return an error object if the insert fails.
  */
-export const createCocktail = async (name, glass_id, step_to_make, garnish = "", notes = "", image) => {
+export const createCocktail = async (
+  name,
+  glass_id,
+  step_to_make,
+  garnish = '',
+  notes = '',
+  image,
+) => {
   try {
     let result = await executeQuery(
       'INSERT INTO recipe (name, glass_id, step_to_make, garnish, notes, image) VALUES (?, ?, ?, ?, ?, ?);',
