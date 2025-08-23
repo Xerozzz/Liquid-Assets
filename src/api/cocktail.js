@@ -43,12 +43,13 @@ export const getCocktailById = async (recipe_id) => {
     const query = `
       WITH base AS (
         SELECT r.recipe_id,
-              r.name  AS recipe_name,
-              g.name  AS glass_name,
-              r.garnish,
-              r.notes,
-              r.image,
-              r.step_to_make
+               r.name  AS recipe_name,
+               g.name  AS glass_name,
+               g.glass_id AS glass_id,
+               r.garnish,
+               r.notes,
+               r.image,
+               r.step_to_make
         FROM recipe r
         JOIN glassware g ON r.glass_id = g.glass_id
         WHERE r.is_deleted = 0
@@ -87,6 +88,7 @@ export const getCocktailById = async (recipe_id) => {
       ORDER BY i.item_name;
     `
     const result = await executeQuery(query, [recipe_id, recipe_id, recipe_id])
+    destroy()
     return result?.result?.resultRows
   } catch (error) {
     console.log(error)
