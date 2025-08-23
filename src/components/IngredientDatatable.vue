@@ -30,17 +30,7 @@ export default {
       // selectedIngredients: [],
     }
   },
-  computed: {
-    value: {
-      get() {
-        return this.selectedIngredients
-      },
-      set(value) {
-        this.$emit('update:selectedIngredients', value)
-      },
-    },
-  },
-  emits: ['update:selectedIngredients'],
+  emits: ['selectedIngredients' ],
   methods: {
     onSearch(event) {
       setTimeout(() => {
@@ -54,9 +44,10 @@ export default {
       }, 250)
     },
     onDelete(id) {
-      this.selectedIngredients = this.selectedIngredients.filter(
+      const updatedIngredients = this.selectedIngredients.filter(
         (item) => item.ingredient_id !== id,
       )
+      this.$emit('selectedIngredients', updatedIngredients)
     },
     onIngredientSelect(event) {
       const exists = this.selectedIngredients.some(
@@ -64,7 +55,13 @@ export default {
       )
 
       if (!exists) {
-        this.selectedIngredients.push({ selected_quantity: 1, ...event.value })
+        const updatedIngredients = [
+          ...this.selectedIngredients,
+          { selected_quantity: 1, ...event.value }
+        ]
+        console.log(updatedIngredients);
+        
+        this.$emit('selectedIngredients', updatedIngredients)
       } else {
         console.log('Ingredient already exists in the list.')
       }
