@@ -13,7 +13,7 @@ import IngredientDatatable from '../IngredientDatatable.vue'
 
 export default {
   components: {
-    IngredientDatatable
+    IngredientDatatable,
   },
   setup() {
     const notification = useNotificationStore()
@@ -25,12 +25,8 @@ export default {
       ingredients: [],
       hm_ingredients: [],
       glassware: [],
-      filtered_ingredients: [],
-      filtered_hm_ingredients: [],
       recipe_ingredients: [],
       recipe_hm_ingredients: [],
-      ingredientInput: '',
-      hmIngredientInput: '',
       initialValues: {
         name: '',
         glass: '',
@@ -50,7 +46,6 @@ export default {
     async getIngredientData() {
       try {
         this.ingredients = await getIngredients()
-        this.filtered_ingredients = this.ingredients
       } catch (error) {
         console.log(error)
         this.notification.notify({
@@ -63,7 +58,6 @@ export default {
     async getHmIngredientData() {
       try {
         this.hm_ingredients = await getHmIngredient()
-        this.filtered_hm_ingredients = this.hm_ingredients
       } catch (error) {
         console.log(error)
         this.notification.notify({
@@ -106,31 +100,13 @@ export default {
         errors,
       }
     },
-    /** This is a search function for ingredient with a debounce of 250ms */
-    searchIngredients(event) {
-      setTimeout(() => {
-        if (!event.query.trim().length) {
-          this.filtered_ingredients = [...this.ingredients]
-        } else {
-          this.filtered_ingredients = this.ingredients.filter((ingredient) => {
-            return ingredient.name.toLowerCase().startsWith(event.query.toLowerCase())
-          })
-        }
-      }, 250)
-    },
-    /** This is a search function for homemade ingredient with a debounce of 250ms */
-    searchHMIngredients(event) {
-      setTimeout(() => {
-        if (!event.query.trim().length) {
-          this.filtered_hm_ingredients = [...this.hm_ingredients]
-        } else {
-          this.filtered_hm_ingredients = this.hm_ingredients.filter((ingredient) => {
-            return ingredient.name.toLowerCase().startsWith(event.query.toLowerCase())
-          })
-        }
-      }, 250)
-    },
 
+    handleRecipeIngredients(data) {
+      this.recipe_ingredients = data
+    },
+    handleHmRecipeIngredients(data) {
+      this.recipe_hm_ingredients = data
+    },
     onFileSelect(event) {
       const file = event.files[0]
       const reader = new FileReader()
@@ -140,44 +116,6 @@ export default {
       }
 
       reader.readAsDataURL(file)
-    },
-    /** This is for when the options in the homemade ingredient autocomplete is clicked */
-    onIngredientOptionClick(event) {
-      const exists = this.recipe_ingredients.some(
-        (item) => item.ingredient_id === event.value.ingredient_id,
-      )
-
-      if (!exists) {
-        this.recipe_ingredients.push({ selected_quantity: 1, ...event.value })
-      } else {
-        console.log('Ingredient already exists in the list.')
-      }
-
-      this.ingredientInput = ''
-    },
-    /** This is for when the options in the homemade ingredient autocomplete is clicked */
-    onHmIngredientOptionClick(event) {
-      const exists = this.recipe_hm_ingredients.some(
-        (item) => item.hm_ingredient_id === event.value.hm_ingredient_id,
-      )
-
-      if (!exists) {
-        this.recipe_hm_ingredients.push({ selected_quantity: 1, ...event.value })
-      } else {
-        console.log('Ingredient already exists in the list.')
-      }
-
-      this.hmIngredientInput = ''
-    },
-
-    onDeleteIngredient(id) {
-      this.recipe_ingredients = this.recipe_ingredients.filter((item) => item.ingredient_id !== id)
-    },
-
-    onDeleteHmIngredient(id) {
-      this.recipe_hm_ingredients = this.recipe_hm_ingredients.filter(
-        (item) => item.hm_ingredient_id !== id,
-      )
     },
 
     async insertIngredientData(rows) {
@@ -200,8 +138,8 @@ export default {
       }
     },
 
-    async onFormSubmit({ valid, values, originalEvent }) {
-      console.log(originalEvent)
+    async onFormSubmit({ valid, values }) {
+      // console.log(values)
 
       try {
         if (this.recipe_ingredients.length === 0 && this.recipe_hm_ingredients.length === 0) {
@@ -391,115 +329,19 @@ export default {
       </template>
     </Card>
 
-    <IngredientDatatable title="Ingredients" :ingredients="ingredients" :selected-ingredients="[]"/>
-    <!-- Ingredients Card -->
-    <!-- <div>
-      <Card class="w-full">
-        <template #title>Ingredients</template>
-        <template #subtitle>
-          <AutoComplete
-            v-model="ingredientInput"
-            :suggestions="filtered_ingredients"
-            optionLabel="name"
-            @complete="searchIngredients"
-            @option-select="onIngredientOptionClick"
-            class="w-full"
-            placeholder="Search Ingredients"
-          />
-        </template>
-        <template #content>
-          <div v-if="recipe_ingredients.length !== 0">
-            <DataTable
-              :value="recipe_ingredients"
-              tableStyle="min-width: 50rem; cursor: default;"
-              class="mt-4"
-            >
-              <Column field="name" header="Name"></Column>
-              <Column field="selected_quantity" header="Quantity">
-                <template #body="slotProps">
-                  <InputNumber
-                    v-model="slotProps.data.selected_quantity"
-                    id="selected_quantity"
-                    :suffix="` ${slotProps.data.unit}`"
-                    fluid
-                    :min="1"
-                    class="w-full"
-                  />
-                </template>
-              </Column>
-              <Column field="is_deleted" header="Delete">
-                <template #body="slotProps">
-                  <Button
-                    icon="pi pi-times"
-                    severity="danger"
-                    rounded
-                    aria-label="Cancel"
-                    @click="onDeleteIngredient(slotProps.data.ingredient_id)"
-                    class="p-2"
-                  />
-                </template>
-              </Column>
-            </DataTable>
-          </div>
-          <div class="py-8 text-center text-gray-500 font-semibold" v-else>No ingredient added</div>
-        </template>
-      </Card>
-    </div> -->
+    <IngredientDatatable
+      title="Ingredients"
+      :ingredients="ingredients"
+      :selectedIngredients="recipe_ingredients"
+      @selectedIngredients="handleRecipeIngredients"
+    />
 
-    <!-- Homemade Ingredients Card -->
-    <div>
-      <Card class="w-full">
-        <template #title>Homemade Ingredients</template>
-        <template #subtitle>
-          <AutoComplete
-            v-model="hmIngredientInput"
-            :suggestions="filtered_hm_ingredients"
-            optionLabel="name"
-            @complete="searchHMIngredients"
-            @option-select="onHmIngredientOptionClick"
-            class="w-full"
-            placeholder="Search Homemade Ingredients"
-          />
-        </template>
-        <template #content>
-          <div v-if="recipe_hm_ingredients.length !== 0">
-            <DataTable
-              :value="recipe_hm_ingredients"
-              tableStyle="min-width: 50rem; cursor: default;"
-              class="mt-4"
-            >
-              <Column field="name" header="Name"></Column>
-              <Column field="selected_quantity" header="Quantity">
-                <template #body="slotProps">
-                  <InputNumber
-                    v-model="slotProps.data.selected_quantity"
-                    id="selected_quantity"
-                    :suffix="` ${slotProps.data.unit}`"
-                    fluid
-                    class="w-full"
-                  />
-                </template>
-              </Column>
-              <Column field="is_deleted" header="Delete">
-                <template #body="slotProps">
-                  <Button
-                    icon="pi pi-times"
-                    severity="danger"
-                    rounded
-                    aria-label="Cancel"
-                    @click="onDeleteHmIngredient(slotProps.data.hm_ingredient_id)"
-                    class="p-2"
-                  />
-                </template>
-              </Column>
-            </DataTable>
-          </div>
-          <div class="py-8 text-center text-gray-500 font-semibold" v-else>
-            No homemade ingredient added
-          </div>
-        </template>
-      </Card>
-    </div>
+    <IngredientDatatable
+      title="Homemade Ingredients"
+      :ingredients="hm_ingredients"
+      :selectedIngredients="recipe_hm_ingredients"
+      @selectedIngredients="handleHmRecipeIngredients"
+    />
 
     <!-- Submit button -->
     <div class="flex justify-center">
