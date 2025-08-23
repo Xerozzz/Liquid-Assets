@@ -67,14 +67,26 @@ export const createMultipleRecipeIngredient = async (rows) => {
         const values = rows.flatMap(row => [row.recipe_id, row.ingredient_id, row.selected_quantity
         ]);
 
+        // Delete rows not present in the new data for the given recipe_id
+        if (rows.length > 0) {
+            const recipeId = rows[0].recipe_id
+            const ingredientIds = rows.map(row => row.ingredient_id)
+            const placeholdersForDelete = ingredientIds.map(() => '?').join(', ')
+            await executeQuery(
+                `DELETE FROM recipe_ingredient 
+             WHERE recipe_id = ? 
+             AND ingredient_id NOT IN (${placeholdersForDelete})`,
+                [recipeId, ...ingredientIds]
+            )
+        }
+        // Insert or update existing rows
         let result = await executeQuery(
             `INSERT INTO recipe_ingredient (recipe_id, ingredient_id, quantity) VALUES ${placeholders} 
             ON CONFLICT(recipe_id, ingredient_id) 
             DO UPDATE SET 
-                recipe_id = excluded.recipe_id, 
-                ingredient_id = excluded.ingredient_id,
-                quantity = quantity
+            quantity = excluded.quantity
             `, values)
+
         destroy()
         return result
     } catch (error) {
