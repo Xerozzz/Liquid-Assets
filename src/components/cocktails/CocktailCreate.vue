@@ -9,8 +9,12 @@ import { createMultipleRecipeHmIngredient } from '@/api/recipe_hm_ingredient'
 import { useSQLite } from '@/composables/useSQLite'
 import { useNotificationStore } from '@/stores/notification.store'
 
+import IngredientDatatable from '../IngredientDatatable.vue'
 
 export default {
+  components: {
+    IngredientDatatable
+  },
   setup() {
     const notification = useNotificationStore()
     const { destroy } = useSQLite()
@@ -366,7 +370,6 @@ export default {
             v-model="$form.image"
             name="image"
             @select="onFileSelect"
-            @uploader=""
             :showUploadButton="false"
             :showCancelButton="false"
             :multiple="false"
@@ -388,8 +391,9 @@ export default {
       </template>
     </Card>
 
+    <IngredientDatatable title="Ingredients" :ingredients="ingredients" :selected-ingredients="[]"/>
     <!-- Ingredients Card -->
-    <div>
+    <!-- <div>
       <Card class="w-full">
         <template #title>Ingredients</template>
         <template #subtitle>
@@ -440,7 +444,7 @@ export default {
           <div class="py-8 text-center text-gray-500 font-semibold" v-else>No ingredient added</div>
         </template>
       </Card>
-    </div>
+    </div> -->
 
     <!-- Homemade Ingredients Card -->
     <div>
