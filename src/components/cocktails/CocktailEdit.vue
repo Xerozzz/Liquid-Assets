@@ -198,8 +198,8 @@ export default {
     /** This is for validating form data */
     resolver: ({ values }) => {
       const errors = {}
-      console.log(values);
-      
+      console.log(values)
+
       if (!values.name) {
         errors.name = [{ message: 'Name is required.' }]
       }
@@ -230,42 +230,37 @@ export default {
           })
         }
         if (valid) {
-          let recipe_id = await updateCocktail(
+          await updateCocktail(
             values.name,
             values.glass,
             values.step_to_make,
             values.garnish,
             values.notes,
-            this.initialValues.image,
+            this.cocktailId,
+            // this.initialValues.image,
           )
 
-          if (recipe_id) {
-            if (this.cocktailIngredients.length > 0) {
-              let ingredients_data = this.cocktailIngredients.map(
-                ({ ingredient_id, selected_quantity }) => ({
-                  recipe_id,
-                  ingredient_id,
-                  selected_quantity,
-                }),
-              )
+          let cocktailIngredients = this.cocktailIngredients.map(
+            ({ ingredient_id, selected_quantity }) => ({
+              recipe_id: this.cocktailId,
+              ingredient_id,
+              selected_quantity,
+            }),
+          )
+          await this.insertIngredientData(cocktailIngredients)
 
-              let result = await this.insertIngredientData(ingredients_data)
-              console.log(result)
-            }
-            if (this.cocktailHmIngredients.length > 0) {
-              let ingredients_data = this.cocktailHmIngredients.map(
-                ({ hm_ingredient_id, selected_quantity }) => ({
-                  recipe_id,
-                  hm_ingredient_id,
-                  selected_quantity,
-                }),
-              )
+          let cocktailHmIngredients = this.cocktailHmIngredients.map(
+            ({ hm_ingredient_id, selected_quantity }) => ({
+              recipe_id: this.cocktailId,
+              hm_ingredient_id,
+              selected_quantity,
+            }),
+          )
 
-              let result = await this.insertHmIngredientData(ingredients_data)
-              console.log(result)
-            }
-            // this.$router.push('/cocktail')
-          }
+          let result = await this.insertHmIngredientData(cocktailHmIngredients)
+          console.log(result)
+
+          this.$router.push('/cocktail')
         }
       } catch (error) {
         console.log(error)

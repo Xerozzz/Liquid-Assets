@@ -105,12 +105,23 @@ export default {
             <Column field="selected_quantity" header="Quantity">
               <template #body="slotProps">
                 <InputNumber
-                  v-model="slotProps.data.selected_quantity"
+                  :modelValue="slotProps.data.selected_quantity"
                   id="selected_quantity"
                   :suffix="` ${slotProps.data.unit}`"
                   fluid
                   :min="1"
                   class="w-full"
+                  @update:modelValue="value => {
+                    const updated = selectedIngredients.map(item => {
+                      const itemId = item.hm_ingredient_id || item.ingredient_id
+                      const slotId = slotProps.data.hm_ingredient_id || slotProps.data.ingredient_id
+                      if (itemId === slotId) {
+                        return { ...item, selected_quantity: value }
+                      }
+                      return item
+                    })
+                    this.$emit('selectedIngredients', updated)
+                  }"
                 />
               </template>
             </Column>
