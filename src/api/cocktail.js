@@ -44,6 +44,7 @@ export const getCocktailById = async (recipe_id) => {
       SELECT
           r.name AS recipe_name,
           g.name AS glass_name,
+          g.glass_id AS glass_id,
           r.garnish AS garnish,
           r.notes AS notes,
           i.ingredient_id AS ingredient_id,
