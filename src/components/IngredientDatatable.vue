@@ -30,7 +30,7 @@ export default {
       // selectedIngredients: [],
     }
   },
-  emits: ['selectedIngredients' ],
+  emits: ['selectedIngredients'],
   methods: {
     onSearch(event) {
       setTimeout(() => {
@@ -44,23 +44,27 @@ export default {
       }, 250)
     },
     onDelete(id) {
-      const updatedIngredients = this.selectedIngredients.filter(
-        (item) => item.ingredient_id !== id,
-      )
+      const updatedIngredients = this.selectedIngredients.filter((item) => {
+        const itemId = item.hm_ingredient_id || item.ingredient_id
+        return itemId !== id
+      })
       this.$emit('selectedIngredients', updatedIngredients)
     },
     onIngredientSelect(event) {
-      const exists = this.selectedIngredients.some(
-        (item) => item.hm_ingredient_id === event.value.hm_ingredient_id,
-      )
+      const idKey = event.value.hm_ingredient_id ? 'hm_ingredient_id' : 'ingredient_id'
+      const selectedId = event.value[idKey]
+      const exists = this.selectedIngredients.some((item) => {
+        const itemId = item.hm_ingredient_id || item.ingredient_id
+        return itemId === selectedId
+      })
 
       if (!exists) {
         const updatedIngredients = [
           ...this.selectedIngredients,
-          { selected_quantity: 1, ...event.value }
+          { selected_quantity: 1, ...event.value },
         ]
-        console.log(updatedIngredients);
-        
+        console.log(updatedIngredients)
+
         this.$emit('selectedIngredients', updatedIngredients)
       } else {
         console.log('Ingredient already exists in the list.')
@@ -118,7 +122,7 @@ export default {
                   severity="danger"
                   rounded
                   aria-label="Cancel"
-                  @click="onDelete(slotProps.data.ingredient_id)"
+                  @click="onDelete(slotProps.data.ingredient_id || slotProps.data.hm_ingredient_id)"
                   class="p-2"
                 />
               </template>
