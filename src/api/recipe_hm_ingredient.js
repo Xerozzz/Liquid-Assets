@@ -25,6 +25,30 @@ export const getRecipeHmIngredientById = async (recipe_hm_ingredient_id) => {
     }
 }
 
+export const getRecipeHmIngredientByRecipeId = async (recipe_id) => {
+    try {
+        let result = await executeQuery(`
+            SELECT rhi.recipe_id,
+            rhi.recipe_hm_ingredient_id,
+            rhi.hm_ingredient_id,
+            hi.name,
+            rhi.quantity,
+            hi.unit
+            FROM recipe_hm_ingredient rhi 
+            JOIN hm_ingredients hi ON rhi.hm_ingredient_id = hi.hm_ingredient_id
+            WHERE rhi.recipe_id = ?;
+            `,
+            [recipe_id]
+        )
+        destroy()
+        return result?.result.resultRows
+    } catch (error) {
+        console.log(error);
+        return error
+    }
+
+}
+
 export const createRecipeHmIngredient = async (recipe_id, hm_ingredient_id, quantity) => {
     try {
         let result = await executeQuery('INSERT INTO recipe_hm_ingredient (recipe_id, hm_ingredient_id, quantity) VALUES (1,1,1)',

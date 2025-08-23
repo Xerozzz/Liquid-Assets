@@ -114,9 +114,11 @@ export default {
   <div v-if="loading">Loading...</div>
   <div v-else-if="error">{{ error.message }}</div>
   <div v-else class="bodysection">
-    <Button label="Delete Item" icon="pi pi-trash" @click="confirmDelete" />
-
     <button class="nav_button" @click="$router.push('/cocktail')">Back</button>
+    <button class="nav_button" @click="$router.push(`/cocktail/edit/${this.$route.params.id}`)">
+      Edit
+    </button>
+    <button class="nav_button" @click="confirmDelete">Delete</button>
     <div class="grid grid-cols-3 gap-11">
       <div class="sectionbox">
         <h2 class="title">{{ cocktail.name }}</h2>
