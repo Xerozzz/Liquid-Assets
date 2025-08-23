@@ -45,6 +45,7 @@ export const getCocktailById = async (recipe_id) => {
         SELECT r.recipe_id,
                r.name  AS recipe_name,
                g.name  AS glass_name,
+               g.glass_id AS glass_id,
                r.garnish,
                r.notes,
                r.image,
@@ -84,8 +85,8 @@ export const getCocktailById = async (recipe_id) => {
       CROSS JOIN items i
       ORDER BY i.item_name;
     `
-
     const result = await executeQuery(query, [recipe_id, recipe_id, recipe_id])
+    destroy()
     return result?.result?.resultRows
   } catch (error) {
     console.log(error)
