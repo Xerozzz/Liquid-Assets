@@ -208,7 +208,11 @@ export default {
     :initialValues
     :resolver
     @submit="onFormSubmit"
-    @keydown.enter="$event.preventDefault()"
+    @keydown.enter="
+      ($event) => {
+        if ($event.target.tagName !== 'TEXTAREA') $event.preventDefault()
+      }
+    "
     class="space-y-8 max-w-7xl mx-auto m-5"
   >
     <!-- Name input -->
