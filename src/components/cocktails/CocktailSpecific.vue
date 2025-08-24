@@ -40,7 +40,7 @@ export default {
           id: row.item_id,
           name: row.item_name,
           quantity: row.item_quantity,
-          unit: row.unit ?? null,
+          unit: row.item_unit ?? null,
           cost: Number(row.item_quantity) * Number(row.item_cost || 0),
           stock: row.item_stock ? '✅' : '❌',
         }))
@@ -100,7 +100,7 @@ export default {
             <tr v-for="item in ingredients" :key="`${item.kind}-${item.item_id}`">
               <td><span v-if="item.kind === 'hm'">(HM) </span>{{ item.name }}</td>
               <td>
-                {{ item.quantity }}<span v-if="item.unit"> {{ item.unit }}</span>
+                {{ item.quantity }} <span v-if="item.unit">{{ item.unit }}</span>
               </td>
               <td>${{ Number(item.cost).toFixed(2) }}</td>
               <td>{{ item.stock }}</td>
