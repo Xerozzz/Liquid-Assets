@@ -42,40 +42,42 @@ export const getCocktailById = async (recipe_id) => {
     const query = `
       WITH base AS (
         SELECT r.recipe_id,
-               r.name  AS recipe_name,
-               g.name  AS glass_name,
-               r.garnish,
-               r.notes,
-               r.image,
-               r.step_to_make
+              r.name  AS recipe_name,
+              g.name  AS glass_name,
+              r.garnish,
+              r.notes,
+              r.image,
+              r.step_to_make
         FROM recipe r
         JOIN glassware g ON r.glass_id = g.glass_id
-        WHERE r.is_deleted = false
+        WHERE r.is_deleted = 0
           AND r.recipe_id = ?
       ),
       items AS (
         SELECT 'ingredient' AS kind,
-               i.ingredient_id AS item_id,
-               i.name          AS item_name,
-               i.cost          AS item_cost,
-               i.is_stocked    AS item_stock,
-               ri.quantity     AS item_quantity
+              i.ingredient_id AS item_id,
+              i.name          AS item_name,
+              i.cost          AS item_cost,
+              i.unit          AS item_unit,
+              i.is_stocked    AS item_stock,
+              ri.quantity     AS item_quantity
         FROM recipe_ingredient ri
         JOIN ingredients i ON i.ingredient_id = ri.ingredient_id
-        WHERE ri.is_deleted = false
+        WHERE ri.is_deleted = 0
           AND ri.recipe_id = ?
 
         UNION ALL
 
         SELECT 'hm' AS kind,
-               hmi.hm_ingredient_id AS item_id,
-               hmi.name             AS item_name,
-               hmi.cost             AS item_cost,
-               hmi.is_stocked       AS item_stock,
-               rhi.quantity         AS item_quantity
+              hmi.hm_ingredient_id AS item_id,
+              hmi.name             AS item_name,
+              hmi.cost             AS item_cost,
+              CAST(NULL AS TEXT)   AS item_unit,   -- ✅ SQLite-friendly
+              hmi.is_stocked       AS item_stock,
+              rhi.quantity         AS item_quantity
         FROM recipe_hm_ingredient rhi
         JOIN hm_ingredients hmi ON hmi.hm_ingredient_id = rhi.hm_ingredient_id
-        WHERE rhi.is_deleted = false
+        WHERE rhi.is_deleted = 0
           AND rhi.recipe_id = ?
       )
       SELECT b.*, i.*
@@ -83,7 +85,6 @@ export const getCocktailById = async (recipe_id) => {
       CROSS JOIN items i
       ORDER BY i.item_name;
     `
-
     const result = await executeQuery(query, [recipe_id, recipe_id, recipe_id])
     return result?.result?.resultRows
   } catch (error) {
