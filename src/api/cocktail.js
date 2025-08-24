@@ -139,11 +139,11 @@ export const createCocktail = async (
  * @returns {Promise<Object|Error>} A promise that resolves to the update result or an error object.
  * @throws Will log and return an error object if the update fails.
  */
-export const updateCocktail = async (name, glass_id, step_to_make, garnish, notes, recipe_id) => {
+export const updateCocktail = async (name, glass_id, step_to_make, garnish, notes, image, recipe_id) => {
   try {
     let result = await executeQuery(
-      'UPDATE recipe SET name = ?, glass_id = ?, step_to_make = ?, garnish = ?, notes = ? WHERE recipe_id = ?;',
-      [name, glass_id, step_to_make, garnish, notes, recipe_id],
+      'UPDATE recipe SET name = ?, glass_id = ?, step_to_make = ?, garnish = ?, notes = ?, image = ? WHERE recipe_id = ?;',
+      [name, glass_id, step_to_make, garnish, notes, image, recipe_id],
     )
     destroy()
     return result

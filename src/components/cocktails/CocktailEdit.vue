@@ -236,8 +236,8 @@ export default {
             values.step_to_make,
             values.garnish,
             values.notes,
+            this.initialValues.image,
             this.cocktailId,
-            // this.initialValues.image,
           )
 
           let cocktailIngredients = this.cocktailIngredients.map(
@@ -383,6 +383,36 @@ export default {
           class="w-full rounded-md border border-gray-300 p-2 resize-y"
         />
       </div>
+
+      <Card>
+        <template #title>Image</template>
+        <template #content>
+          <!-- Image upload -->
+          <div>
+            <FileUpload
+              v-model="$form.image"
+              name="image"
+              @select="onFileSelect"
+              :showUploadButton="false"
+              :showCancelButton="false"
+              :multiple="false"
+              :fileLimit="1"
+              accept="image/*"
+              :maxFileSize="1000000"
+              class="w-full"
+              :auto="false"
+            >
+              <template #empty>
+                <span
+                  class="block p-4 border-2 border-dashed border-gray-300 rounded-md text-center text-gray-500 cursor-pointer hover:border-gray-400"
+                >
+                  Drag and drop files here to upload.
+                </span>
+              </template>
+            </FileUpload>
+          </div>
+        </template>
+      </Card>
 
       <IngredientDatatable
         title="Ingredients"
