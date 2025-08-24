@@ -27,16 +27,16 @@ export const dumps = [
   {
     schema: 'ingredients',
     query: `
-      INSERT INTO ingredients (name, cost, quantity, unit, is_stocked, is_deleted) VALUES
-      ('Vodka',             26.00, 1000, 'ml', 1, 0),  -- id:1
-      ('Gin',               30.00, 1000, 'ml', 1, 0),  -- id:2
-      ('Lime Juice',         6.50,  500, 'ml', 1, 0),  -- id:3
-      ('Tonic Water',        3.20, 1000, 'ml', 1, 0),  -- id:4
-      ('Dry Vermouth',      12.00,  750, 'ml', 0, 0),  -- id:5 (out of stock)
-      ('Sugar',              1.80, 1000, 'g',  1, 0),  -- id:6
-      ('Water',              0.10, 2000, 'ml', 1, 0),  -- id:7
-      ('Pomegranate Juice',  5.50,  500, 'ml', 0, 0),  -- id:8 (out of stock)
-      ('Ginger',             2.40,  300, 'g',  1, 0);  -- id:9
+      INSERT INTO ingredients (name, cost, unit, is_stocked, is_deleted) VALUES
+      ('Vodka',             0.08, 'ml', 1, 0),  -- id:1
+      ('Gin',               00.10, 'ml', 1, 0),  -- id:2
+      ('Lime Juice',         0.01, 'ml', 1, 0),  -- id:3
+      ('Tonic Water',        0.01, 'ml', 1, 0),  -- id:4
+      ('Dry Vermouth',      0.05, 'ml', 0, 0),  -- id:5 (out of stock)
+      ('Sugar',              0.01, 'g',  1, 0),  -- id:6
+      ('Water',              0.00, 'ml', 1, 0),  -- id:7
+      ('Pomegranate Juice',  0.02, 'ml', 0, 0),  -- id:8 (out of stock)
+      ('Ginger',             0.03, 'g',  1, 0);  -- id:9
     `,
   },
 
