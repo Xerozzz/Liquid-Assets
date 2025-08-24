@@ -51,7 +51,7 @@ export const getRecipeHmIngredientByRecipeId = async (recipe_id) => {
 
 export const createRecipeHmIngredient = async (recipe_id, hm_ingredient_id, quantity) => {
     try {
-        let result = await executeQuery('INSERT INTO recipe_hm_ingredient (recipe_id, hm_ingredient_id, quantity) VALUES (1,1,1)',
+        let result = await executeQuery('INSERT INTO recipe_hm_ingredient (recipe_id, hm_ingredient_id, quantity) VALUES (?, ?, ?)',
             [recipe_id, hm_ingredient_id, quantity])
         destroy()
         return Number(result?.result.lastInsertRowId)
