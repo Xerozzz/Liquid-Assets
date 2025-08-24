@@ -1,9 +1,17 @@
 <script setup lang="js">
 import { useSQLite } from '@/composables/useSQLite'
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { queries } from '../config/queries'
 
-const { isLoading, error, executeQuery, initialize, setIsInitialized } = useSQLite()
+const {
+  isLoading,
+  error,
+  executeQuery,
+  initialize,
+  setIsInitialized,
+  resetDatabase: hardResetDatabase, // <-- new: import the hard reset
+} = useSQLite()
+
 const sqlQuery = ref('SELECT * FROM glassware')
 const sqlTable = ref('glassware')
 const queryResult = ref([])
@@ -20,7 +28,7 @@ async function runQuery() {
     if (isSelect) {
       queryResult.value = result?.result.resultRows || []
     } else {
-      let table = sqlTable.value.split(' ')
+      const table = sqlTable.value.split(' ')
       queryResult.value = (await executeQuery(`SELECT * FROM ${table[1]}`))?.result.resultRows || []
     }
   } catch (err) {
@@ -28,24 +36,57 @@ async function runQuery() {
   }
 }
 
-async function resetDatabase() {
+/** Soft reset:
+ * Drops all schema via SQL and re-initializes.
+ * (Keeps the same OPFS file, just empties it.)
+ */
+async function softResetDatabase() {
   queryError.value = null
   queryResult.value = []
   try {
     const query = `
-        PRAGMA writable_schema = 1;
-        delete from sqlite_master where type in ('table', 'index', 'trigger');
-        PRAGMA writable_schema = 0;
-        VACUUM;
-        PRAGMA INTEGRITY_CHECK;
+      PRAGMA writable_schema = 1;
+      DELETE FROM sqlite_master WHERE type IN ('table','index','trigger');
+      PRAGMA writable_schema = 0;
+      VACUUM;
+      PRAGMA integrity_check;
     `
     await executeQuery(query)
     setIsInitialized()
     await initialize()
+    alert('Soft reset complete (schema dropped & re-seeded).')
   } catch (err) {
     queryError.value = err instanceof Error ? err.message : 'An error occurred'
   }
 }
+
+/** Hard reset (recommended):
+ * Deletes the OPFS db files and re-seeds from dumps.js.
+ * Uses the new composable method.
+ */
+async function resetToSeed() {
+  queryError.value = null
+  queryResult.value = []
+  try {
+    await hardResetDatabase()
+    // Optional: show a toast/alert for dev UX
+    alert('Database reset to seed state (OPFS wiped & re-initialized).')
+    // Optionally re-run the current query to show fresh data
+    await runQuery()
+  } catch (err) {
+    queryError.value = err instanceof Error ? err.message : 'An error occurred'
+  }
+}
+
+// Optional: auto-init on mount so the playground is ready
+onMounted(async () => {
+  try {
+    await initialize()
+    await runQuery()
+  } catch (e) {
+    // shown below in the error panel
+  }
+})
 </script>
 
 <template>
@@ -81,20 +122,35 @@ async function resetDatabase() {
           :disabled="isLoading"
           class="w-full px-4 py-3 rounded-lg font-mono text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-100 transition-colors duration-200"
         />
-        <button
-          :disabled="isLoading"
-          class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-green-600 hover:bg-primary-700 disabled:bg-gray-400 transition-colors duration-200"
-          @click="runQuery"
-        >
-          {{ isLoading ? 'Running...' : 'Run Query' }}
-        </button>
-        <button
-          :disabled="isLoading"
-          class="px-4 py-2 rounded-lg text-sm font-medium text-white ml-2 bg-red-600 hover:bg-primary-700 disabled:bg-gray-400 transition-colors duration-200"
-          @click="resetDatabase"
-        >
-          {{ isLoading ? 'Running...' : 'Reset database' }}
-        </button>
+        <div class="flex flex-wrap gap-2">
+          <button
+            :disabled="isLoading"
+            class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 transition-colors duration-200"
+            @click="runQuery"
+          >
+            {{ isLoading ? 'Running...' : 'Run Query' }}
+          </button>
+
+          <!-- Hard reset (recommended) -->
+          <button
+            :disabled="isLoading"
+            class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:bg-gray-400 transition-colors duration-200"
+            @click="resetToSeed"
+            title="Delete OPFS DB files and reseed from dumps.js"
+          >
+            {{ isLoading ? 'Running...' : 'Reset DB to Seed' }}
+          </button>
+
+          <!-- Optional: Soft reset button -->
+          <button
+            :disabled="isLoading"
+            class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400 transition-colors duration-200"
+            @click="softResetDatabase"
+            title="Drop all tables via SQL and re-initialize"
+          >
+            {{ isLoading ? 'Running...' : 'Soft Reset (drop schema)' }}
+          </button>
+        </div>
       </div>
 
       <div
@@ -136,6 +192,10 @@ async function resetDatabase() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      <div v-else class="text-sm text-gray-500 dark:text-gray-400">
+        No rows yet — run a query to see results.
       </div>
     </div>
   </div>
