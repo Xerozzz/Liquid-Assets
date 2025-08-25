@@ -34,7 +34,6 @@ export const databaseConfig = {
         ingredient_id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         cost REAL NOT NULL,
-        quantity INTEGER NOT NULL,
         unit TEXT NOT NULL,
         is_stocked BOOLEAN,
         is_deleted BOOLEAN DEFAULT 0,
@@ -129,4 +128,4 @@ export const databaseConfig = {
       `
     }
   },
-} 
+}
