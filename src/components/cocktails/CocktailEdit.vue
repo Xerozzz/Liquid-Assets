@@ -345,6 +345,7 @@ export default {
       <!-- Steps to Make textarea -->
       <div>
         <Textarea
+          style="white-space: pre-wrap"
           name="step_to_make"
           placeholder="Steps to Make"
           rows="10"

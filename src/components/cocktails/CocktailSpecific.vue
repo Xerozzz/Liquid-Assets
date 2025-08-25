@@ -44,7 +44,7 @@ export default {
           garnish: r.garnish,
           notes: r.notes,
           image: r.image,
-          step_to_make: r.step_to_make,
+          step_to_make: r.step_to_make ? r.step_to_make.split('\n') : [],
         }
 
         // one flat list of items (you said mapping happens here, so keeping it)
@@ -135,7 +135,9 @@ export default {
 
       <div class="sectionbox">
         <h3>Steps to make:</h3>
-        <p>{{ cocktail.step_to_make }}</p>
+        <p v-for="(step_to_make, index) in cocktail.step_to_make" :key="index">
+          {{ step_to_make }}
+        </p>
       </div>
 
       <div class="sectionbox">
