@@ -257,9 +257,13 @@ export default {
             }),
           )
 
-          let result = await this.insertHmIngredientData(cocktailHmIngredients)
-          console.log(result)
+          await this.insertHmIngredientData(cocktailHmIngredients)
 
+          this.notification.notify({
+            message: `Cocktail updated successfully`,
+            summary: 'Update Success',
+            severity: 'success',
+          })
           this.$router.push('/cocktail')
         }
       } catch (error) {
