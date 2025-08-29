@@ -20,26 +20,24 @@ export function useSQLite() {
 
   /** This fucking stupid sql libary can't run multiple promiser at once so the only way is to kill the promiser
    * instance everytime the page is navigated away on the frontend
-  */
-  const destroy  = () => {
-    promiser = null;
+   */
+  const destroy = () => {
+    promiser = null
     isInitialized.value = false
   }
 
   const setIsInitialized = () => {
-    isInitialized.value = false;
+    isInitialized.value = false
   }
 
   const openDatabase = async (p) => {
     const response = await p('open', { filename: databaseConfig.filename })
-    if (response.type === 'error')
-      throw new Error(response.result.message)
+    if (response.type === 'error') throw new Error(response.result.message)
     return response.result.dbId
   }
 
   const initialize = async () => {
-    if (isInitialized.value)
-      return true
+    if (isInitialized.value) return true
 
     isLoading.value = true
     error.value = null
@@ -47,8 +45,7 @@ export function useSQLite() {
     try {
       log('Initializing SQLite database...')
       promiser = await initializePromiser()
-      if (!promiser)
-        throw new Error('Failed to initialize promiser')
+      if (!promiser) throw new Error('Failed to initialize promiser')
 
       await promiser('config-get', {})
       dbId = await openDatabase(promiser)
@@ -57,12 +54,12 @@ export function useSQLite() {
       // sqllite before v4 will not enforce foreign key constraints, so it needs to be manually set on whenever the database initialise
       await promiser('exec', {
         dbId,
-        sql: 'PRAGMA foreign_keys = ON;'
+        sql: 'PRAGMA foreign_keys = ON;',
       })
 
       // Creating tables
       for (const tableKey of Object.keys(databaseConfig.tables)) {
-        const table = databaseConfig.tables[tableKey];
+        const table = databaseConfig.tables[tableKey]
         await promiser('exec', {
           dbId,
           sql: table.schema,
@@ -71,45 +68,43 @@ export function useSQLite() {
 
       // Dumping data into table
       for (const dump of dumps) {
-        const tableName = dump.schema;
+        const tableName = dump.schema
 
         const result = await promiser('exec', {
           dbId,
           sql: `SELECT EXISTS(SELECT 1 FROM ${tableName} LIMIT 1) AS isExist;`,
           rowMode: 'object',
           returnValue: 'resultRows',
-        });
+        })
 
         let exists = result?.result.resultRows[0].isExist
 
         if (!exists) {
-          let insert = dump.query;
+          let insert = dump.query
           await promiser('exec', {
             dbId,
-            sql: insert
+            sql: insert,
           })
         }
       }
 
       isInitialized.value = true
       return true
-    }
-    catch (err) {
-      console.log(err);
+    } catch (err) {
+      console.log(err)
 
-      error.value = err instanceof Error
-        ? `Failed to initialize SQLite database: ${err.message}`
-        : 'Failed to initialize SQLite database'
+      error.value =
+        err instanceof Error
+          ? `Failed to initialize SQLite database: ${err.message}`
+          : 'Failed to initialize SQLite database'
       throw error.value
-    }
-    finally {
+    } finally {
       isLoading.value = false
     }
   }
 
   const executeQuery = async (sql, params = []) => {
-    if (!dbId || !promiser)
-      await initialize()
+    if (!dbId || !promiser) await initialize()
 
     isLoading.value = true
     error.value = null
@@ -122,26 +117,57 @@ export function useSQLite() {
         bind: params,
         rowMode: 'object',
         returnValue: 'resultRows',
-        lastInsertRowId: true
+        lastInsertRowId: true,
       })
       log('Query result:', result)
 
-      if (result.type === 'error')
-        throw new Error(result.result.message)
+      if (result.type === 'error') throw new Error(result.result.message)
 
       return result
-    }
-    catch (err) {
-      console.log(err);
+    } catch (err) {
+      console.log(err)
 
-      error.value = err instanceof Error
-        ? `Query execution failed: ${err.message}`
-        : 'Query execution failed'
+      error.value =
+        err instanceof Error ? `Query execution failed: ${err.message}` : 'Query execution failed'
       throw error.value
-    }
-    finally {
+    } finally {
       isLoading.value = false
     }
+  }
+
+  const removeDbFilesFromOPFS = async () => {
+    // Only works in the browser
+    if (!('storage' in navigator) || !navigator.storage?.getDirectory) return
+
+    const root = await navigator.storage.getDirectory()
+    const files = [
+      'mydb.sqlite3', // main db file
+      'mydb.sqlite3-wal', // WAL (if ever present)
+      'mydb.sqlite3-shm', // shared memory (if ever present)
+    ]
+
+    for (const name of files) {
+      try {
+        await root.removeEntry(name)
+        // eslint-disable-next-line no-console
+        console.log(`[DB RESET] Removed OPFS file: ${name}`)
+      } catch (e) {
+        // Ignore if not found
+        // eslint-disable-next-line no-console
+        console.log(`[DB RESET] Could not remove ${name}:`, e?.message ?? e)
+      }
+    }
+  }
+
+  const resetDatabase = async () => {
+    // 1) kill current worker/promiser
+    destroy()
+
+    // 2) delete OPFS files
+    await removeDbFilesFromOPFS()
+
+    // 3) re-init → re-creates tables and seeds from dumps.js
+    await initialize()
   }
 
   return {
@@ -151,6 +177,7 @@ export function useSQLite() {
     executeQuery,
     initialize,
     destroy,
-    setIsInitialized
+    setIsInitialized,
+    resetDatabase,
   }
 }
