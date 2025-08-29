@@ -72,7 +72,7 @@ export const getCocktailById = async (recipe_id) => {
               hmi.hm_ingredient_id AS item_id,
               hmi.name             AS item_name,
               hmi.cost             AS item_cost,
-              CAST(NULL AS TEXT)   AS item_unit,   -- ✅ SQLite-friendly
+              CAST(NULL AS TEXT)   AS item_unit,   -- Ensures consistent TEXT type for item_unit across UNION ALL (required by SQLite)
               hmi.is_stocked       AS item_stock,
               rhi.quantity         AS item_quantity
         FROM recipe_hm_ingredient rhi
