@@ -47,19 +47,13 @@ export default {
       <div
         class="border-1 rounded-md text-center pt-1"
         v-for="ingredient in queryResult"
-        :key="ingredient.recipe_id"
+        :key="ingredient.ingredient_id"
       >
-        <router-link :to="`/ingredients/view/${ingredient.recipe_id}`" class="font-bold text-md">{{
-          ingredient.name
-        }}</router-link>
-        <br />
-        <router-link :to="`/ingredients/view/${ingredient.recipe_id}`">
-          <img
-            v-bind:src="ingredient.image"
-            :alt="'Image of ' + ingredient.name"
-            v-if="ingredient.image"
-          />
-        </router-link>
+        <router-link
+          :to="`/ingredient/view/${ingredient.ingredient_id}`"
+          class="font-bold text-md"
+          >{{ ingredient.name }}</router-link
+        >
       </div>
     </div>
   </div>
