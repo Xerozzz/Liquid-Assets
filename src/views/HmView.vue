@@ -1,2 +1,7 @@
-<script></script>
-<template>test</template>
+<script setup>
+</script>
+<template>
+  <main>
+    <RouterView />
+  </main>
+</template>
