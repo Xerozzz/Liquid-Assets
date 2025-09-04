@@ -13,8 +13,15 @@ import {
   CocktailCreate,
   CocktailEdit,
   CocktailSpecific,
-  CocktailHome, 
+  CocktailHome,
 } from '@/components/cocktails/'
+
+import {
+  HmIngredientCreate,
+  HmIngredientEdit,
+  HmIngredientSpecific,
+  HmIngredientHome
+} from '@/components/hmIngredients'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -31,20 +38,22 @@ const router = createRouter({
       children: [
         {
           path: '',
+          name: 'cocktail-home',
           component: CocktailHome,
         },
         {
           path: 'view/:id',
+          name: 'cocktail-specific',
           component: CocktailSpecific,
         },
         {
           path: 'create',
-          name: 'create',
+          name: 'cocktail-create',
           component: CocktailCreate,
         },
         {
           path: 'edit/:id',
-          name: 'edit',
+          name: 'cocktail-edit',
           component: CocktailEdit,
         },
       ],
@@ -71,13 +80,24 @@ const router = createRouter({
       component: HmView,
       children: [
         {
+          path: '',
+          name: 'hm-home',
+          component: HmIngredientHome,
+        },
+        {
+          path: 'view/:id',
+          name: 'hm-specific',
+          component: HmIngredientSpecific,
+        },
+        {
           path: 'create',
+          name: 'hm-create',
+          component: HmIngredientCreate,
         },
         {
-          path: 'edit',
-        },
-        {
-          path: 'card',
+          path: 'edit/:id',
+          name: 'hm-edit',
+          component: HmIngredientEdit,
         },
       ],
     },
