@@ -66,7 +66,7 @@ export default {
         let data = await getHmIngredientById(this.$route.params.id)
         if (!data || data.length == 0) {
           this.notification.notify({
-            message: 'Cocktail not found',
+            message: 'Homemade ingredient not found',
             summary: 'Error',
             severity: 'error',
           })
@@ -144,7 +144,7 @@ export default {
         if (this.hmIngredientComponents.length === 0) {
           valid = false
           this.notification.notify({
-            message: `Cocktail cannot be made without any ingredients.`,
+            message: `Homemade ingredient cannot be made without any ingredients.`,
             summary: 'No ingredients added',
             severity: 'error',
           })

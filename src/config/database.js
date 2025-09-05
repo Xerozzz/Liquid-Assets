@@ -71,7 +71,7 @@ export const databaseConfig = {
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           deleted_at TIMESTAMP,
           FOREIGN KEY (hm_ingredient_id) REFERENCES hm_ingredients(hm_ingredient_id),
-          FOREIGN KEY (ingredient_id) REFERENCES ingredients(ingredient_id)
+          FOREIGN KEY (ingredient_id) REFERENCES ingredients(ingredient_id),
           UNIQUE(hm_ingredient_id, ingredient_id)
         )
       `
@@ -106,7 +106,7 @@ export const databaseConfig = {
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           deleted_at TIMESTAMP,
           FOREIGN KEY (recipe_id) REFERENCES recipe(recipe_id),
-          FOREIGN KEY (ingredient_id) REFERENCES ingredients(ingredient_id)
+          FOREIGN KEY (ingredient_id) REFERENCES ingredients(ingredient_id),
           UNIQUE(recipe_id, ingredient_id)
       )
       `
@@ -123,7 +123,7 @@ export const databaseConfig = {
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           deleted_at TIMESTAMP,
           FOREIGN KEY (recipe_id) REFERENCES recipe(recipe_id),
-          FOREIGN KEY (hm_ingredient_id) REFERENCES hm_ingredients(hm_ingredient_id)
+          FOREIGN KEY (hm_ingredient_id) REFERENCES hm_ingredients(hm_ingredient_id),
           UNIQUE(recipe_id, hm_ingredient_id)
         )
       `
