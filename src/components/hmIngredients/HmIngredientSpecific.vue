@@ -80,7 +80,7 @@ export default {
         await deleteHmIngredient(this.$route.params.id)
         this.notification.notify({
           message: `Homemade ingredient deleted successfully`,
-          summary: 'Delete Sucess',
+          summary: 'Delete Success',
           severity: 'success',
         })
         this.$router.replace('/hm')
