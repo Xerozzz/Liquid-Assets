@@ -32,6 +32,7 @@ export default {
         cost: 0,
         notes: '',
         unit: '',
+        yield: 0,
         image: '',
         is_stocked: 0,
       },
@@ -80,6 +81,7 @@ export default {
             cost: this.hmIngredient.cost,
             notes: this.hmIngredient.notes,
             unit: this.hmIngredient.unit,
+            yield: this.hmIngredient.yield,
             image: this.hmIngredient.image,
             is_stocked: this.hmIngredient.is_stocked === 1 ? true : false,
           }
@@ -134,6 +136,10 @@ export default {
         errors.cost = [{ message: 'Cost is required.' }]
       }
 
+      if (!values.yield) {
+        errors.yield = [{ message: 'Yield is required.' }]
+      }
+
       return {
         values, // (Optional) Used to pass current form values to submit event.
         errors,
@@ -152,13 +158,14 @@ export default {
         console.log(values)
 
         if (valid) {
-          let totalCost = this.calculateTotalCost(this.hmIngredientComponents)
+          let totalCost = this.calculateTotalCost(this.hmIngredientComponents, values.yield)
           await updateHmIngredient(
             values.name,
-            totalCost,
+            totalCost.toFixed(2),
             values.notes,
             this.initialValues.image,
             values.unit,
+            values.yield,
             values.is_stocked === true ? 1 : 0,
             this.$route.params.id,
           )
@@ -184,14 +191,14 @@ export default {
         console.log(error)
       }
     },
-    calculateTotalCost(ingredients) {
-      console.log(ingredients)
-
-      return ingredients.reduce((total, ingredient) => {
-        const quantity = ingredient.selected_quantity || ingredient.quantity || 0
-        const cost = quantity * ingredient.cost
-        return total + cost
-      }, 0)
+    calculateTotalCost(ingredients, hmYield) {
+      return (
+        ingredients.reduce((total, ingredient) => {
+          const quantity = ingredient.selected_quantity || ingredient.quantity
+          const cost = quantity * ingredient.cost
+          return total + cost
+        }, 0) / hmYield
+      )
     },
   },
   mounted() {
@@ -259,6 +266,27 @@ export default {
           class="mt-1 text-red-600"
         >
           {{ $form.unit.error?.message }}
+        </Message>
+      </div>
+
+      <!-- Yield input -->
+      <div>
+        <InputNumber
+          name="yield"
+          type="text"
+          placeholder="Yield"
+          :suffix="$form.unit?.value || ''"
+          fluid
+          class="w-full rounded-md"
+        />
+        <Message
+          v-if="$form.yield?.invalid"
+          severity="error"
+          size="small"
+          variant="simple"
+          class="mt-1 text-red-600"
+        >
+          {{ $form.yield.error?.message }}
         </Message>
       </div>
 

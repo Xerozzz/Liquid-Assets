@@ -49,6 +49,7 @@ export const databaseConfig = {
           hm_ingredient_id INTEGER PRIMARY KEY AUTOINCREMENT,
           name TEXT NOT NULL,
           cost REAL NOT NULL,
+          yield REAL NOT NULL,
           notes TEXT,
           unit TEXT NOT NULL,
           image BLOB,

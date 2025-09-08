@@ -27,11 +27,11 @@ export const getHmIngredientById = async (hm_ingredient_id) => {
     }
 }
 
-export const createHmIngredient = async (name, cost, notes, unit, image, is_stocked) => {
+export const createHmIngredient = async (name, cost, notes, unit, hmYield, image, is_stocked) => {
     try {
         let result = await executeQuery(
-            'INSERT INTO hm_ingredients (name, cost, notes, unit, image, is_stocked) VALUES (?, ?, ?, ?, ?, ?)',
-            [name, cost, notes, unit, image, is_stocked])
+            'INSERT INTO hm_ingredients (name, cost, notes, unit, yield, image, is_stocked) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [name, cost, notes, unit, hmYield, image, is_stocked])
         destroy()
         return Number(result?.result.lastInsertRowId)
     } catch (error) {
@@ -40,11 +40,11 @@ export const createHmIngredient = async (name, cost, notes, unit, image, is_stoc
     }
 }
 
-export const updateHmIngredient = async (name, cost, notes, image, unit, is_stocked, hm_ingredient_id) => {
+export const updateHmIngredient = async (name, cost, notes, image, unit, hmYield, is_stocked, hm_ingredient_id) => {
     try {
         let result = await executeQuery(
-            'UPDATE hm_ingredients SET name = ?, cost = ?, notes = ?, image = ?, unit = ?, is_stocked = ? WHERE hm_ingredient_id = ?;',
-            [name, cost, notes, image, unit, is_stocked, hm_ingredient_id])
+            'UPDATE hm_ingredients SET name = ?, cost = ?, notes = ?, image = ?, unit = ?, yield = ?, is_stocked = ? WHERE hm_ingredient_id = ?;',
+            [name, cost, notes, image, unit, hmYield, is_stocked, hm_ingredient_id])
         destroy()
         return result
     } catch (error) {
@@ -74,6 +74,7 @@ export const getHmIngredientWithComponents = async (hm_ingredient_id) => {
                        hm.name AS hm_ingredient_name,
                        hm.cost AS hm_ingredient_cost,
                        hm.unit AS hm_ingredient_unit,
+                       hm.yield AS hm_ingredient_yield,
                        hm.notes AS hm_ingredient_notes,
                        hm.image AS hm_ingredient_image,
                        hm.is_stocked AS hm_ingredient_stock,
