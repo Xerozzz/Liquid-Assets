@@ -1,5 +1,5 @@
 <script>
-import { createIngredient, getIngredientById } from '@/api/ingredients'
+import { createIngredient } from '@/api/ingredients'
 
 import { useSQLite } from '@/composables/useSQLite'
 import { useNotificationStore } from '@/stores/notification.store'
@@ -16,22 +16,6 @@ export default {
     }
   },
   methods: {
-    async fetchIngredient() {
-      try {
-        const ingredientId = this.$route.params.id
-        const ingredient = await getIngredientById(ingredientId) // returns ingredient from your query
-
-        if (!ingredient || ingredient.length === 0) {
-          this.error = new Error('Ingredient not found')
-          return
-        }
-        this.ingredient = ingredient
-      } catch (error) {
-        this.error = error
-      } finally {
-        this.loading = false
-      }
-    },
     /** This is for validating form data */
     resolver: ({ values }) => {
       const errors = {}
@@ -87,9 +71,7 @@ export default {
       }
     },
   },
-  mounted() {
-    this.fetchIngredient()
-  },
+
   unmounted() {
     this.destroy()
   },

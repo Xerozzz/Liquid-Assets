@@ -58,17 +58,22 @@ export default {
     async deleteItem() {
       try {
         await deleteIngredient(this.$route.params.id)
+
         this.notification.notify({
-          message: `Ingredient deleted successfully`,
+          message: 'Ingredient deleted successfully',
           summary: 'Delete Success',
           severity: 'success',
         })
+
         this.$router.replace('/ingredient')
       } catch (error) {
-        console.log(error)
+        this.notification.notify({
+          message: 'Cannot delete ingredient: it is used in recipes. Remove those recipes first.',
+          summary: 'Delete Failed',
+          severity: 'error',
+        })
       }
     },
-    cancelAction() {},
   },
   mounted() {
     this.fetchIngredient()
