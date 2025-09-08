@@ -15,7 +15,12 @@ import {
   CocktailSpecific,
   CocktailHome,
 } from '@/components/cocktails/'
-import { IngredientHome, IngredientSpecific } from '@/components/ingredients'
+import {
+  IngredientHome,
+  IngredientSpecific,
+  IngredientCreate,
+  IngredientEdit,
+} from '@/components/ingredients'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -65,12 +70,13 @@ const router = createRouter({
         },
         {
           path: 'create',
+          name: 'create',
+          component: IngredientCreate,
         },
         {
-          path: 'edit',
-        },
-        {
-          path: 'card',
+          path: 'edit/:id',
+          name: 'edit',
+          component: IngredientEdit,
         },
       ],
     },
