@@ -96,7 +96,7 @@ export default {
         if (this.hmIngredientsComponents.length === 0) {
           valid = false
           this.notification.notify({
-            message: `Cocktail cannot be made without any ingredients.`,
+            message: `Homemade ingredients cannot be made without any ingredients.`,
             summary: 'No ingredients added',
             severity: 'error',
           })
