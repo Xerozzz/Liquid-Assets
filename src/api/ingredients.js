@@ -25,11 +25,11 @@ export const getIngredientById = async (ingredient_id) => {
     }
 }
 
-export const createIngredient = async (name, cost, quantity, is_stocked) => {
+export const createIngredient = async (name, unit, cost, is_stocked) => {
     try {
         let result = await executeQuery(
-            'INSERT INTO ingredients (name, cost, quantity, is_stocked) VALUES (?, ?, ?, ?);',
-            [name, cost, quantity, is_stocked])
+            'INSERT INTO ingredients (name, unit, cost, is_stocked) VALUES (?, ?, ?, ?);',
+            [name, unit, cost, is_stocked])
             destroy()
         return Number(result?.result.lastInsertRowId)
     } catch (error) {
