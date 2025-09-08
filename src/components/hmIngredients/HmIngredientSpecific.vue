@@ -36,8 +36,10 @@ export default {
         this.hmIngredient = {
           id: r.hm_ingredient_id,
           name: r.hm_ingredient_name,
+          cost: r.hm_ingredient_cost,
           image: r.hm_ingredient_image,
           unit: r.hm_ingredient_unit,
+          yield: r.hm_ingredient_yield,
           notes: r.hm_ingredient_notes,
         }
 
@@ -117,10 +119,12 @@ export default {
         />
         <h3>Unit:</h3>
         <p>{{ hmIngredient.unit }}</p>
+        <h3>Yield:</h3>
+        <p>{{ hmIngredient.yield }}</p>
         <h3>Notes:</h3>
         <p>{{ hmIngredient.notes }}</p>
         <h3>Total Cost:</h3>
-        <p>${{ totalCost.toFixed(2) }}</p>
+        <p>${{ this.hmIngredient.cost.toFixed(2) }}</p>
       </div>
 
       <div class="sectionbox">

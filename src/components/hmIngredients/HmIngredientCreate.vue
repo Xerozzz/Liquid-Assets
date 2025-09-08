@@ -22,6 +22,7 @@ export default {
         name: '',
         cost: 0,
         notes: '',
+        yield: 0,
         unit: '',
         image: '',
         is_stocked: 0,
@@ -71,6 +72,10 @@ export default {
         errors.name = [{ message: 'Name is required.' }]
       }
 
+      if (!values.yield) {
+        errors.yield = [{ message: 'Yield is required.' }]
+      }
+
       if (!values.cost) {
         errors.cost = [{ message: 'Cost is required.' }]
       }
@@ -80,15 +85,13 @@ export default {
         errors,
       }
     },
-    calculateTotalCost(ingredients) {
+    calculateTotalCost(ingredients, hmYield) {
       return ingredients.reduce((total, ingredient) => {
         const cost = ingredient.selected_quantity * ingredient.cost
         return total + cost
-      }, 0)
+      }, 0) / hmYield
     },
     async onFormSubmit({ valid, values }) {
-      console.log(values)
-
       try {
         if (this.hmIngredientsComponents.length === 0) {
           valid = false
@@ -100,12 +103,13 @@ export default {
         }
 
         if (valid) {
-          let totalCost = this.calculateTotalCost(this.hmIngredientsComponents)
+          let totalCost = this.calculateTotalCost(this.hmIngredientsComponents, values.yield)
           let hmIngredientId = await createHmIngredient(
             values.name,
-            totalCost,
+            totalCost.toFixed(2),
             values.notes,
             values.unit,
+            values.yield,
             this.initialValues.image,
             values.is_stocked === true ? 1 : 0,
           )
@@ -189,6 +193,27 @@ export default {
         class="mt-1 text-red-600"
       >
         {{ $form.unit.error?.message }}
+      </Message>
+    </div>
+
+    <!-- Yield input -->
+    <div>
+      <InputNumber
+        name="yield"
+        type="text"
+        placeholder="Yield"
+        :suffix="$form.unit?.value || ''"
+        fluid
+        class="w-full rounded-md"
+      />
+      <Message
+        v-if="$form.yield?.invalid"
+        severity="error"
+        size="small"
+        variant="simple"
+        class="mt-1 text-red-600"
+      >
+        {{ $form.yield.error?.message }}
       </Message>
     </div>
 
