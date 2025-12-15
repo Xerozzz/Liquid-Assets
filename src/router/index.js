@@ -15,6 +15,12 @@ import {
   CocktailSpecific,
   CocktailHome,
 } from '@/components/cocktails/'
+import {
+  IngredientHome,
+  IngredientSpecific,
+  IngredientCreate,
+  IngredientEdit,
+} from '@/components/ingredients'
 
 import {
   HmIngredientCreate,
@@ -64,13 +70,22 @@ const router = createRouter({
       component: IngredientView,
       children: [
         {
+          path: '',
+          component: IngredientHome,
+        },
+        {
+          path: 'view/:id',
+          component: IngredientSpecific,
+        },
+        {
           path: 'create',
+          name: 'create',
+          component: IngredientCreate,
         },
         {
-          path: 'edit',
-        },
-        {
-          path: 'card',
+          path: 'edit/:id',
+          name: 'edit',
+          component: IngredientEdit,
         },
       ],
     },
