@@ -90,7 +90,7 @@ export default {
         await deleteRecipeIngredientByRecipeId(this.$route.params.id)
         this.notification.notify({
           message: `Cocktail deleted successfully`,
-          summary: 'Delete Sucess',
+          summary: 'Delete Success',
           severity: 'success',
         })
         this.$router.replace('/cocktail')

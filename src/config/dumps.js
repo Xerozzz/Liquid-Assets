@@ -44,10 +44,10 @@ export const dumps = [
   {
     schema: 'hm_ingredients',
     query: `
-      INSERT INTO hm_ingredients (name, cost, notes, unit, image, is_stocked, is_deleted) VALUES
-      ('Simple Syrup',  1.20, '1:1 sugar:water by weight', 'ml', 'no image', 1, 0),  -- id:1
-      ('Grenadine',     2.60, 'Pomegranate + sugar + water', 'ml', 'no image', 0, 0), -- id:2 (not stocked)
-      ('Ginger Syrup',  2.10, 'Ginger macerate + sugar + water', 'ml', 'no image', 1, 0); -- id:3
+      INSERT INTO hm_ingredients (name, cost, notes, unit, yield, image, is_stocked, is_deleted) VALUES
+      ('Simple Syrup',  1.20, '1:1 sugar:water by weight', 'ml', '100', 'no image', 1, 0),  -- id:1
+      ('Grenadine',     2.60, 'Pomegranate + sugar + water', 'ml', '100', 'no image', 0, 0), -- id:2 (not stocked)
+      ('Ginger Syrup',  2.10, 'Ginger macerate + sugar + water', 'ml', '100', 'no image', 1, 0); -- id:3
     `,
   },
 

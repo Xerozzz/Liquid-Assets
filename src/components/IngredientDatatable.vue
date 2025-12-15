@@ -105,7 +105,7 @@ export default {
             <Column field="selected_quantity" header="Quantity">
               <template #body="slotProps">
                 <InputNumber
-                  :modelValue="slotProps.data.selected_quantity"
+                  :modelValue="slotProps.data.selected_quantity || slotProps.data.quantity"
                   id="selected_quantity"
                   :suffix="` ${slotProps.data.unit}`"
                   fluid

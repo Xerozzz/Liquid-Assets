@@ -49,6 +49,7 @@ export const databaseConfig = {
           hm_ingredient_id INTEGER PRIMARY KEY AUTOINCREMENT,
           name TEXT NOT NULL,
           cost REAL NOT NULL,
+          yield REAL NOT NULL,
           notes TEXT,
           unit TEXT NOT NULL,
           image BLOB,
@@ -60,7 +61,7 @@ export const databaseConfig = {
       `
     },
     hm_ingredient_components: {
-      name: 'hm_ingredients_components',
+      name: 'hm_ingredient_components',
       schema: `
         CREATE TABLE IF NOT EXISTS hm_ingredient_components (
           hm_ingredient_component_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -71,7 +72,8 @@ export const databaseConfig = {
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           deleted_at TIMESTAMP,
           FOREIGN KEY (hm_ingredient_id) REFERENCES hm_ingredients(hm_ingredient_id),
-          FOREIGN KEY (ingredient_id) REFERENCES ingredients(ingredient_id)
+          FOREIGN KEY (ingredient_id) REFERENCES ingredients(ingredient_id),
+          UNIQUE(hm_ingredient_id, ingredient_id)
         )
       `
     },
@@ -105,7 +107,7 @@ export const databaseConfig = {
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           deleted_at TIMESTAMP,
           FOREIGN KEY (recipe_id) REFERENCES recipe(recipe_id),
-          FOREIGN KEY (ingredient_id) REFERENCES ingredients(ingredient_id)
+          FOREIGN KEY (ingredient_id) REFERENCES ingredients(ingredient_id),
           UNIQUE(recipe_id, ingredient_id)
       )
       `
@@ -122,7 +124,7 @@ export const databaseConfig = {
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           deleted_at TIMESTAMP,
           FOREIGN KEY (recipe_id) REFERENCES recipe(recipe_id),
-          FOREIGN KEY (hm_ingredient_id) REFERENCES hm_ingredients(hm_ingredient_id)
+          FOREIGN KEY (hm_ingredient_id) REFERENCES hm_ingredients(hm_ingredient_id),
           UNIQUE(recipe_id, hm_ingredient_id)
         )
       `
