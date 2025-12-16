@@ -2,13 +2,15 @@
 import { useSQLite } from '@/composables/useSQLite'
 import { useNotificationStore } from '@/stores/notification.store'
 import { getHmIngredient } from '@/api/hm_ingredients.js'
+import { useImageStorage } from '@/composables/useImageStorage'
 
 export default {
   name: 'HmIngredientHome',
   setup() {
     const notification = useNotificationStore()
     const { destroy } = useSQLite()
-    return { notification, destroy }
+    const { getImageUrl } = useImageStorage()
+    return { notification, destroy, getImageUrl }
   },
   data() {
     return {
@@ -20,7 +22,25 @@ export default {
     async getData() {
       this.loading = true
       try {
-        this.hmIngredients = await getHmIngredient()
+        const rawData = await getHmIngredient()
+
+        // --- RESOLVE IMAGES ---
+        this.hmIngredients = await Promise.all(
+          rawData.map(async (item) => {
+            let finalUrl = null
+            if (item.image) {
+              if (item.image.startsWith('data:')) {
+                finalUrl = item.image
+              } else {
+                finalUrl = await this.getImageUrl(item.image)
+              }
+            }
+            return {
+              ...item,
+              displayImageUrl: finalUrl,
+            }
+          }),
+        )
       } catch (error) {
         console.error(error)
         this.notification.notify({
@@ -68,8 +88,8 @@ export default {
       >
         <div class="h-48 w-full bg-gray-50 relative border-b border-gray-100">
           <img
-            v-if="item.image"
-            :src="item.image"
+            v-if="item.displayImageUrl"
+            :src="item.displayImageUrl"
             :alt="item.name"
             class="w-full h-full object-cover"
           />

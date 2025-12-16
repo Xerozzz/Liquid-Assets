@@ -1,134 +1,195 @@
 // dumps.js
+
 export const dumps = [
-  /** test_table */
+  /** * 1. Test Table
+   * Simple connectivity check.
+   */
   {
     schema: 'test_table',
     query: `
-      INSERT INTO test_table (name) VALUES
-      ('Smoke test A'),
-      ('Smoke test B'),
-      ('Smoke test C');
+      DELETE FROM test_table;
+      INSERT INTO test_table (id, name) VALUES
+      (1, 'System Ready'),
+      (2, 'Database Seeded');
     `,
   },
 
-  /** glassware */
+  /** * 2. Glassware
+   * varied volumes to test liquid vs ice capacity logic.
+   */
   {
     schema: 'glassware',
     query: `
-      INSERT INTO glassware (name, brand, model, volume, volume_w_ice, is_deleted) VALUES
-      ('Highball', 'Libbey', 'Classic', 350, 280, 0),
-      ('Martini', 'Riedel', 'Vinum', 200, 160, 0),
-      ('Rocks',   'Spiegelau', 'Perfect Serve', 300, 220, 0),
-      ('Coupe',   'Nick & Nora', 'Vintage', 180, 150, 0);
+      DELETE FROM glassware;
+      INSERT INTO glassware (glass_id, name, brand, model, volume, volume_w_ice, is_deleted) VALUES
+      (1, 'Double Rocks', 'Spiegelau', 'Perfect Serve', 360, 240, 0),
+      (2, 'Nick & Nora', 'Riedel', 'Drink Specific', 140, 110, 0),
+      (3, 'Highball', 'Libbey', 'Chicago', 300, 200, 0),
+      (4, 'Coupe', 'Luminarc', 'Barcraft', 220, 180, 0),
+      (5, 'Tiki Mug', 'Generic', 'Ceramic', 450, 350, 0);
     `,
   },
 
-  /** ingredients (base / store-bought) */
+  /** * 3. Ingredients (Raw)
+   * Includes Spirits, Citrus, Pantry items, and Modifiers.
+   * Note: Some items are deliberately set to is_stocked = 0 to test UI warnings.
+   */
   {
     schema: 'ingredients',
     query: `
-      INSERT INTO ingredients (name, cost, unit, is_stocked, is_deleted) VALUES
-      ('Vodka',             0.08, 'ml', 1, 0),  -- id:1
-      ('Gin',               00.10, 'ml', 1, 0),  -- id:2
-      ('Lime Juice',         0.01, 'ml', 1, 0),  -- id:3
-      ('Tonic Water',        0.01, 'ml', 1, 0),  -- id:4
-      ('Dry Vermouth',      0.05, 'ml', 0, 0),  -- id:5 (out of stock)
-      ('Sugar',              0.01, 'g',  1, 0),  -- id:6
-      ('Water',              0.00, 'ml', 1, 0),  -- id:7
-      ('Pomegranate Juice',  0.02, 'ml', 0, 0),  -- id:8 (out of stock)
-      ('Ginger',             0.03, 'g',  1, 0);  -- id:9
+      DELETE FROM ingredients;
+      INSERT INTO ingredients (ingredient_id, name, cost, unit, is_stocked, is_deleted) VALUES
+      -- Spirits
+      (1, 'London Dry Gin', 0.05, 'ml', 1, 0),
+      (2, 'Bourbon Whiskey', 0.07, 'ml', 1, 0),
+      (3, 'White Rum', 0.04, 'ml', 1, 0),
+      (4, 'Tequila Blanco', 0.06, 'ml', 1, 0),
+      (5, 'Campari', 0.05, 'ml', 1, 0),
+      (6, 'Sweet Vermouth', 0.03, 'ml', 1, 0),
+      (7, 'Green Chartreuse', 0.12, 'ml', 0, 0), -- Expensive & Out of stock
+
+      -- Citrus & Fresh
+      (8, 'Lemon Juice', 0.01, 'ml', 1, 0),
+      (9, 'Lime Juice', 0.01, 'ml', 1, 0),
+      (10, 'Orange Peel', 0.10, 'piece', 1, 0),
+      (11, 'Mint Leaves', 0.05, 'sprig', 1, 0),
+
+      -- Pantry / Mixers
+      (12, 'White Sugar', 0.002, 'g', 1, 0),
+      (13, 'Water', 0.00, 'ml', 1, 0),
+      (14, 'Honey', 0.02, 'g', 1, 0),
+      (15, 'Soda Water', 0.01, 'ml', 1, 0),
+      (16, 'Angostura Bitters', 0.50, 'dash', 1, 0);
     `,
   },
 
-  /** hm_ingredients (house-made) */
+  /** * 4. Homemade Ingredients (HM)
+   * Derived ingredients.
+   */
   {
     schema: 'hm_ingredients',
     query: `
-      INSERT INTO hm_ingredients (name, cost, notes, unit, yield, image, is_stocked, is_deleted) VALUES
-      ('Simple Syrup',  1.20, '1:1 sugar:water by weight', 'ml', '100', 'no image', 1, 0),  -- id:1
-      ('Grenadine',     2.60, 'Pomegranate + sugar + water', 'ml', '100', 'no image', 0, 0), -- id:2 (not stocked)
-      ('Ginger Syrup',  2.10, 'Ginger macerate + sugar + water', 'ml', '100', 'no image', 1, 0); -- id:3
+      DELETE FROM hm_ingredients;
+      INSERT INTO hm_ingredients (hm_ingredient_id, name, cost, yield, notes, unit, image, is_stocked, is_deleted) VALUES
+      -- ID 1: Simple Syrup (1:1 Ratio)
+      (1, 'Simple Syrup', 0.0, 500, 'Standard 1:1 sugar to water ratio.', 'ml', null, 1, 0),
+
+      -- ID 2: Honey Syrup (3:1 Ratio)
+      (2, 'Honey Syrup', 0.0, 300, 'Rich honey syrup for penicillin/bees knees.', 'ml', null, 1, 0),
+
+      -- ID 3: Super Lime Juice (Hypothetical, complex yield)
+      (3, 'Lime Cordial', 0.0, 250, 'Acid adjusted lime cordial.', 'ml', null, 0, 0); -- Out of stock
     `,
   },
 
-  /** hm_ingredient_components (composition of house-made items) */
+  /** * 5. Homemade Components
+   * Links Raw Ingredients to HM Ingredients.
+   * This allows calculating the REAL cost of the homemade item based on raw costs.
+   */
   {
     schema: 'hm_ingredient_components',
     query: `
-      -- Simple Syrup = Sugar + Water
+      DELETE FROM hm_ingredient_components;
+      -- 1. Simple Syrup (250g Sugar + 250ml Water)
       INSERT INTO hm_ingredient_components (hm_ingredient_id, ingredient_id, quantity) VALUES
-      (1, 6, 500.0),  -- 500 g Sugar
-      (1, 7, 500.0);  -- 500 ml Water
+      (1, 12, 250), -- Sugar
+      (1, 13, 250); -- Water
 
-      -- Grenadine = Pomegranate Juice + Sugar + Water
+      -- 2. Honey Syrup (225g Honey + 75ml Water)
       INSERT INTO hm_ingredient_components (hm_ingredient_id, ingredient_id, quantity) VALUES
-      (2, 8, 400.0),
-      (2, 6, 400.0),
-      (2, 7, 200.0);
+      (2, 14, 225), -- Honey
+      (2, 13, 75);  -- Water
 
-      -- Ginger Syrup = Ginger + Sugar + Water
+      -- 3. Lime Cordial (Lime Juice + Sugar)
       INSERT INTO hm_ingredient_components (hm_ingredient_id, ingredient_id, quantity) VALUES
-      (3, 9, 150.0),
-      (3, 6, 300.0),
-      (3, 7, 300.0);
+      (3, 9, 150),  -- Lime Juice
+      (3, 12, 100); -- Sugar
     `,
   },
 
-  /** recipe */
+  /** * 6. Recipes
+   * The actual cocktails.
+   */
   {
     schema: 'recipe',
     query: `
-      INSERT INTO recipe (name, glass_id, step_to_make, garnish, notes, image, is_deleted) VALUES
-      -- Uses Highball (glass_id = 1)
-      ('Vodka Tonic', 1,
-        'Add ice to highball. Pour vodka, top with tonic. Brief stir.',
-        'Lime wedge', 'Keep effervescence by gentle stir.', 'no image', 0),
+      DELETE FROM recipe;
+      INSERT INTO recipe (recipe_id, name, glass_id, step_to_make, garnish, notes, image, is_deleted) VALUES
 
-      -- Uses Martini (glass_id = 2)
-      ('Dry Martini', 2,
-        'Stir gin with dry vermouth over ice ~20s. Strain into chilled martini glass.',
-        'Olive or lemon twist', 'Adjust vermouth to preference.', 'no image', 0),
+      -- 1. Negroni (All raw ingredients)
+      (1, 'Negroni', 1, 'Add all ingredients to mixing glass with ice. Stir until chilled. Strain over large rock.', 'Orange Peel', 'The classic aperitivo.', null, 0),
 
-      -- Uses Coupe (glass_id = 4)
-      ('Gimlet', 4,
-        'Shake gin, lime juice, and simple syrup with ice. Fine strain.',
-        'Lime wheel', '2:1:1 is a nice starting point.', 'no image', 0);
+      -- 2. Daiquiri (Raw + HM Ingredient)
+      (2, 'Daiquiri', 4, 'Add Rum, Lime, and Syrup to shaker. Shake hard with ice. Double strain.', 'Lime Wheel', 'Adjust syrup based on lime acidity.', null, 0),
+
+      -- 3. Old Fashioned (Raw + HM + Different Units)
+      (3, 'Old Fashioned', 1, 'Add syrup and bitters. Add Whiskey. Stir with ice.', 'Orange Peel', 'Use high proof bourbon.', null, 0),
+
+      -- 4. Bee''s Knees (Uses Honey Syrup HM)
+      (4, 'Bee''s Knees', 2, 'Shake all ingredients with ice. Fine strain.', 'Lemon Twist', 'Gin sour variation.', null, 0),
+
+      -- 5. The Last Word (Contains an OUT OF STOCK ingredient)
+      (5, 'The Last Word', 4, 'Shake all ingredients with ice.', 'Luxardo Cherry', 'Equal parts classic.', null, 0);
     `,
   },
 
-  /** recipe_ingredient (store-bought components per recipe) */
+  /** * 7. Recipe Ingredients (Raw)
+   * Linking Recipes to Raw Ingredients.
+   */
   {
     schema: 'recipe_ingredient',
     query: `
-      -- Vodka Tonic (recipe_id = 1)
-      INSERT INTO recipe_ingredient (recipe_id, ingredient_id, quantity) VALUES
-      (1, 1, 50),   -- Vodka 50 ml
-      (1, 4, 120),  -- Tonic 120 ml
-      (1, 3, 10);   -- Lime juice 10 ml
+      DELETE FROM recipe_ingredient;
 
-      -- Dry Martini (recipe_id = 2)
+      -- 1. Negroni
       INSERT INTO recipe_ingredient (recipe_id, ingredient_id, quantity) VALUES
-      (2, 2, 60),   -- Gin 60 ml
-      (2, 5, 10);   -- Dry Vermouth 10 ml (note: ingredient may be unstocked)
+      (1, 1, 30), -- Gin
+      (1, 5, 30), -- Campari
+      (1, 6, 30); -- Sweet Vermouth
 
-      -- Gimlet (recipe_id = 3)
+      -- 2. Daiquiri
       INSERT INTO recipe_ingredient (recipe_id, ingredient_id, quantity) VALUES
-      (3, 2, 50),   -- Gin 50 ml
-      (3, 3, 20);   -- Lime juice 20 ml
+      (2, 3, 60), -- White Rum
+      (2, 9, 30); -- Lime Juice
+
+      -- 3. Old Fashioned
+      INSERT INTO recipe_ingredient (recipe_id, ingredient_id, quantity) VALUES
+      (3, 2, 60), -- Bourbon
+      (3, 16, 2); -- Angostura (Dashes)
+
+      -- 4. Bee's Knees
+      INSERT INTO recipe_ingredient (recipe_id, ingredient_id, quantity) VALUES
+      (4, 1, 60), -- Gin
+      (4, 8, 22.5); -- Lemon Juice
+
+      -- 5. The Last Word (Testing missing stock logic)
+      INSERT INTO recipe_ingredient (recipe_id, ingredient_id, quantity) VALUES
+      (5, 1, 22.5), -- Gin
+      (5, 7, 22.5), -- Green Chartreuse (Stocked = 0)
+      (5, 9, 22.5); -- Lime
+      -- (Missing Maraschino in DB, intentionally left incomplete to test UI)
     `,
   },
 
-  /** recipe_hm_ingredient (house-made components per recipe) */
+  /** * 8. Recipe Homemade Ingredients
+   * Linking Recipes to Homemade Ingredients.
+   */
   {
     schema: 'recipe_hm_ingredient',
     query: `
-      -- Vodka Tonic uses no HM ingredients
+      DELETE FROM recipe_hm_ingredient;
 
-      -- Dry Martini uses no HM ingredients
-
-      -- Gimlet (recipe_id = 3)
+      -- 2. Daiquiri uses Simple Syrup
       INSERT INTO recipe_hm_ingredient (recipe_id, hm_ingredient_id, quantity) VALUES
-      (3, 1, 15);   -- Simple Syrup 15 ml
+      (2, 1, 22.5); -- Simple Syrup
+
+      -- 3. Old Fashioned uses Simple Syrup
+      INSERT INTO recipe_hm_ingredient (recipe_id, hm_ingredient_id, quantity) VALUES
+      (3, 1, 5); -- Simple Syrup (just a spoon)
+
+      -- 4. Bee's Knees uses Honey Syrup
+      INSERT INTO recipe_hm_ingredient (recipe_id, hm_ingredient_id, quantity) VALUES
+      (4, 2, 22.5); -- Honey Syrup
     `,
   },
 ]

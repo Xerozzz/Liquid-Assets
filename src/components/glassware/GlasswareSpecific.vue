@@ -105,8 +105,8 @@ export default {
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-11 mt-6">
       <div class="sectionbox">
-        <h2 class="title">{{ glass.brand }}</h2>
-        <h3 class="text-xl font-bold text-gray-600">{{ glass.model }}</h3>
+        <h2 class="title">{{ glass.model }}</h2>
+        <h3 class="text-xl font-bold text-gray-600">{{ glass.brand }}</h3>
 
         <div class="grid grid-cols-2 gap-4 mt-2">
           <div>

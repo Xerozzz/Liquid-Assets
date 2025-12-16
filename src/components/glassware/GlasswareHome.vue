@@ -58,8 +58,8 @@ export default {
         class="border border-gray-300 rounded-md text-center p-4 hover:shadow-lg transition-shadow cursor-pointer bg-white flex flex-col justify-center items-center h-32"
         @click="$router.push(`/glassware/view/${glass.glass_id}`)"
       >
-        <h3 class="font-bold text-lg text-gray-800">{{ glass.brand }}</h3>
-        <p class="text-sm text-gray-500 mb-2">{{ glass.model }}</p>
+        <h3 class="font-bold text-lg text-gray-800">{{ glass.model }}</h3>
+        <p class="text-sm text-gray-500 mb-2">{{ glass.brand }}</p>
 
         <div
           class="inline-block bg-gray-100 rounded-full px-3 py-1 text-xs font-semibold text-gray-600 mt-auto"
