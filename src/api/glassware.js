@@ -1,65 +1,76 @@
-import { useSQLite } from "@/composables/useSQLite";
-const { executeQuery, destroy } = useSQLite()
+import { useSQLite } from '@/composables/useSQLite'
 
 export const getGlassware = async () => {
-    try {
-        let result = await executeQuery('SELECT * FROM glassware;')
-        destroy()
-        return result?.result.resultRows
-    } catch (error) {
-        console.log(error);
-        return error
-    }
+  const { executeQuery, destroy } = useSQLite()
+  try {
+    let result = await executeQuery('SELECT * FROM glassware;')
+    return result?.result.resultRows
+  } catch (error) {
+    console.log(error)
+    throw error
+  } finally {
+    destroy()
+  }
 }
 
-export const getGlasswareById = async (glassware_id) => {
-    try {
-        let result = await executeQuery(
-            'SELECT * FROM glassware WHERE glass_id = ?;',
-            [glassware_id])
-        destroy()
-        return result?.result.resultRows[0]
-    } catch (error) {
-        console.log(error);
-        return error
-    }
+export const getGlasswareById = async (id) => {
+  const { executeQuery, destroy } = useSQLite()
+  try {
+    let result = await executeQuery('SELECT * FROM glassware WHERE glass_id = ?;', [id])
+    return result?.result.resultRows.length > 0 ? result.result.resultRows[0] : null
+  } catch (error) {
+    console.log(error)
+    throw error
+  } finally {
+    destroy()
+  }
 }
 
-export const createGlassware = async (name, brand, model, volume, volume_w_ice) => {
-    try {
-        let result = await executeQuery(
-            'INSERT INTO glassware (name, brand, model, volume, volume_w_ice) VALUES (?, ?, ?, ?, ?)',
-            [name, brand, model, volume, volume_w_ice])
-        destroy()
-        return Number(result?.result.lastInsertRowId)
-    } catch (error) {
-        console.log(error);
-        return error
-    }
+export const createGlassware = async (brand, model, volume, volume_fill) => {
+  const { executeQuery, destroy } = useSQLite()
+  try {
+    const name = `${brand} ${model}`
+
+    let result = await executeQuery(
+      'INSERT INTO glassware (name, brand, model, volume, volume_w_ice) VALUES (?, ?, ?, ?, ?)',
+      [name, brand, model, volume, volume_fill],
+    )
+    return Number(result?.result.lastInsertRowId)
+  } catch (error) {
+    console.log(error)
+    throw error
+  } finally {
+    destroy()
+  }
 }
 
-export const updateGlassware = async (name, brand, model, volume, volume_w_ice, glass_id) => {
-    try {
-        let result = await executeQuery(
-            'UPDATE glassware SET name = ?, brand = ?, model = ?, volume = ?, volume_w_ice = ? WHERE glass_id = ?;',
-            [name, brand, model, volume, volume_w_ice, glass_id])
-        destroy()
-        return result
-    } catch (error) {
-        console.log(error);
-        return error
-    }
+export const updateGlassware = async (brand, model, volume, volume_fill, glass_id) => {
+  const { executeQuery, destroy } = useSQLite()
+  try {
+    const name = `${brand} ${model}`
+
+    let result = await executeQuery(
+      'UPDATE glassware SET name = ?, brand = ?, model = ?, volume = ?, volume_w_ice = ? WHERE glass_id = ?;',
+      [name, brand, model, volume, volume_fill, glass_id],
+    )
+    return result
+  } catch (error) {
+    console.log(error)
+    throw error
+  } finally {
+    destroy()
+  }
 }
 
-export const deleteGlassware = async (glassware_id) => {
-    try {
-        let result = await executeQuery(
-            'DELETE FROM glassware WHERE glassware_id = ?;',
-            [glassware_id])
-        destroy()
-        return result
-    } catch (error) {
-        console.log(error);
-        return error
-    }
+export const deleteGlassware = async (glass_id) => {
+  const { executeQuery, destroy } = useSQLite()
+  try {
+    let result = await executeQuery('DELETE FROM glassware WHERE glass_id = ?;', [glass_id])
+    return result
+  } catch (error) {
+    console.log(error)
+    throw error
+  } finally {
+    destroy()
+  }
 }

@@ -7,6 +7,14 @@ import IngredientView from '@/views/IngredientView.vue'
 import HmView from '@/views/HmView.vue'
 import GlasswareView from '@/views/GlasswareView.vue'
 
+// Import glassware components
+import {
+  GlasswareHome,
+  GlasswareCreate,
+  GlasswareEdit,
+  GlasswareSpecific,
+} from '@/components/glassware/'
+
 // Import Cocktail Components
 import CocktailView from '@/views/CocktailView.vue'
 import {
@@ -26,7 +34,7 @@ import {
   HmIngredientCreate,
   HmIngredientEdit,
   HmIngredientSpecific,
-  HmIngredientHome
+  HmIngredientHome,
 } from '@/components/hmIngredients'
 
 const router = createRouter({
@@ -122,13 +130,23 @@ const router = createRouter({
       component: GlasswareView,
       children: [
         {
+          path: '',
+          component: GlasswareHome,
+        },
+        {
           path: 'create',
+          name: 'glassware-create',
+          component: GlasswareCreate,
         },
         {
-          path: 'edit',
+          path: 'edit/:id',
+          name: 'glassware-edit',
+          component: GlasswareEdit,
         },
         {
-          path: 'card',
+          path: 'view/:id',
+          name: 'glassware-view',
+          component: GlasswareSpecific,
         },
       ],
     },
@@ -136,13 +154,6 @@ const router = createRouter({
       path: '/playground',
       name: 'playground',
       component: PlaygroundView,
-    },
-    {
-      path: '/docs',
-      beforeEnter() {
-        // Redirect to the static HTML file
-        window.location.href = '/docs/index.html'
-      },
     },
   ],
 })
