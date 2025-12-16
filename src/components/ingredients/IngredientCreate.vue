@@ -1,10 +1,10 @@
 <script>
 import { createIngredient } from '@/api/ingredients'
-
 import { useSQLite } from '@/composables/useSQLite'
 import { useNotificationStore } from '@/stores/notification.store'
 
 export default {
+  name: 'IngredientCreate',
   setup() {
     const notification = useNotificationStore()
     const { destroy } = useSQLite()
@@ -12,42 +12,30 @@ export default {
   },
   data() {
     return {
-      ingredient: null,
+      initialValues: {
+        name: '',
+        unit: '',
+        totalcost: null,
+        totalquantity: null,
+        isstocked: false,
+      },
     }
   },
   methods: {
-    /** This is for validating form data */
     resolver: ({ values }) => {
       const errors = {}
-
-      if (!values.name) {
-        errors.name = [{ message: 'Name is required.' }]
-      }
-
-      if (!values.unit) {
-        errors.unit = [{ message: 'Unit is required.' }]
-      }
-
-      if (!values.totalcost || isNaN(Number(values.totalcost))) {
-        errors.totalcost = [{ message: 'Total Cost is required and must be a number' }]
-      }
-
-      if (!values.totalquantity || isNaN(Number(values.totalquantity))) {
-        errors.totalquantity = [{ message: 'Total Quantity is required and must be a number' }]
-      }
-
-      return {
-        values, // (Optional) Used to pass current form values to submit event.
-        errors,
-      }
+      if (!values.name) errors.name = [{ message: 'Name is required.' }]
+      if (!values.unit) errors.unit = [{ message: 'Unit is required.' }]
+      if (!values.totalcost) errors.totalcost = [{ message: 'Total Cost is required' }]
+      if (!values.totalquantity) errors.totalquantity = [{ message: 'Quantity is required' }]
+      return { values, errors }
     },
     async onFormSubmit({ valid, values }) {
       try {
-        if (values.isstocked === null) {
-          values.isstocked = false
-        }
-        var costPerUnit = (values.totalcost / values.totalquantity).toFixed(2)
         if (valid) {
+          // Calculate cost per unit
+          const costPerUnit = (Number(values.totalcost) / Number(values.totalquantity)).toFixed(4)
+
           await createIngredient(
             values.name,
             values.unit,
@@ -56,145 +44,88 @@ export default {
           )
           this.notification.notify({
             message: `Ingredient created successfully`,
-            summary: 'Success',
             severity: 'success',
           })
+          this.destroy() // Close DB before routing
           this.$router.push('/ingredient')
         }
       } catch (error) {
-        console.log(error)
-        this.notification.notify({
-          message: `${error}`,
-          summary: 'Error',
-          severity: 'error',
-        })
+        console.error(error)
+        this.notification.notify({ message: 'Error creating ingredient', severity: 'error' })
       }
     },
   },
-
   unmounted() {
-    this.destroy()
+
   },
 }
 </script>
 
 <template>
-  <Form
-    v-slot="$form"
-    :initialValues
-    :resolver
-    @submit="onFormSubmit"
-    @keydown.enter="
-      ($event) => {
-        if ($event.target.tagName !== 'TEXTAREA') $event.preventDefault()
-      }
-    "
-    class="space-y-8 max-w-7xl mx-auto m-5"
-  >
-    <!-- Name input -->
-    <div>
-      <InputText
-        name="name"
-        type="text"
-        placeholder="Name"
-        fluid
-        class="w-full rounded-md border border-gray-300 p-2"
-      />
-      <Message
-        v-if="$form.name?.invalid"
-        severity="error"
-        size="small"
-        variant="simple"
-        class="mt-1 text-red-600"
-      >
-        {{ $form.name.error?.message }}
-      </Message>
-    </div>
+  <div class="max-w-4xl mx-auto py-10">
+    <h1 class="text-2xl font-bold mb-6 text-center">Add New Ingredient</h1>
 
-    <!-- Unit input -->
-    <div>
-      <InputText
-        name="unit"
-        type="text"
-        placeholder="Unit"
-        fluid
-        class="w-full rounded-md border border-gray-300 p-2"
-      />
-      <Message
-        v-if="$form.unit?.invalid"
-        severity="error"
-        size="small"
-        variant="simple"
-        class="mt-1 text-red-600"
-      >
-        {{ $form.unit.error?.message }}
-      </Message>
-    </div>
+    <Form
+      v-slot="$form"
+      :initialValues="initialValues"
+      :resolver="resolver"
+      @submit="onFormSubmit"
+      class="bg-white p-8 rounded-lg shadow-md space-y-6"
+    >
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="flex flex-col gap-1">
+          <label class="font-semibold">Name</label>
+          <InputText name="name" placeholder="e.g. Vodka" fluid />
+          <Message v-if="$form.name?.invalid" severity="error" size="small" variant="simple">
+            {{ $form.name.error?.message }}
+          </Message>
+        </div>
 
-    <!-- Total Cost input -->
-    <div>
-      <InputText
-        name="totalcost"
-        type="text"
-        placeholder="Total Cost"
-        fluid
-        class="w-full rounded-md border border-gray-300 p-2"
-      />
-      <Message
-        v-if="$form.totalcost?.invalid"
-        severity="error"
-        size="small"
-        variant="simple"
-        class="mt-1 text-red-600"
-      >
-        {{ $form.totalcost.error?.message }}
-      </Message>
-    </div>
+        <div class="flex flex-col gap-1">
+          <label class="font-semibold">Unit</label>
+          <InputText name="unit" placeholder="e.g. ml, oz, gram" fluid />
+          <Message v-if="$form.unit?.invalid" severity="error" size="small" variant="simple">
+            {{ $form.unit.error?.message }}
+          </Message>
+        </div>
+      </div>
 
-    <!-- Total Quantity input -->
-    <div>
-      <InputText
-        name="totalquantity"
-        type="text"
-        placeholder="Total Quantity"
-        fluid
-        class="w-full rounded-md border border-gray-300 p-2"
-      />
-      <Message
-        v-if="$form.totalquantity?.invalid"
-        severity="error"
-        size="small"
-        variant="simple"
-        class="mt-1 text-red-600"
-      >
-        {{ $form.totalquantity.error?.message }}
-      </Message>
-    </div>
+      <div class="p-4 bg-gray-50 rounded-md border border-gray-100">
+        <h3 class="text-sm font-bold text-gray-500 mb-3 uppercase tracking-wide">
+          Price Calculator
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="flex flex-col gap-1">
+            <label class="font-semibold">Total Price Paid ($)</label>
+            <InputNumber name="totalcost" placeholder="0.00" :minFractionDigits="2" fluid />
+            <Message v-if="$form.totalcost?.invalid" severity="error" size="small" variant="simple">
+              {{ $form.totalcost.error?.message }}
+            </Message>
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="font-semibold">Total Quantity Purchased</label>
+            <InputNumber name="totalquantity" placeholder="0" fluid />
+            <Message
+              v-if="$form.totalquantity?.invalid"
+              severity="error"
+              size="small"
+              variant="simple"
+            >
+              {{ $form.totalquantity.error?.message }}
+            </Message>
+          </div>
+        </div>
+      </div>
 
-    <!-- Is Stocked input -->
-    <div>
-      <InputSwitch
-        name="isstocked"
-        :trueValue="true"
-        :falseValue="false"
-        :modelValue="false"
-        class="w-full"
-      />
-      <label for="isstocked" class="ml-2">Is Stocked</label>
-      <Message
-        v-if="$form.isstocked?.invalid"
-        severity="error"
-        size="small"
-        variant="simple"
-        class="mt-1 text-red-600"
-      >
-        {{ $form.isstocked.error?.message }}
-      </Message>
-    </div>
+      <div class="flex items-center gap-3">
+        <InputSwitch name="isstocked" />
+        <label for="isstocked" class="font-medium text-gray-700">Currently In Stock?</label>
+      </div>
 
-    <!-- Submit button -->
-    <div class="flex justify-center">
-      <Button type="submit" severity="secondary" label="Submit" class="w-48" />
-    </div>
-  </Form>
+      <div class="flex justify-center gap-4 mt-4">
+        <Button label="Cancel" severity="secondary" @click="$router.push('/ingredient')" />
+        <Button type="submit" label="Save Ingredient" class="w-48" />
+      </div>
+    </Form>
+  </div>
 </template>

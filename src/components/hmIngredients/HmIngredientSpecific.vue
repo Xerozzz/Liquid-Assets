@@ -1,11 +1,15 @@
 <script>
 import { useSQLite } from '@/composables/useSQLite'
 import { useNotificationStore } from '@/stores/notification.store'
-import { getHmIngredientWithComponents, deleteHmIngredient } from '@/api/hm_ingredients'
+
+// Import specific fetchers to avoid join errors
+import { getHmIngredientById, deleteHmIngredient } from '@/api/hm_ingredients'
+import { getHmIngredientComponentByHmIngredientId } from '@/api/hm_ingredient_components'
 
 import DeleteDialog from '../DeleteDialog.vue'
 
 export default {
+  name: 'HmIngredientSpecific',
   components: { DeleteDialog },
   setup() {
     const notification = useNotificationStore()
@@ -24,37 +28,47 @@ export default {
   methods: {
     async getHmIngredient() {
       try {
-        const hm_ingredient_id = this.$route.params.id
-        const rows = await getHmIngredientWithComponents(hm_ingredient_id) // returns rows from your query
+        const id = this.$route.params.id
 
-        if (!rows || rows.length === 0) {
+        // 1. Fetch Main Ingredient Details
+        const mainData = await getHmIngredientById(id)
+
+        if (!mainData) {
           this.error = new Error('Hm ingredient not found')
           return
         }
 
-        const r = rows[0]
         this.hmIngredient = {
-          id: r.hm_ingredient_id,
-          name: r.hm_ingredient_name,
-          cost: r.hm_ingredient_cost,
-          image: r.hm_ingredient_image,
-          unit: r.hm_ingredient_unit,
-          yield: r.hm_ingredient_yield,
-          notes: r.hm_ingredient_notes,
+          id: mainData.hm_ingredient_id || id,
+          name: mainData.name,
+          cost: Number(mainData.cost),
+          image: mainData.image,
+          unit: mainData.unit,
+          yield: mainData.yield,
+          notes: mainData.notes,
+          is_stocked: mainData.is_stocked === 1 || mainData.is_stocked === true,
         }
 
-        const items = rows.map((row) => ({
-          id: row.component_id,
-          name: row.component_name,
-          quantity: row.component_quantity,
-          stock: row.component_stock ? '✅' : '❌',
-          unit: row.component_unit,
-          cost: Number(row.component_cost),
-        }))
+        // 2. Fetch Components List
+        const componentsData = await getHmIngredientComponentByHmIngredientId(id)
 
-        this.ingredients = items
-        this.totalCost = items.reduce((sum, item) => sum + item.cost, 0)
+        if (Array.isArray(componentsData)) {
+          this.ingredients = componentsData.map((row) => ({
+            id: row.ingredient_id || row.component_id,
+            name: row.ingredient_name || row.name,
+            quantity: row.quantity,
+            unit: row.unit,
+            cost: Number(row.cost),
+            is_stocked: row.is_stocked || false,
+          }))
+
+          this.totalCost = this.ingredients.reduce(
+            (sum, item) => sum + item.cost * item.quantity,
+            0,
+          )
+        }
       } catch (error) {
+        console.error(error)
         this.error = error
       } finally {
         this.loading = false
@@ -95,58 +109,81 @@ export default {
   mounted() {
     this.getHmIngredient()
   },
+  unmounted() {
+    this.destroy()
+  },
 }
 </script>
 
 <template>
   <DeleteDialog />
-  <div v-if="loading">Loading...</div>
-  <div v-else-if="error">{{ error.message }}</div>
+
+  <div v-if="loading" class="flex justify-center items-center h-64">
+    <ProgressSpinner />
+  </div>
+
+  <div v-else-if="error" class="text-center p-10 text-red-500">
+    {{ error.message }}
+  </div>
+
   <div v-else class="bodysection">
     <button class="nav_button" @click="$router.push('/hm')">Back</button>
     <button class="nav_button" @click="$router.push(`/hm/edit/${this.$route.params.id}`)">
       Edit
     </button>
     <button class="nav_button" @click="confirmDelete">Delete</button>
+
     <div class="grid grid-cols-3 gap-11">
       <div class="sectionbox">
         <h2 class="title">{{ hmIngredient.name }}</h2>
         <img
-          class="w-80 h-auto"
+          class="w-80 h-auto rounded shadow-sm mb-4"
           :src="hmIngredient.image"
-          alt="Homemade Ingredient Image"
+          alt="Item Image"
           v-if="hmIngredient.image"
         />
-        <h3>Unit:</h3>
-        <p>{{ hmIngredient.unit }}</p>
+
         <h3>Yield:</h3>
-        <p>{{ hmIngredient.yield }}</p>
+        <p>{{ hmIngredient.yield }} {{ hmIngredient.unit }}</p>
+
+        <h3>Unit Cost:</h3>
+        <p>${{ hmIngredient.cost.toFixed(2) }}</p>
+
+        <h3>Status:</h3>
+
+        <div class="mt-1">
+          <span v-if="hmIngredient.is_stocked" class="font-bold text-green-700">
+            <i class="pi pi-check"></i> In Stock
+          </span>
+          <span v-else class="font-bold text-red-700">
+            <i class="pi pi-times"></i> Out of Stock
+          </span>
+        </div>
+      </div>
+
+      <div class="sectionbox">
         <h3>Notes:</h3>
-        <p>{{ hmIngredient.notes }}</p>
-        <h3>Total Cost:</h3>
-        <p>${{ this.hmIngredient.cost.toFixed(2) }}</p>
+        <p class="whitespace-pre-line text-gray-800">
+          {{ hmIngredient.notes || 'No notes provided.' }}
+        </p>
       </div>
 
       <div class="sectionbox">
         <h3>Components:</h3>
-        <p>Total Cost: ${{ totalCost.toFixed(2) }}</p>
-        <table class="text-center">
+        <p class="text-sm text-gray-500 mb-2">Total Batch Cost: ${{ totalCost.toFixed(2) }}</p>
+        <table class="text-center w-full">
           <thead>
             <tr>
-              <th>Component</th>
-              <th>Quantity</th>
+              <th>Ingredient</th>
+              <th>Qty</th>
               <th>Cost</th>
-              <th>Stock Status</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="item in ingredients" :key="item.id">
               <td>{{ item.name }}</td>
-              <td>
-                {{ item.quantity }} <span v-if="item.unit">{{ item.unit }}</span>
-              </td>
+              <td>{{ item.quantity }} {{ item.unit }}</td>
               <td>${{ Number(item.cost).toFixed(2) }}</td>
-              <td>{{ item.stock }}</td>
             </tr>
           </tbody>
         </table>
