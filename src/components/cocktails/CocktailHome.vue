@@ -44,17 +44,12 @@ export default {
 
 <template>
   <div class="bodysection">
-    <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-      <h1 class="title m-0">Cocktail Menu</h1>
-      <div class="space-x-2">
-        <Button label="Back" severity="secondary" @click="$router.push('/')" />
-        <Button
-          label="Create Cocktail"
-          icon="pi pi-plus"
-          @click="$router.push('/cocktail/create')"
-        />
-      </div>
+    <div class="flex gap-2 mb-2">
+      <button class="nav_button" @click="$router.push('/')">Back</button>
+      <button class="nav_button" @click="$router.push('/cocktail/create')">Create Cocktail</button>
     </div>
+
+    <h1 class="title mt-0 mb-6">Cocktail Menu</h1>
 
     <div v-if="loading" class="flex justify-center py-20">
       <ProgressSpinner />
@@ -64,10 +59,10 @@ export default {
       <div
         v-for="cocktail in queryResult"
         :key="cocktail.recipe_id"
-        class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col"
+        class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col"
         @click="$router.push(`/cocktail/view/${cocktail.recipe_id}`)"
       >
-        <div class="h-48 bg-gray-100 relative">
+        <div class="h-48 w-full bg-gray-50 relative border-b border-gray-100">
           <img
             v-if="cocktail.image"
             :src="cocktail.image"
@@ -79,30 +74,20 @@ export default {
           </div>
         </div>
 
-        <div class="p-4 flex-grow flex flex-col justify-between">
-          <div>
-            <h3 class="font-bold text-lg text-gray-800 mb-1">{{ cocktail.name }}</h3>
-            <p v-if="cocktail.glass_name" class="text-sm text-gray-500 flex items-center gap-1">
-              <i class="pi pi-box text-xs"></i> {{ cocktail.glass_name }}
-            </p>
-          </div>
+        <div class="p-4 text-center">
+          <h3 class="font-bold text-xl text-gray-800">{{ cocktail.name }}</h3>
 
-          <div class="mt-4 flex justify-end">
-            <span class="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded-md">
-              View Recipe
-            </span>
+          <div class="mt-2">
+            <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider"
+              >View Recipe</span
+            >
           </div>
         </div>
       </div>
     </div>
 
-    <div
-      v-if="!loading && queryResult.length === 0"
-      class="text-center py-20 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300"
-    >
-      <i class="pi pi-search text-4xl text-gray-400 mb-4"></i>
-      <p class="text-gray-500 text-lg">No cocktails found.</p>
-      <Button label="Create your first cocktail" link @click="$router.push('/cocktail/create')" />
+    <div v-if="!loading && queryResult.length === 0" class="text-center py-20 text-gray-400">
+      <p>No cocktails found. Click "Create Cocktail" to start mixing!</p>
     </div>
   </div>
 </template>
