@@ -102,3 +102,7 @@ npm run build
 ```sh
 npm run lint
 ```
+
+### Documentation
+
+http://localhost:5173/docs/index.html
