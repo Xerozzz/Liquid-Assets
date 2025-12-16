@@ -12,6 +12,7 @@ import { useNotificationStore } from '@/stores/notification.store'
 import IngredientDatatable from '../IngredientDatatable.vue'
 
 export default {
+  name: 'CocktailCreate',
   components: {
     IngredientDatatable,
   },
@@ -96,7 +97,7 @@ export default {
       }
 
       return {
-        values, // (Optional) Used to pass current form values to submit event.
+        values,
         errors,
       }
     },
@@ -121,7 +122,7 @@ export default {
     async insertIngredientData(rows) {
       try {
         let result = await createMultipleRecipeIngredient(rows)
-        this.destroy()
+        // Note: moved destroy() to unmounted or end of parent function to prevent premature closing
         return result
       } catch (error) {
         console.log(error)
@@ -131,7 +132,6 @@ export default {
     async insertHmIngredientData(rows) {
       try {
         let result = await createMultipleRecipeHmIngredient(rows)
-        this.destroy()
         return result
       } catch (error) {
         console.log(error)
@@ -139,8 +139,6 @@ export default {
     },
 
     async onFormSubmit({ valid, values }) {
-      // console.log(values)
-
       try {
         if (this.recipe_ingredients.length === 0 && this.recipe_hm_ingredients.length === 0) {
           valid = false
@@ -159,7 +157,7 @@ export default {
             values.notes,
             this.initialValues.image,
           )
-          this.destroy()
+
           if (recipe_id) {
             if (this.recipe_ingredients.length > 0) {
               let ingredients_data = this.recipe_ingredients.map(
@@ -170,8 +168,7 @@ export default {
                 }),
               )
 
-              let result = await this.insertIngredientData(ingredients_data)
-              console.log(result)
+              await this.insertIngredientData(ingredients_data)
             }
             if (this.recipe_hm_ingredients.length > 0) {
               let ingredients_data = this.recipe_hm_ingredients.map(
@@ -182,9 +179,9 @@ export default {
                 }),
               )
 
-              let result = await this.insertHmIngredientData(ingredients_data)
-              console.log(result)
+              await this.insertHmIngredientData(ingredients_data)
             }
+            this.destroy()
             this.$router.push('/cocktail')
           }
         }
@@ -208,149 +205,116 @@ export default {
 </script>
 
 <template>
-  <Form
-    v-slot="$form"
-    :initialValues
-    :resolver
-    @submit="onFormSubmit"
-    @keydown.enter="
-      ($event) => {
-        if ($event.target.tagName !== 'TEXTAREA') $event.preventDefault()
-      }
-    "
-    class="space-y-8 max-w-7xl mx-auto m-5"
-  >
-    <!-- Name input -->
-    <div>
-      <InputText
-        name="name"
-        type="text"
-        placeholder="Name"
-        fluid
-        class="w-full rounded-md border border-gray-300 p-2"
-      />
-      <Message
-        v-if="$form.name?.invalid"
-        severity="error"
-        size="small"
-        variant="simple"
-        class="mt-1 text-red-600"
-      >
-        {{ $form.name.error?.message }}
-      </Message>
-    </div>
+  <div class="max-w-5xl mx-auto py-10">
+    <h1 class="text-2xl font-bold mb-6 text-center">Create New Cocktail</h1>
 
-    <!-- Glass Select -->
-    <div>
-      <Select
-        name="glass"
-        :options="glassware"
-        optionLabel="name"
-        placeholder="Select Glass"
-        fluid
-        class="w-full rounded-md border border-gray-300"
-      />
-      <Message
-        v-if="$form.glass?.invalid"
-        severity="error"
-        size="small"
-        variant="simple"
-        class="mt-1 text-red-600"
-      >
-        {{ $form.glass.error?.message }}
-      </Message>
-    </div>
+    <Form
+      v-slot="$form"
+      :initialValues
+      :resolver
+      @submit="onFormSubmit"
+      @keydown.enter="
+        ($event) => {
+          if ($event.target.tagName !== 'TEXTAREA') $event.preventDefault()
+        }
+      "
+      class="space-y-6 bg-white p-8 rounded-lg shadow-md"
+    >
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="flex flex-col gap-1">
+          <label class="font-semibold">Name</label>
+          <InputText name="name" placeholder="e.g. Old Fashioned" fluid />
+          <Message v-if="$form.name?.invalid" severity="error" size="small" variant="simple">
+            {{ $form.name.error?.message }}
+          </Message>
+        </div>
 
-    <!-- Steps to Make textarea -->
-    <div>
-      <Textarea
-        style="white-space: pre;"
-        name="step_to_make"
-        placeholder="Steps to Make"
-        rows="10"
-        fluid
-        class="w-full rounded-md border border-gray-300 p-2 resize-y"
-      />
-      <Message
-        v-if="$form.step_to_make?.invalid"
-        severity="error"
-        size="small"
-        variant="simple"
-        class="mt-1 text-red-600"
-      >
-        {{ $form.step_to_make.error?.message }}
-      </Message>
-    </div>
+        <div class="flex flex-col gap-1">
+          <label class="font-semibold">Glass</label>
+          <Select
+            name="glass"
+            :options="glassware"
+            optionLabel="name"
+            placeholder="Select Glass"
+            fluid
+          />
+          <Message v-if="$form.glass?.invalid" severity="error" size="small" variant="simple">
+            {{ $form.glass.error?.message }}
+          </Message>
+        </div>
+      </div>
 
-    <!-- Garnish input -->
-    <div>
-      <InputText
-        name="garnish"
-        type="text"
-        placeholder="Garnish (Optional)"
-        fluid
-        class="w-full rounded-md border border-gray-300 p-2"
-      />
-    </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+        <div class="flex flex-col gap-1">
+          <label class="font-semibold">Garnish (Optional)</label>
+          <InputText name="garnish" placeholder="e.g. Orange Peel" fluid />
+        </div>
 
-    <!-- Notes textarea -->
-    <div>
-      <Textarea
-        name="notes"
-        placeholder="Notes (Optional)"
-        rows="2"
-        fluid
-        class="w-full rounded-md border border-gray-300 p-2 resize-y"
-      />
-    </div>
-
-    <Card>
-      <template #title>Image</template>
-      <template #content>
-        <!-- Image upload -->
-        <div>
+        <div class="flex flex-col gap-1">
+          <label class="font-semibold">Image</label>
           <FileUpload
-            v-model="$form.image"
+            mode="basic"
             name="image"
-            @select="onFileSelect"
-            :showUploadButton="false"
-            :showCancelButton="false"
-            :multiple="false"
-            :fileLimit="1"
             accept="image/*"
             :maxFileSize="1000000"
+            :auto="true"
+            customUpload
+            @select="onFileSelect"
+            chooseLabel="Upload Image"
             class="w-full"
-            :auto="false"
-          >
-            <template #empty>
-              <span
-                class="block p-4 border-2 border-dashed border-gray-300 rounded-md text-center text-gray-500 cursor-pointer hover:border-gray-400"
-              >
-                Drag and drop files here to upload.
-              </span>
-            </template>
-          </FileUpload>
+          />
+          <small v-if="initialValues.image" class="text-green-600">Image selected</small>
         </div>
-      </template>
-    </Card>
+      </div>
 
-    <IngredientDatatable
-      title="Ingredients"
-      :ingredients="ingredients"
-      :selectedIngredients="recipe_ingredients"
-      @selectedIngredients="handleRecipeIngredients"
-    />
+      <div class="flex flex-col gap-1">
+        <label class="font-semibold">Steps to Make</label>
+        <Textarea
+          style="white-space: pre"
+          name="step_to_make"
+          placeholder="1. Add ingredients..."
+          rows="6"
+          fluid
+          class="resize-y"
+        />
+        <Message v-if="$form.step_to_make?.invalid" severity="error" size="small" variant="simple">
+          {{ $form.step_to_make.error?.message }}
+        </Message>
+      </div>
 
-    <IngredientDatatable
-      title="Homemade Ingredients"
-      :ingredients="hm_ingredients"
-      :selectedIngredients="recipe_hm_ingredients"
-      @selectedIngredients="handleHmRecipeIngredients"
-    />
+      <div class="flex flex-col gap-1">
+        <label class="font-semibold">Notes (Optional)</label>
+        <Textarea
+          name="notes"
+          placeholder="History, flavor profile, etc."
+          rows="3"
+          fluid
+          class="resize-y"
+        />
+      </div>
 
-    <!-- Submit button -->
-    <div class="flex justify-center">
-      <Button type="submit" severity="secondary" label="Submit" class="w-48" />
-    </div>
-  </Form>
+      <hr class="border-gray-200" />
+
+      <div class="space-y-6">
+        <IngredientDatatable
+          title="Ingredients"
+          :ingredients="ingredients"
+          :selectedIngredients="recipe_ingredients"
+          @selectedIngredients="handleRecipeIngredients"
+        />
+
+        <IngredientDatatable
+          title="Homemade Ingredients"
+          :ingredients="hm_ingredients"
+          :selectedIngredients="recipe_hm_ingredients"
+          @selectedIngredients="handleHmRecipeIngredients"
+        />
+      </div>
+
+      <div class="flex justify-center gap-4 mt-8">
+        <Button label="Cancel" severity="secondary" @click="$router.push('/cocktail')" />
+        <Button type="submit" label="Create Cocktail" class="w-48" />
+      </div>
+    </Form>
+  </div>
 </template>

@@ -44,7 +44,9 @@ export default {
           garnish: r.garnish,
           notes: r.notes,
           image: r.image,
-          step_to_make: r.step_to_make ? r.step_to_make.split('\n') : [],
+          step_to_make: r.step_to_make
+            ? r.step_to_make.split('\n').filter((step) => step.trim() !== '')
+            : [],
         }
 
         // one flat list of items (you said mapping happens here, so keeping it)
@@ -135,14 +137,23 @@ export default {
 
       <div class="sectionbox">
         <h3>Steps to make:</h3>
-        <p v-for="(step_to_make, index) in cocktail.step_to_make" :key="index">
-          {{ step_to_make }}
+
+        <ol class="list-decimal list-inside space-y-2 mt-2 text-gray-800">
+          <li v-for="(step, index) in cocktail.step_to_make" :key="index">
+            {{ step }}
+          </li>
+        </ol>
+
+        <p v-if="cocktail.step_to_make.length === 0" class="text-gray-500 italic">
+          No instructions provided.
         </p>
       </div>
 
       <div class="sectionbox">
         <h3>Ingredients:</h3>
-        <p>Total Cost: ${{ totalCost.toFixed(2) }}</p>
+        <p>
+          Total Cost: <b>${{ totalCost.toFixed(2) }}</b>
+        </p>
         <table class="text-center">
           <thead>
             <tr>
