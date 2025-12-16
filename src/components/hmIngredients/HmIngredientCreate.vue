@@ -4,6 +4,7 @@ import { useNotificationStore } from '@/stores/notification.store'
 import { getIngredients } from '@/api/ingredients'
 import { createMultipleHmIngredientComponents } from '@/api/hm_ingredient_components'
 import { createHmIngredient } from '@/api/hm_ingredients'
+import { useImageStorage } from '@/composables/useImageStorage'
 
 import IngredientDatatable from '../IngredientDatatable.vue'
 
@@ -13,12 +14,14 @@ export default {
   setup() {
     const notification = useNotificationStore()
     const { destroy } = useSQLite()
-    return { notification, destroy }
+    const { saveImage } = useImageStorage()
+    return { notification, destroy, saveImage }
   },
   data() {
     return {
       ingredients: [],
       hmIngredientsComponents: [],
+      selectedFileRaw: null,
       initialValues: {
         name: '',
         cost: 0,
@@ -35,34 +38,28 @@ export default {
       try {
         this.ingredients = await getIngredients()
       } catch (error) {
-        console.log(error)
-        this.notification.notify({
-          message: `${error}`,
-          summary: 'Error',
-          severity: 'error',
-        })
+        console.error(error)
       }
     },
     async insertIngredientData(rows) {
       try {
         let result = await createMultipleHmIngredientComponents(rows)
-        this.destroy()
         return result
       } catch (error) {
-        console.log(error)
+        console.error(error)
       }
     },
     handleHmIngredientsComponents(data) {
       this.hmIngredientsComponents = data
     },
+
+    // --- UPDATED IMAGE HANDLING ---
     onFileSelect(event) {
       const file = event.files[0]
-      const reader = new FileReader()
-      reader.onload = async (e) => {
-        this.initialValues.image = e.target.result
-      }
-      reader.readAsDataURL(file)
+      this.selectedFileRaw = file
+      this.initialValues.image = URL.createObjectURL(file)
     },
+
     resolver: ({ values }) => {
       const errors = {}
       if (!values.name) errors.name = [{ message: 'Name is required.' }]
@@ -79,6 +76,7 @@ export default {
         }, 0) / hmYield
       )
     },
+
     async onFormSubmit({ valid, values }) {
       try {
         if (this.hmIngredientsComponents.length === 0) {
@@ -91,14 +89,21 @@ export default {
         }
 
         if (valid) {
+          // --- SAVE IMAGE TO STORAGE ---
+          let finalImageFilename = ''
+          if (this.selectedFileRaw) {
+            finalImageFilename = await this.saveImage(this.selectedFileRaw)
+          }
+
           let totalCost = this.calculateTotalCost(this.hmIngredientsComponents, values.yield)
+
           let hmIngredientId = await createHmIngredient(
             values.name,
             totalCost.toFixed(2),
             values.notes,
             values.unit,
             values.yield,
-            this.initialValues.image,
+            finalImageFilename,
             values.is_stocked ? 1 : 0,
           )
 
@@ -114,6 +119,7 @@ export default {
               await this.insertIngredientData(ingredients_data)
             }
           }
+          this.destroy()
           this.$router.push('/hm')
         }
       } catch (error) {
@@ -182,14 +188,17 @@ export default {
             mode="basic"
             name="image"
             accept="image/*"
-            :maxFileSize="1000000"
+            :maxFileSize="5000000"
             :auto="true"
             customUpload
             @select="onFileSelect"
             chooseLabel="Upload Image"
             class="w-full"
           />
-          <small v-if="initialValues.image" class="text-green-600">Image selected</small>
+          <div v-if="initialValues.image" class="mt-2 text-center">
+            <img :src="initialValues.image" class="h-32 object-contain mx-auto rounded border" />
+            <small class="text-green-600 block">Image selected</small>
+          </div>
         </div>
       </div>
 

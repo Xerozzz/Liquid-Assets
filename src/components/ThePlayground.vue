@@ -9,7 +9,7 @@ const {
   executeQuery,
   initialize,
   setIsInitialized,
-  resetDatabase: hardResetDatabase, // <-- new: import the hard reset
+  resetDatabase: hardResetDatabase,
 } = useSQLite()
 
 const sqlQuery = ref('SELECT * FROM glassware')
@@ -69,43 +69,40 @@ async function resetToSeed() {
   queryResult.value = []
   try {
     await hardResetDatabase()
-    // Optional: show a toast/alert for dev UX
     alert('Database reset to seed state (OPFS wiped & re-initialized).')
-    // Optionally re-run the current query to show fresh data
     await runQuery()
   } catch (err) {
     queryError.value = err instanceof Error ? err.message : 'An error occurred'
   }
 }
 
-// Optional: auto-init on mount so the playground is ready
 onMounted(async () => {
   try {
     await initialize()
     await runQuery()
   } catch (e) {
-    // shown below in the error panel
+    console.error('Initialization error:', e)
   }
 })
 </script>
 
 <template>
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-    <h2 class="text-2xl font-bold text-gray-900 dark:text-white">SQLite Playground</h2>
+    <h2 class="text-2xl font-bold text-black-900">SQLite Playground</h2>
 
     <div class="mt-4 space-y-2">
-      <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Example Queries:</h3>
+      <h3 class="text-sm font-medium text-black-700 dark:text-black-300">Example Queries:</h3>
       <div class="flex flex-wrap gap-2">
         <button
           v-for="example in queries"
           :key="example.title"
-          class="px-3 py-1 text-sm rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors duration-200"
+          class="px-3 py-1 text-sm rounded-full bg-black-100 hover:bg-black-200 dark:bg-black-800 dark:hover:bg-black-700 text-black-700 dark:text-black-300 transition-colors duration-200"
           @click="((sqlQuery = example.query), (sqlTable = example.title))"
         >
           {{ example.title }}
         </button>
       </div>
-      <p class="text-sm text-gray-600 dark:text-gray-400">
+      <p class="text-sm text-gray-600">
         The test_table has columns:<br />
         - id (INTEGER PRIMARY KEY AUTOINCREMENT)<br />
         - name (TEXT NOT NULL)<br />
@@ -125,26 +122,24 @@ onMounted(async () => {
         <div class="flex flex-wrap gap-2">
           <button
             :disabled="isLoading"
-            class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 transition-colors duration-200"
+            class="px-4 py-2 rounded-lg text-sm font-medium text-black bg-green-600 hover:bg-green-700 disabled:bg-gray-400 transition-colors duration-200"
             @click="runQuery"
           >
             {{ isLoading ? 'Running...' : 'Run Query' }}
           </button>
 
-          <!-- Hard reset (recommended) -->
           <button
             :disabled="isLoading"
-            class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:bg-gray-400 transition-colors duration-200"
+            class="px-4 py-2 rounded-lg text-sm font-medium text-black bg-red-600 hover:bg-red-700 disabled:bg-gray-400 transition-colors duration-200"
             @click="resetToSeed"
             title="Delete OPFS DB files and reseed from dumps.js"
           >
             {{ isLoading ? 'Running...' : 'Reset DB to Seed' }}
           </button>
 
-          <!-- Optional: Soft reset button -->
           <button
             :disabled="isLoading"
-            class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400 transition-colors duration-200"
+            class="px-4 py-2 rounded-lg text-sm font-medium text-black bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400 transition-colors duration-200"
             @click="softResetDatabase"
             title="Drop all tables via SQL and re-initialize"
           >
@@ -161,7 +156,7 @@ onMounted(async () => {
       </div>
 
       <div v-if="queryResult.length" class="space-y-2">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Results:</h3>
+        <h3 class="text-lg font-semibold text-black-900">Results:</h3>
         <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
           <table class="w-full">
             <thead class="bg-gray-50 dark:bg-gray-800">
@@ -169,17 +164,17 @@ onMounted(async () => {
                 <th
                   v-for="column in Object.keys(queryResult[0])"
                   :key="column"
-                  class="px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-200 border-b border-gray-200"
+                  class="px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700"
                 >
                   {{ column }}
                 </th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200">
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
               <tr
                 v-for="(row, index) in queryResult"
                 :key="index"
-                class="bg-white dark:bg-gray-900 hover:bg-gray-50 transition-colors duration-150"
+                class="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-150"
               >
                 <td
                   v-for="column in Object.keys(row)"
@@ -194,9 +189,7 @@ onMounted(async () => {
         </div>
       </div>
 
-      <div v-else class="text-sm text-gray-500 dark:text-gray-400">
-        No rows yet — run a query to see results.
-      </div>
+      <div v-else class="text-sm text-black">No rows yet — run a query to see results.</div>
     </div>
   </div>
 </template>

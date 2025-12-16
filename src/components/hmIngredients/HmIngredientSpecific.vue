@@ -1,8 +1,8 @@
 <script>
 import { useSQLite } from '@/composables/useSQLite'
 import { useNotificationStore } from '@/stores/notification.store'
+import { useImageStorage } from '@/composables/useImageStorage'
 
-// Import specific fetchers to avoid join errors
 import { getHmIngredientById, deleteHmIngredient } from '@/api/hm_ingredients'
 import { getHmIngredientComponentByHmIngredientId } from '@/api/hm_ingredient_components'
 
@@ -14,12 +14,14 @@ export default {
   setup() {
     const notification = useNotificationStore()
     const { destroy } = useSQLite()
-    return { notification, destroy }
+    const { getImageUrl } = useImageStorage()
+    return { notification, destroy, getImageUrl }
   },
   data() {
     return {
       loading: true,
       hmIngredient: null,
+      displayImageUrl: null,
       error: null,
       ingredients: [],
       totalCost: 0,
@@ -30,7 +32,6 @@ export default {
       try {
         const id = this.$route.params.id
 
-        // 1. Fetch Main Ingredient Details
         const mainData = await getHmIngredientById(id)
 
         if (!mainData) {
@@ -49,7 +50,16 @@ export default {
           is_stocked: mainData.is_stocked === 1 || mainData.is_stocked === true,
         }
 
-        // 2. Fetch Components List
+        // --- IMAGE RESOLUTION LOGIC ---
+        if (this.hmIngredient.image) {
+          if (this.hmIngredient.image.startsWith('data:')) {
+            this.displayImageUrl = this.hmIngredient.image
+          } else {
+            this.displayImageUrl = await this.getImageUrl(this.hmIngredient.image)
+          }
+        }
+
+        // Fetch Components List
         const componentsData = await getHmIngredientComponentByHmIngredientId(id)
 
         if (Array.isArray(componentsData)) {
@@ -62,6 +72,7 @@ export default {
             is_stocked: row.is_stocked || false,
           }))
 
+          // Calculate Total Cost of the batch components
           this.totalCost = this.ingredients.reduce(
             (sum, item) => sum + item.cost * item.quantity,
             0,
@@ -136,11 +147,12 @@ export default {
     <div class="grid grid-cols-3 gap-11">
       <div class="sectionbox">
         <h2 class="title">{{ hmIngredient.name }}</h2>
+
         <img
+          v-if="displayImageUrl"
           class="w-80 h-auto rounded shadow-sm mb-4"
-          :src="hmIngredient.image"
+          :src="displayImageUrl"
           alt="Item Image"
-          v-if="hmIngredient.image"
         />
 
         <h3>Yield:</h3>
@@ -150,13 +162,15 @@ export default {
         <p>${{ hmIngredient.cost.toFixed(2) }}</p>
 
         <h3>Status:</h3>
-
         <div class="mt-1">
-          <span v-if="hmIngredient.is_stocked" class="font-bold text-green-700">
-            <i class="pi pi-check"></i> In Stock
+          <span
+            v-if="hmIngredient.is_stocked"
+            class="px-2 py-1 rounded-md bg-green-100 text-green-700 font-bold text-xs"
+          >
+            In Stock
           </span>
-          <span v-else class="font-bold text-red-700">
-            <i class="pi pi-times"></i> Out of Stock
+          <span v-else class="px-2 py-1 rounded-md bg-red-100 text-red-700 font-bold text-xs">
+            Out
           </span>
         </div>
       </div>
@@ -177,6 +191,7 @@ export default {
               <th>Ingredient</th>
               <th>Qty</th>
               <th>Cost</th>
+              <th>Stock</th>
             </tr>
           </thead>
           <tbody>
@@ -184,6 +199,17 @@ export default {
               <td>{{ item.name }}</td>
               <td>{{ item.quantity }} {{ item.unit }}</td>
               <td>${{ Number(item.cost).toFixed(2) }}</td>
+              <td>
+                <span
+                  v-if="item.is_stocked"
+                  class="px-2 py-1 rounded-md bg-green-100 text-green-700 font-bold text-xs"
+                >
+                  In
+                </span>
+                <span v-else class="px-2 py-1 rounded-md bg-red-100 text-red-700 font-bold text-xs">
+                  Out
+                </span>
+              </td>
             </tr>
           </tbody>
         </table>

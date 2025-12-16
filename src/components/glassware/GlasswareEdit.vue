@@ -13,11 +13,11 @@ export default {
   data() {
     return {
       glassId: null,
-      initialValues: {
+      formValues: {
         brand: '',
         model: '',
-        volume: null,
-        volume_fill: null,
+        volume: '',
+        volume_fill: '',
       },
       isLoading: true,
     }
@@ -25,11 +25,10 @@ export default {
   methods: {
     async loadData() {
       try {
-        // FIX: API now returns the object directly, not an array
         const data = await getGlasswareById(this.glassId)
 
         if (data) {
-          this.initialValues = {
+          this.formValues = {
             brand: data.brand,
             model: data.model,
             volume: data.volume,
@@ -49,11 +48,24 @@ export default {
         this.isLoading = false
       }
     },
+
+    /** * VALIDATION LOGIC */
     resolver: ({ values }) => {
       const errors = {}
+
       if (!values.brand) errors.brand = [{ message: 'Brand is required.' }]
       if (!values.model) errors.model = [{ message: 'Model is required.' }]
-      if (!values.volume) errors.volume = [{ message: 'Volume is required.' }]
+      if (!values.volume) errors.volume = [{ message: 'Total volume is required.' }]
+
+      // Check if Fill Volume is empty
+      if (!values.volume_fill) {
+        errors.volume_fill = [{ message: 'Fill volume is required.' }]
+      }
+      // Check if Fill Volume > Total Volume
+      else if (Number(values.volume_fill) > Number(values.volume)) {
+        errors.volume_fill = [{ message: 'Fill volume cannot exceed Total Volume.' }]
+      }
+
       return { values, errors }
     },
     async onFormSubmit({ valid, values }) {
@@ -62,8 +74,8 @@ export default {
           await updateGlassware(
             values.brand,
             values.model,
-            values.volume,
-            values.volume_fill,
+            Number(values.volume),
+            Number(values.volume_fill),
             this.glassId,
           )
           this.notification.notify({ message: 'Updated successfully', severity: 'success' })
@@ -93,7 +105,7 @@ export default {
 
     <Form
       v-slot="$form"
-      :initialValues="initialValues"
+      :initialValues="formValues"
       :resolver="resolver"
       @submit="onFormSubmit"
       class="space-y-6 bg-white p-8 rounded-lg shadow-md"
@@ -117,15 +129,19 @@ export default {
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="flex flex-col gap-1">
-          <label class="font-semibold">Total Volume</label>
-          <InputNumber name="volume" fluid :min="0" />
+          <label class="font-semibold">Total Volume (ml)</label>
+          <InputText name="volume" type="number" step="0.01" fluid />
           <Message v-if="$form.volume?.invalid" severity="error" size="small" variant="simple">
             {{ $form.volume.error?.message }}
           </Message>
         </div>
+
         <div class="flex flex-col gap-1">
           <label class="font-semibold">Fill Volume (with Ice)</label>
-          <InputNumber name="volume_fill" fluid :min="0" />
+          <InputText name="volume_fill" type="number" step="0.01" fluid />
+          <Message v-if="$form.volume_fill?.invalid" severity="error" size="small" variant="simple">
+            {{ $form.volume_fill.error?.message }}
+          </Message>
         </div>
       </div>
 

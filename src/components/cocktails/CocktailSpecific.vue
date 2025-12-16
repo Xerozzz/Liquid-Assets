@@ -1,9 +1,8 @@
 <script>
 import { deleteCocktail, getCocktailById } from '@/api/cocktail.js'
-
 import { useSQLite } from '@/composables/useSQLite'
 import { useNotificationStore } from '@/stores/notification.store'
-
+import { useImageStorage } from '@/composables/useImageStorage'
 import DeleteDialog from '../DeleteDialog.vue'
 import { deleteRecipeHmIngredientByRecipeId } from '@/api/recipe_hm_ingredient'
 import { deleteRecipeIngredientByRecipeId } from '@/api/recipe_ingredient'
@@ -14,12 +13,14 @@ export default {
   setup() {
     const notification = useNotificationStore()
     const { destroy } = useSQLite()
-    return { notification, destroy }
+    const { getImageUrl } = useImageStorage()
+    return { notification, destroy, getImageUrl }
   },
   data() {
     return {
       loading: true,
       cocktail: null,
+      displayImageUrl: null,
       error: null,
       ingredients: [],
       totalCost: 0,
@@ -29,14 +30,13 @@ export default {
     async fetchCocktail() {
       try {
         const cocktailId = this.$route.params.id
-        const rows = await getCocktailById(cocktailId) // returns rows from your query
+        const rows = await getCocktailById(cocktailId)
 
         if (!rows || rows.length === 0) {
           this.error = new Error('Cocktail not found')
           return
         }
 
-        // recipe-level info is identical on every row
         const r = rows[0]
         this.cocktail = {
           name: r.recipe_name,
@@ -49,15 +49,18 @@ export default {
             : [],
         }
 
-        // one flat list of items (you said mapping happens here, so keeping it)
+        if (this.cocktail.image) {
+          this.displayImageUrl = await this.getImageUrl(this.cocktail.image)
+        }
+
         const items = rows.map((row) => ({
-          kind: row.kind, // 'ingredient' | 'hm'
+          kind: row.kind,
           id: row.item_id,
           name: row.item_name,
           quantity: row.item_quantity,
           unit: row.item_unit ?? null,
           cost: Number(row.item_quantity) * Number(row.item_cost || 0),
-          stock: row.item_stock ? '✅' : '❌',
+          stock: !!row.item_stock,
         }))
 
         this.ingredients = items
@@ -121,10 +124,18 @@ export default {
       Edit
     </button>
     <button class="nav_button" @click="confirmDelete">Delete</button>
+
     <div class="grid grid-cols-3 gap-11">
       <div class="sectionbox">
         <h2 class="title">{{ cocktail.name }}</h2>
-        <img class="w-80 h-auto" :src="cocktail.image" alt="Cocktail Image" v-if="cocktail.image" />
+
+        <img
+          v-if="displayImageUrl"
+          :src="displayImageUrl"
+          alt="Cocktail Image"
+          class="w-80 h-auto rounded shadow-sm mb-4"
+        />
+
         <h3>Glass:</h3>
         <p>{{ cocktail.glass }}</p>
         <h3>Garnish:</h3>
@@ -137,13 +148,11 @@ export default {
 
       <div class="sectionbox">
         <h3>Steps to make:</h3>
-
         <ol class="list-decimal list-inside space-y-2 mt-2 text-gray-800">
           <li v-for="(step, index) in cocktail.step_to_make" :key="index">
             {{ step }}
           </li>
         </ol>
-
         <p v-if="cocktail.step_to_make.length === 0" class="text-gray-500 italic">
           No instructions provided.
         </p>
@@ -154,7 +163,7 @@ export default {
         <p>
           Total Cost: <b>${{ totalCost.toFixed(2) }}</b>
         </p>
-        <table class="text-center">
+        <table class="text-center w-full">
           <thead>
             <tr>
               <th>Ingredient</th>
@@ -170,7 +179,18 @@ export default {
                 {{ item.quantity }} <span v-if="item.unit">{{ item.unit }}</span>
               </td>
               <td>${{ Number(item.cost).toFixed(2) }}</td>
-              <td>{{ item.stock }}</td>
+
+              <td>
+                <span
+                  v-if="item.stock"
+                  class="px-2 py-1 rounded-md bg-green-100 text-green-700 font-bold text-xs"
+                >
+                  In Stock
+                </span>
+                <span v-else class="px-2 py-1 rounded-md bg-red-100 text-red-700 font-bold text-xs">
+                  Out
+                </span>
+              </td>
             </tr>
           </tbody>
         </table>

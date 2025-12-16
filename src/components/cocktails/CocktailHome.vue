@@ -2,13 +2,15 @@
 import { getCocktail } from '@/api/cocktail.js'
 import { useSQLite } from '@/composables/useSQLite'
 import { useNotificationStore } from '@/stores/notification.store'
+import { useImageStorage } from '@/composables/useImageStorage'
 
 export default {
   name: 'CocktailHome',
   setup() {
     const notification = useNotificationStore()
     const { destroy } = useSQLite()
-    return { notification, destroy }
+    const { getImageUrl } = useImageStorage()
+    return { notification, destroy, getImageUrl }
   },
   data() {
     return {
@@ -21,7 +23,22 @@ export default {
     async retrieveCocktails() {
       try {
         this.loading = true
-        this.queryResult = await getCocktail()
+        const rawData = await getCocktail()
+
+        // --- Process Images for the List ---
+        // Map over the results and resolve the URL for each one
+        this.queryResult = await Promise.all(
+          rawData.map(async (cocktail) => {
+            let resolvedUrl = null
+            if (cocktail.image) {
+              resolvedUrl = await this.getImageUrl(cocktail.image)
+            }
+            return {
+              ...cocktail,
+              displayImageUrl: resolvedUrl, 
+            }
+          }),
+        )
       } catch (error) {
         this.queryError = error
         this.notification.notify({
@@ -64,8 +81,8 @@ export default {
       >
         <div class="h-48 w-full bg-gray-50 relative border-b border-gray-100">
           <img
-            v-if="cocktail.image"
-            :src="cocktail.image"
+            v-if="cocktail.displayImageUrl"
+            :src="cocktail.displayImageUrl"
             :alt="cocktail.name"
             class="w-full h-full object-cover"
           />
@@ -76,12 +93,6 @@ export default {
 
         <div class="p-4 text-center">
           <h3 class="font-bold text-xl text-gray-800">{{ cocktail.name }}</h3>
-
-          <div class="mt-2">
-            <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider"
-              >View Recipe</span
-            >
-          </div>
         </div>
       </div>
     </div>

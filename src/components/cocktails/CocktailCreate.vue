@@ -8,6 +8,7 @@ import { createMultipleRecipeHmIngredient } from '@/api/recipe_hm_ingredient'
 
 import { useSQLite } from '@/composables/useSQLite'
 import { useNotificationStore } from '@/stores/notification.store'
+import { useImageStorage } from '@/composables/useImageStorage'
 
 import IngredientDatatable from '../IngredientDatatable.vue'
 
@@ -19,7 +20,8 @@ export default {
   setup() {
     const notification = useNotificationStore()
     const { destroy } = useSQLite()
-    return { notification, destroy }
+    const { saveImage } = useImageStorage()
+    return { notification, destroy, saveImage }
   },
   data() {
     return {
@@ -28,6 +30,7 @@ export default {
       glassware: [],
       recipe_ingredients: [],
       recipe_hm_ingredients: [],
+      selectedFileRaw: null,
       initialValues: {
         name: '',
         glass: '',
@@ -48,58 +51,30 @@ export default {
       try {
         this.ingredients = await getIngredients()
       } catch (error) {
-        console.log(error)
-        this.notification.notify({
-          message: `${error}`,
-          summary: 'Error',
-          severity: 'error',
-        })
+        console.error(error)
       }
     },
     async getHmIngredientData() {
       try {
         this.hm_ingredients = await getHmIngredient()
       } catch (error) {
-        console.log(error)
-        this.notification.notify({
-          message: `${error}`,
-          summary: 'Error',
-          severity: 'error',
-        })
+        console.error(error)
       }
     },
     async getGlasswareData() {
       try {
         this.glassware = await getGlassware()
       } catch (error) {
-        console.log(error)
-        this.notification.notify({
-          message: `${error}`,
-          summary: 'Error',
-          severity: 'error',
-        })
+        console.error(error)
       }
     },
-    /** This is for validating form data */
+
     resolver: ({ values }) => {
       const errors = {}
-
-      if (!values.name) {
-        errors.name = [{ message: 'Name is required.' }]
-      }
-
-      if (!values.glass) {
-        errors.glass = [{ message: 'Glass is required.' }]
-      }
-
-      if (!values.step_to_make) {
-        errors.step_to_make = [{ message: 'Steps to make is required' }]
-      }
-
-      return {
-        values,
-        errors,
-      }
+      if (!values.name) errors.name = [{ message: 'Name is required.' }]
+      if (!values.glass) errors.glass = [{ message: 'Glass is required.' }]
+      if (!values.step_to_make) errors.step_to_make = [{ message: 'Steps to make is required' }]
+      return { values, errors }
     },
 
     handleRecipeIngredients(data) {
@@ -108,34 +83,20 @@ export default {
     handleHmRecipeIngredients(data) {
       this.recipe_hm_ingredients = data
     },
+
     onFileSelect(event) {
       const file = event.files[0]
-      const reader = new FileReader()
+      this.selectedFileRaw = file
 
-      reader.onload = async (e) => {
-        this.initialValues.image = e.target.result
-      }
 
-      reader.readAsDataURL(file)
+      this.initialValues.image = URL.createObjectURL(file)
     },
 
     async insertIngredientData(rows) {
-      try {
-        let result = await createMultipleRecipeIngredient(rows)
-        // Note: moved destroy() to unmounted or end of parent function to prevent premature closing
-        return result
-      } catch (error) {
-        console.log(error)
-      }
+      return await createMultipleRecipeIngredient(rows)
     },
-
     async insertHmIngredientData(rows) {
-      try {
-        let result = await createMultipleRecipeHmIngredient(rows)
-        return result
-      } catch (error) {
-        console.log(error)
-      }
+      return await createMultipleRecipeHmIngredient(rows)
     },
 
     async onFormSubmit({ valid, values }) {
@@ -148,14 +109,23 @@ export default {
             severity: 'error',
           })
         }
+
         if (valid) {
+          let finalImageFilename = ''
+
+          if (this.selectedFileRaw) {
+            console.log('Saving image to storage...')
+            finalImageFilename = await this.saveImage(this.selectedFileRaw)
+            console.log('Saved as:', finalImageFilename)
+          }
+
           let recipe_id = await createCocktail(
             values.name,
             values.glass.glass_id,
             values.step_to_make,
             values.garnish,
             values.notes,
-            this.initialValues.image,
+            finalImageFilename,
           )
 
           if (recipe_id) {
@@ -167,7 +137,6 @@ export default {
                   selected_quantity,
                 }),
               )
-
               await this.insertIngredientData(ingredients_data)
             }
             if (this.recipe_hm_ingredients.length > 0) {
@@ -178,7 +147,6 @@ export default {
                   selected_quantity,
                 }),
               )
-
               await this.insertHmIngredientData(ingredients_data)
             }
             this.destroy()
@@ -256,14 +224,17 @@ export default {
             mode="basic"
             name="image"
             accept="image/*"
-            :maxFileSize="1000000"
+            :maxFileSize="5000000"
             :auto="true"
             customUpload
             @select="onFileSelect"
             chooseLabel="Upload Image"
             class="w-full"
           />
-          <small v-if="initialValues.image" class="text-green-600">Image selected</small>
+          <div v-if="initialValues.image" class="mt-2 text-center">
+            <img :src="initialValues.image" class="h-32 object-contain mx-auto rounded border" />
+            <small class="text-green-600 block">Image selected</small>
+          </div>
         </div>
       </div>
 
