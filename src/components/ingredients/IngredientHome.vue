@@ -1,5 +1,5 @@
 <script>
-import { getIngredients } from '@/api/ingredients.js'
+import { getIngredients, createMultipleIngredients } from '@/api/ingredients.js'
 import { useSQLite } from '@/composables/useSQLite'
 import { useNotificationStore } from '@/stores/notification.store'
 
@@ -14,6 +14,10 @@ export default {
     return {
       loading: true,
       queryResult: [],
+      // Import State
+      showImportDialog: false,
+      parsedIngredients: [],
+      isImporting: false,
     }
   },
   methods: {
@@ -30,6 +34,121 @@ export default {
         this.loading = false
       }
     },
+
+    // --- CSV Parsing Logic ---
+    onFileSelect(event) {
+      const file = event.files[0]
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        this.parseCSV(e.target.result)
+      }
+      reader.readAsText(file)
+    },
+
+    parseNumber(value) {
+      if (!value) return 0
+      // Remove '$' and ',' then parse
+      const cleanValue = value.replace(/[$,]/g, '')
+      const num = parseFloat(cleanValue)
+      return isNaN(num) ? 0 : num
+    },
+
+    parseCSV(csvText) {
+      try {
+        const lines = csvText.split(/\r\n|\n/)
+        if (lines.length === 0) return
+
+        // Clean headers
+        const headers = lines[0].split(',').map((h) =>
+          h
+            .replace(/^\uFEFF/, '')
+            .trim()
+            .toLowerCase(),
+        )
+
+        const nameIndex = headers.findIndex((h) => h === 'item')
+        const costPerMlIndex = headers.findIndex((h) => h === '$/ml')
+        const costIndex = headers.findIndex((h) => h === 'cost')
+        const sizeIndex = headers.findIndex((h) => h === 'size')
+        const unitIndex = headers.findIndex((h) => h === 'unit')
+
+        if (nameIndex === -1) {
+          this.notification.notify({ message: 'CSV must have an "Item" column', severity: 'error' })
+          return
+        }
+
+        const data = []
+
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim()
+          if (!line) continue
+
+          // Handle simple CSV splitting (doesn't handle commas inside quotes)
+          const cols = line.split(',')
+          const name = cols[nameIndex]?.trim()
+
+          let unitCost = 0
+
+          // Use explicit $/ml column
+          if (costPerMlIndex !== -1 && cols[costPerMlIndex]) {
+            unitCost = this.parseNumber(cols[costPerMlIndex])
+          }
+          // Calculate from Cost / Size
+          else if (costIndex !== -1 && sizeIndex !== -1) {
+            const total = this.parseNumber(cols[costIndex])
+            const size = this.parseNumber(cols[sizeIndex])
+            if (size > 0) unitCost = total / size
+          }
+
+          // Determine Unit, otherwise default to 'ml'
+          const unit = unitIndex !== -1 && cols[unitIndex] ? cols[unitIndex].trim() : 'ml'
+          if (name) {
+            data.push({
+              name: name,
+              cost: Number(unitCost.toFixed(2)),
+              unit: unit,
+              is_stocked: true,
+            })
+          }
+        }
+
+        if (data.length > 0) {
+          this.parsedIngredients = data
+          this.showImportDialog = true
+        } else {
+          this.notification.notify({
+            message: 'No valid ingredients found in file',
+            severity: 'warn',
+          })
+        }
+      } catch (error) {
+        console.error(error)
+        this.notification.notify({ message: 'Failed to parse CSV', severity: 'error' })
+      }
+    },
+
+    async confirmImport() {
+      this.isImporting = true
+      try {
+        await createMultipleIngredients(this.parsedIngredients)
+        this.notification.notify({
+          message: `Successfully imported ${this.parsedIngredients.length} ingredients`,
+          severity: 'success',
+        })
+        this.showImportDialog = false
+        this.parsedIngredients = []
+        await this.retrieveIngredients()
+      } catch (error) {
+        console.error(error)
+        this.notification.notify({ message: 'Import failed', severity: 'error' })
+      } finally {
+        this.isImporting = false
+      }
+    },
+
+    formatCurrency(value) {
+      return `$${Number(value).toFixed(2)}`
+    },
   },
   mounted() {
     this.retrieveIngredients()
@@ -42,9 +161,25 @@ export default {
 
 <template>
   <div class="bodysection">
-    <div class="flex gap-2 mb-2">
+    <!-- Header Controls -->
+    <div class="flex flex-wrap gap-2 mb-2 items-center">
       <button class="nav_button" @click="$router.push('/')">Back</button>
       <button class="nav_button" @click="$router.push('/ingredient/create')">Add Ingredient</button>
+
+      <!-- Import Button -->
+      <div class="ml-auto justify-end">
+        <FileUpload
+          mode="basic"
+          name="csv"
+          accept=".csv"
+          :maxFileSize="1000000"
+          :auto="true"
+          customUpload
+          @select="onFileSelect"
+          chooseLabel="Import CSV"
+          class="p-button-sm"
+        />
+      </div>
     </div>
 
     <h1 class="title mt-0 mb-6">Pantry & Ingredients</h1>
@@ -53,6 +188,7 @@ export default {
       <ProgressSpinner />
     </div>
 
+    <!-- Ingredient Grid -->
     <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       <div
         v-for="ing in queryResult"
@@ -89,8 +225,87 @@ export default {
       </div>
     </div>
 
+    <!-- Empty State -->
     <div v-if="!loading && queryResult.length === 0" class="text-center py-20 text-gray-400">
-      <p>No ingredients found. Click "Add Ingredient" to start.</p>
+      <p>No ingredients found. Click "Add Ingredient" or "Import CSV" to start.</p>
     </div>
+
+    <!-- Import Preview Dialog -->
+    <Dialog
+      v-model:visible="showImportDialog"
+      modal
+      header="Review Import"
+      :style="{ width: '80vw', maxWidth: '900px' }"
+    >
+      <p class="mb-4 text-gray-600">
+        Review the data below. You can click on <b>Cost</b> or <b>Unit</b> to edit them before
+        importing.
+      </p>
+
+      <DataTable
+        :value="parsedIngredients"
+        scrollable
+        scrollHeight="400px"
+        editMode="cell"
+        @cell-edit-complete="
+          (e) => {
+            parsedIngredients[e.index][e.field] = e.newValue
+          }
+        "
+        tableClass="editable-cells-table"
+        stripedRows
+        showGridlines
+      >
+        <Column field="name" header="Name"></Column>
+
+        <Column field="cost" header="Cost">
+          <template #body="{ data }">
+            {{ formatCurrency(data.cost) }}
+          </template>
+          <template #editor="{ data, field }">
+            <InputNumber
+              v-model="data[field]"
+              :minFractionDigits="4"
+              :maxFractionDigits="6"
+              fluid
+            />
+          </template>
+        </Column>
+
+        <Column field="unit" header="Unit (Edit)">
+          <template #body="{ data }">
+            <span class="text-blue-600 font-bold">{{ data.unit }}</span>
+          </template>
+          <template #editor="{ data, field }">
+            <InputText v-model="data[field]" fluid />
+          </template>
+        </Column>
+
+        <Column field="is_stocked" header="Stocked">
+          <template #body="{ data }">
+            <Checkbox v-model="data.is_stocked" :binary="true" />
+          </template>
+        </Column>
+      </DataTable>
+
+      <template #footer>
+        <Button label="Cancel" icon="pi pi-times" text @click="showImportDialog = false" />
+        <Button
+          label="Confirm Import"
+          icon="pi pi-check"
+          @click="confirmImport"
+          :loading="isImporting"
+          autofocus
+        />
+      </template>
+    </Dialog>
   </div>
 </template>
+
+<style scoped>
+/* Highlight editable cells */
+:deep(.editable-cells-table .p-editable-column:hover) {
+  background-color: #eff6ff;
+  cursor: pointer;
+}
+</style>
