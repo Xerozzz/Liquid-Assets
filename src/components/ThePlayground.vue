@@ -99,7 +99,6 @@ async function clearDatabase() {
     await executeQuery(dynamicQuery)
 
     alert(`Successfully cleared data from ${tables.length} tables.`)
-
     // Refresh the view
     await runQuery()
   } catch (err) {

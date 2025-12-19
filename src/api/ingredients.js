@@ -61,3 +61,25 @@ export const deleteIngredient = async (ingredient_id) => {
     throw rawErr
   }
 }
+
+export const createMultipleIngredients = async (rows) => {
+  try {
+    if (!rows || rows.length === 0) return
+
+    // Create placeholders: (?,?,?,?), (?,?,?,?)...
+    const placeholders = rows.map(() => '(?, ?, ?, ?)').join(',')
+
+    // Flatten data: name, unit, cost, is_stocked
+    // IMPORTANT: Ensure the order matches the INSERT statement below
+    const flatValues = rows.flatMap((r) => [r.name, r.unit, r.cost, r.is_stocked ? 1 : 0])
+
+    const query = `INSERT INTO ingredients (name, unit, cost, is_stocked) VALUES ${placeholders};`
+
+    let result = await executeQuery(query, flatValues)
+    destroy()
+    return result
+  } catch (error) {
+    console.log(error)
+    return error
+  }
+}
