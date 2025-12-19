@@ -60,6 +60,53 @@ async function softResetDatabase() {
   }
 }
 
+/** Clear database:
+ * Drops all data in SQL
+ */
+async function clearDatabase() {
+  if (
+    !confirm('Are you sure you want to DELETE ALL DATA from ALL TABLES? This cannot be undone.')
+  ) {
+    return
+  }
+
+  queryError.value = null
+  queryResult.value = []
+
+  try {
+    // Get list of all user tables (excluding sqlite internal tables)
+    const tablesQuery = `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';`
+    const result = await executeQuery(tablesQuery)
+    const tables = result?.result?.resultRows || []
+
+    // If no tables found
+    if (tables.length === 0) {
+      alert('No tables found to clear.')
+      return
+    }
+
+    // Construct the dynamic DELETE script
+    let dynamicQuery = 'PRAGMA foreign_keys = OFF;\n'
+
+    tables.forEach((table) => {
+      // Use quotes around table names to handle any special characters/spaces
+      dynamicQuery += `DELETE FROM "${table.name}";\n`
+    })
+
+    dynamicQuery += 'PRAGMA foreign_keys = ON;'
+
+    // Execute mass delete
+    await executeQuery(dynamicQuery)
+
+    alert(`Successfully cleared data from ${tables.length} tables.`)
+
+    // Refresh the view
+    await runQuery()
+  } catch (err) {
+    queryError.value = err instanceof Error ? err.message : 'An error occurred'
+  }
+}
+
 /** Hard reset (recommended):
  * Deletes the OPFS db files and re-seeds from dumps.js.
  * Uses the new composable method.
@@ -144,6 +191,15 @@ onMounted(async () => {
             title="Drop all tables via SQL and re-initialize"
           >
             {{ isLoading ? 'Running...' : 'Soft Reset (drop schema)' }}
+          </button>
+
+          <button
+            :disabled="isLoading"
+            class="px-4 py-2 rounded-lg text-sm font-medium text-black bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400 transition-colors duration-200"
+            @click="clearDatabase"
+            title="Drop all tables data and clear db"
+          >
+            {{ isLoading ? 'Running...' : 'Clear DB' }}
           </button>
         </div>
       </div>
