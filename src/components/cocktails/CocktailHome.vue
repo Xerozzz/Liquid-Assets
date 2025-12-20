@@ -114,6 +114,13 @@ export default {
             line += '\n' + lines[i]
           }
 
+          // If we reach the end of the file with an odd number of quotes,
+          // the CSV has an unterminated quoted field.
+          if ((line.match(/"/g) || []).length % 2 !== 0) {
+            throw new Error(
+              `Malformed CSV: unterminated quoted field near line ${i + 1}`,
+            )
+          }
           if (!line.trim()) {
             i++
             continue
