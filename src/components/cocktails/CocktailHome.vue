@@ -135,8 +135,15 @@ export default {
 
             ingredientMap.forEach((pair) => {
               const ingName = cols[pair.nameIdx]
-              const ingAmt = parseFloat(cols[pair.amountIdx])
+              const rawAmt = cols[pair.amountIdx]
+              const ingAmt = rawAmt != null ? parseFloat(rawAmt) : NaN
 
+              // Warn on invalid numeric values so CSV data quality issues are visible
+              if (ingName && rawAmt && Number.isNaN(ingAmt)) {
+                console.warn(
+                  `Invalid ingredient amount in CSV for cocktail "${name}", ingredient "${ingName}": "${rawAmt}" (line ${i + 1})`
+                )
+              }
               if (ingName && ingAmt > 0) {
                 ingredients.push({
                   name: ingName.replace(/^"|"$/g, ''),
