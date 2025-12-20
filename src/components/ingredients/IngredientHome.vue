@@ -18,6 +18,8 @@ export default {
       showImportDialog: false,
       parsedIngredients: [],
       isImporting: false,
+      duplicateIngredients: [],
+      skipDuplicates: true, // Default behavior
     }
   },
   methods: {
@@ -114,6 +116,7 @@ export default {
 
         if (data.length > 0) {
           this.parsedIngredients = data
+          this.checkForDuplicates()
           this.showImportDialog = true
         } else {
           this.notification.notify({
@@ -127,16 +130,55 @@ export default {
       }
     },
 
+    checkForDuplicates() {
+      // Check for duplicates against existing ingredients
+      const existingNames = this.queryResult.map((ing) => ing.name.toLowerCase())
+      this.duplicateIngredients = this.parsedIngredients.filter((ing) =>
+        existingNames.includes(ing.name.toLowerCase()),
+      )
+    },
+
+    resetImportState() {
+      this.showImportDialog = false
+      this.parsedIngredients = []
+      this.duplicateIngredients = []
+    },
+
     async confirmImport() {
       this.isImporting = true
       try {
-        await createMultipleIngredients(this.parsedIngredients)
+        // Filter out duplicates if skipDuplicates is enabled
+        let ingredientsToImport = this.parsedIngredients
+        if (this.skipDuplicates && this.duplicateIngredients.length > 0) {
+          const duplicateNames = this.duplicateIngredients.map((ing) => ing.name.toLowerCase())
+          ingredientsToImport = this.parsedIngredients.filter(
+            (ing) => !duplicateNames.includes(ing.name.toLowerCase()),
+          )
+        }
+
+        if (ingredientsToImport.length === 0) {
+          this.notification.notify({
+            message: 'No new ingredients to import (all are duplicates)',
+            severity: 'warn',
+          })
+          this.resetImportState()
+          this.isImporting = false
+          return
+        }
+
+        await createMultipleIngredients(ingredientsToImport)
+
+        const skippedCount = this.parsedIngredients.length - ingredientsToImport.length
+        let message = `Successfully imported ${ingredientsToImport.length} ingredient${ingredientsToImport.length !== 1 ? 's' : ''}`
+        if (skippedCount > 0) {
+          message += `, skipped ${skippedCount} duplicate${skippedCount !== 1 ? 's' : ''}`
+        }
+
         this.notification.notify({
-          message: `Successfully imported ${this.parsedIngredients.length} ingredients`,
+          message,
           severity: 'success',
         })
-        this.showImportDialog = false
-        this.parsedIngredients = []
+        this.resetImportState()
         await this.retrieveIngredients()
       } catch (error) {
         console.error(error)
@@ -240,6 +282,34 @@ export default {
       header="Review Import"
       :style="{ width: '80vw', maxWidth: '900px' }"
     >
+      <!-- Duplicate Warning -->
+      <div
+        v-if="duplicateIngredients.length > 0"
+        class="mb-4 p-4 bg-yellow-50 border border-yellow-300 rounded-lg"
+      >
+        <div class="flex items-start gap-2">
+          <i class="pi pi-exclamation-triangle text-yellow-600 mt-1"></i>
+          <div class="flex-1">
+            <p class="font-semibold text-yellow-800 mb-2">
+              {{ duplicateIngredients.length }} duplicate ingredient{{
+                duplicateIngredients.length !== 1 ? 's' : ''
+              }}
+              detected
+            </p>
+            <p class="text-sm text-yellow-700 mb-2">
+              The following ingredients already exist in your database:
+              <strong>{{ duplicateIngredients.map((ing) => ing.name).join(', ') }}</strong>
+            </p>
+            <div class="flex items-center gap-2 mt-3">
+              <Checkbox v-model="skipDuplicates" inputId="skipDuplicates" :binary="true" />
+              <label for="skipDuplicates" class="text-sm text-yellow-800 cursor-pointer">
+                Skip duplicate ingredients (recommended)
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <p class="mb-4 text-gray-600">
         Review the data below. You can click on <b>Cost</b> or <b>Unit</b> to edit them before
         importing.
@@ -259,7 +329,22 @@ export default {
         stripedRows
         showGridlines
       >
-        <Column field="name" header="Name"></Column>
+        <Column field="name" header="Name">
+          <template #body="{ data }">
+            <div class="flex items-center gap-2">
+              <span>{{ data.name }}</span>
+              <i
+                v-if="
+                  duplicateIngredients.some(
+                    (dup) => dup.name.toLowerCase() === data.name.toLowerCase(),
+                  )
+                "
+                class="pi pi-exclamation-circle text-yellow-600"
+                title="Duplicate ingredient"
+              ></i>
+            </div>
+          </template>
+        </Column>
 
         <Column field="cost" header="Cost">
           <template #body="{ data }">
