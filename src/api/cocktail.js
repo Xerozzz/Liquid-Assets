@@ -138,8 +138,34 @@ export const deleteCocktail = async (recipe_id) => {
 }
 
 /**
- * Imports a single cocktail and its ingredients.
- * PROTECTS AGAINST DUPLICATES by checking name first.
+ * Imports a single cocktail and its ingredients from parsed CSV data into the database.
+ *
+ * Behavior:
+ * - Checks for an existing non-deleted recipe with the same (case-insensitive) name and,
+ *   if found, skips creation and reports a duplicate.
+ * - Ensures a valid glassware ID is available (falling back to a default or creating one if needed).
+ * - Creates a new recipe row using the cocktail's name and instructions.
+ * - Attempts to match each CSV ingredient to an existing DB ingredient by normalized name.
+ *   Matched ingredients are inserted into `recipe_ingredient`; unmatched ingredient names
+ *   are collected and returned in the `unknowns` array.
+ * - On any error, logs the issue and returns a failure result with an error message.
+ *
+ * @async
+ * @param {Object} cocktail - Cocktail data parsed from CSV.
+ * @param {string} cocktail.name - The display name of the cocktail/recipe.
+ * @param {string} cocktail.instructions - Text describing how to make the cocktail.
+ * @param {Array<Object>} cocktail.ingredients - List of ingredient entries for this cocktail.
+ * @param {string} cocktail.ingredients[].name - The ingredient name as provided by the CSV.
+ * @param {number|string} cocktail.ingredients[].amount - The quantity to associate with the ingredient.
+ * @param {Array<Object>} dbIngredients - List of existing ingredients from the database used for matching.
+ * @param {number} dbIngredients[].ingredient_id - Primary key of the ingredient in the DB.
+ * @param {string} dbIngredients[].name - Name of the ingredient in the DB.
+ * @returns {Promise<{success: boolean, name: string, error?: string, unknowns?: string[]}>}
+ * A result object where:
+ * - `success` indicates whether the import completed without error and was not skipped.
+ * - `name` is the cocktail name associated with this import attempt.
+ * - `error` is present when the import failed or was skipped (e.g. duplicate).
+ * - `unknowns` contains ingredient names that could not be matched to `dbIngredients` (on success).
  */
 export const importCocktailFromCSV = async (cocktail, dbIngredients) => {
   try {
