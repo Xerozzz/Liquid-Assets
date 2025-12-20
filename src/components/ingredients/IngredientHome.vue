@@ -140,7 +140,10 @@ export default {
         await this.retrieveIngredients()
       } catch (error) {
         console.error(error)
-        this.notification.notify({ message: 'Import failed', severity: 'error' })
+        this.notification.notify({
+          message: 'Import failed: ' + (error && error.message ? error.message : String(error)),
+          severity: 'error',
+        })
       } finally {
         this.isImporting = false
       }
