@@ -160,7 +160,6 @@ export default {
         }
 
         this.importStats.total = cocktailsToImport.length
-        console.log(`Found ${cocktailsToImport.length} cocktails to import`)
 
         for (const cocktail of cocktailsToImport) {
           const res = await importCocktailFromCSV(cocktail, dbIngredients)
