@@ -64,8 +64,14 @@ export const deleteIngredient = async (ingredient_id) => {
 
 export const createMultipleIngredients = async (rows) => {
   try {
-    if (!rows || rows.length === 0) return
+    if (!Array.isArray(rows)) {
+      throw new TypeError('createMultipleIngredients: "rows" must be a non-empty array.')
+    }
 
+    if (rows.length === 0) {
+      // Explicitly indicate a successful no-op when there are no rows to insert
+      return { rowsInserted: 0 }
+    }
     // Create placeholders: (?,?,?,?), (?,?,?,?)...
     const placeholders = rows.map(() => '(?, ?, ?, ?)').join(',')
 
