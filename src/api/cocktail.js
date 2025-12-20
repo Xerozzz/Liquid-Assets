@@ -1,14 +1,25 @@
 import { useSQLite } from '@/composables/useSQLite'
 const { executeQuery, destroy } = useSQLite()
 
-/**
- * Retrieves all cocktails from the `recipe` table.
- *
- * @async
- * @function getCocktail
- * @returns {Promise<Array<Object>>} A promise that resolves to an array of recipe objects from the database.
- * @throws Will log and return an error object if the query fails.
- */
+// --- Helper to fix Foreign Key Error ---
+const ensureDefaultGlassware = async () => {
+  try {
+    let check = await executeQuery('SELECT glass_id FROM glassware WHERE glass_id = 1;')
+    if (check?.result?.resultRows?.length > 0) return 1
+
+    let anyGlass = await executeQuery('SELECT glass_id FROM glassware LIMIT 1;')
+    if (anyGlass?.result?.resultRows?.length > 0) return anyGlass.result.resultRows[0].glass_id
+
+    let create = await executeQuery(
+      "INSERT INTO glassware (name, brand, model, volume, volume_w_ice) VALUES ('Standard Glass', 'Generic', 'Standard', 300, 200);",
+    )
+    return Number(create?.result?.lastInsertRowId)
+  } catch (e) {
+    console.error('Failed to ensure glassware', e)
+    return 1
+  }
+}
+
 export const getCocktail = async () => {
   try {
     let result = await executeQuery('SELECT * FROM recipe WHERE is_deleted = 0;')
@@ -20,24 +31,6 @@ export const getCocktail = async () => {
   }
 }
 
-/**
- * Retrieves a cocktail and its related details (glassware, ingredients, etc.) by recipe ID.
- *
- * @async
- * @function getCocktailById
- * @param {number} recipe_id - The ID of the recipe to retrieve.
- * @returns {Promise<Array<Object>>} A promise that resolves to an array of objects containing:
- * - `recipe_name`: {string} The name of the recipe.
- * - `glass_name`: {string} The name of the glassware used.
- * - `garnish`: {string} The garnish for the cocktail.
- * - `notes`: {string} Any notes for the recipe.
- * - `ingredient_id`: {number} ID of the ingredient.
- * - `ingredient_name`: {string} Name of the ingredient.
- * - `ingredient_cost`: {number} Cost of the ingredient.
- * - `ingredient_stock`: {boolean} Whether the ingredient is in stock.
- * - `quantity`: {string|number} The quantity of the ingredient in the recipe.
- * @throws Will log the error if the query fails.
- */
 export const getCocktailById = async (recipe_id) => {
   try {
     const query = `
@@ -57,12 +50,12 @@ export const getCocktailById = async (recipe_id) => {
       ),
       items AS (
         SELECT 'ingredient' AS kind,
-              i.ingredient_id AS item_id,
-              i.name          AS item_name,
-              i.cost          AS item_cost,
-              i.unit          AS item_unit,
-              i.is_stocked    AS item_stock,
-              ri.quantity     AS item_quantity
+               i.ingredient_id AS item_id,
+               i.name          AS item_name,
+               i.cost          AS item_cost,
+               i.unit          AS item_unit,
+               i.is_stocked    AS item_stock,
+               ri.quantity     AS item_quantity
         FROM recipe_ingredient ri
         JOIN ingredients i ON i.ingredient_id = ri.ingredient_id
         WHERE ri.is_deleted = 0
@@ -71,12 +64,12 @@ export const getCocktailById = async (recipe_id) => {
         UNION ALL
 
         SELECT 'hm' AS kind,
-              hmi.hm_ingredient_id AS item_id,
-              hmi.name             AS item_name,
-              hmi.cost             AS item_cost,
-              hmi.unit             AS item_unit,   -- ✅ SQLite-friendly
-              hmi.is_stocked       AS item_stock,
-              rhi.quantity         AS item_quantity
+               hmi.hm_ingredient_id AS item_id,
+               hmi.name             AS item_name,
+               hmi.cost             AS item_cost,
+               hmi.unit             AS item_unit,
+               hmi.is_stocked       AS item_stock,
+               rhi.quantity         AS item_quantity
         FROM recipe_hm_ingredient rhi
         JOIN hm_ingredients hmi ON hmi.hm_ingredient_id = rhi.hm_ingredient_id
         WHERE rhi.is_deleted = 0
@@ -95,26 +88,7 @@ export const getCocktailById = async (recipe_id) => {
   }
 }
 
-/**
- * Inserts a new cocktail recipe into the database.
- *
- * @async
- * @function createCocktail
- * @param {string} name - The name of the cocktail.
- * @param {number} glass_id - The ID of the glassware associated with the cocktail.
- * @param {string} step_to_make - Instructions on how to make the cocktail.
- * @param {string} image - A URL or base64-encoded image of the cocktail.
- * @returns {Promise<number|Error>} A promise that resolves to the `recipe_id` of the newly inserted cocktail or an error object.
- * @throws Will log and return an error object if the insert fails.
- */
-export const createCocktail = async (
-  name,
-  glass_id,
-  step_to_make,
-  garnish = '',
-  notes = '',
-  image,
-) => {
+export const createCocktail = async (name, glass_id, step_to_make, garnish, notes, image) => {
   try {
     let result = await executeQuery(
       'INSERT INTO recipe (name, glass_id, step_to_make, garnish, notes, image) VALUES (?, ?, ?, ?, ?, ?);',
@@ -128,20 +102,15 @@ export const createCocktail = async (
   }
 }
 
-/**
- * Updates an existing cocktail recipe in the database.
- *
- * @async
- * @function updateCocktail
- * @param {string} name - The updated name of the cocktail.
- * @param {number} glass_id - The updated glassware ID.
- * @param {string} step_to_make - The updated instructions for the cocktail.
- * @param {string} image - The updated image URL or base64 data.
- * @param {number} recipe_id - The ID of the recipe to update.
- * @returns {Promise<Object|Error>} A promise that resolves to the update result or an error object.
- * @throws Will log and return an error object if the update fails.
- */
-export const updateCocktail = async (name, glass_id, step_to_make, garnish, notes, image, recipe_id) => {
+export const updateCocktail = async (
+  name,
+  glass_id,
+  step_to_make,
+  garnish,
+  notes,
+  image,
+  recipe_id,
+) => {
   try {
     let result = await executeQuery(
       'UPDATE recipe SET name = ?, glass_id = ?, step_to_make = ?, garnish = ?, notes = ?, image = ? WHERE recipe_id = ?;',
@@ -155,22 +124,101 @@ export const updateCocktail = async (name, glass_id, step_to_make, garnish, note
   }
 }
 
-/**
- * Updates a cocktail recipe is_deleted flag from the database by ID.
- *
- * @async
- * @function deleteCocktail
- * @param {number} recipe_id - The ID of the recipe to delete.
- * @returns {Promise<Object|Error>} A promise that resolves to the deletion result or an error object.
- * @throws Will log and return an error object if the delete fails.
- */
 export const deleteCocktail = async (recipe_id) => {
   try {
-    let result = await executeQuery('UPDATE recipe SET is_deleted = 1 WHERE recipe_id = ?;', [recipe_id])
+    let result = await executeQuery('UPDATE recipe SET is_deleted = 1 WHERE recipe_id = ?;', [
+      recipe_id,
+    ])
     destroy()
     return result
   } catch (error) {
     console.log(error)
     return error
+  }
+}
+
+/**
+ * Imports a single cocktail and its ingredients from parsed CSV data into the database.
+ *
+ * Behavior:
+ * - Checks for an existing non-deleted recipe with the same (case-insensitive) name and,
+ *   if found, skips creation and reports a duplicate.
+ * - Ensures a valid glassware ID is available (falling back to a default or creating one if needed).
+ * - Creates a new recipe row using the cocktail's name and instructions.
+ * - Attempts to match each CSV ingredient to an existing DB ingredient by normalized name.
+ *   Matched ingredients are inserted into `recipe_ingredient`; unmatched ingredient names
+ *   are collected and returned in the `unknowns` array.
+ * - On any error, logs the issue and returns a failure result with an error message.
+ *
+ * @async
+ * @param {Object} cocktail - Cocktail data parsed from CSV.
+ * @param {string} cocktail.name - The display name of the cocktail/recipe.
+ * @param {string} cocktail.instructions - Text describing how to make the cocktail.
+ * @param {Array<Object>} cocktail.ingredients - List of ingredient entries for this cocktail.
+ * @param {string} cocktail.ingredients[].name - The ingredient name as provided by the CSV.
+ * @param {number|string} cocktail.ingredients[].amount - The quantity to associate with the ingredient.
+ * @param {Array<Object>} dbIngredients - List of existing ingredients from the database used for matching.
+ * @param {number} dbIngredients[].ingredient_id - Primary key of the ingredient in the DB.
+ * @param {string} dbIngredients[].name - Name of the ingredient in the DB.
+ * @returns {Promise<{success: boolean, name: string, error?: string, unknowns?: string[]}>}
+ * A result object where:
+ * - `success` indicates whether the import completed without error and was not skipped.
+ * - `name` is the cocktail name associated with this import attempt.
+ * - `error` is present when the import failed or was skipped (e.g. duplicate).
+ * - `unknowns` contains ingredient names that could not be matched to `dbIngredients` (on success).
+ */
+export const importCocktailFromCSV = async (cocktail, dbIngredients) => {
+  try {
+    const existing = await executeQuery(
+      'SELECT recipe_id FROM recipe WHERE LOWER(name) = LOWER(?) AND is_deleted = 0;',
+      [cocktail.name],
+    )
+
+    if (existing?.result?.resultRows?.length > 0) {
+      console.log(`Skipping duplicate: ${cocktail.name}`)
+      return { success: false, name: cocktail.name, error: 'Duplicate cocktail already exists' }
+    }
+
+    // Get Valid Glass ID
+    const validGlassId = await ensureDefaultGlassware()
+
+    let result = await executeQuery(
+      'INSERT INTO recipe (name, glass_id, step_to_make, garnish, notes, image) VALUES (?, ?, ?, ?, ?, ?);',
+      [cocktail.name, validGlassId, cocktail.instructions, '', '', null],
+    )
+    const recipeId = Number(result?.result.lastInsertRowId)
+
+    if (!recipeId) throw new Error('Failed to create recipe record')
+
+    const ingredientInserts = []
+    const unknownIngredients = []
+
+    for (const item of cocktail.ingredients) {
+      const match = dbIngredients.find(
+        (dbIng) => dbIng.name.toLowerCase().trim() === item.name.toLowerCase().trim(),
+      )
+
+      if (match) {
+        ingredientInserts.push({
+          recipeId,
+          ingredientId: match.ingredient_id,
+          quantity: item.amount,
+        })
+      } else {
+        unknownIngredients.push(item.name)
+      }
+    }
+
+    for (const ing of ingredientInserts) {
+      await executeQuery(
+        'INSERT INTO recipe_ingredient (recipe_id, ingredient_id, quantity) VALUES (?, ?, ?);',
+        [ing.recipeId, ing.ingredientId, ing.quantity],
+      )
+    }
+
+    return { success: true, name: cocktail.name, unknowns: unknownIngredients }
+  } catch (error) {
+    console.error('Import Error for ' + cocktail.name, error)
+    return { success: false, name: cocktail.name, error: error.message }
   }
 }
