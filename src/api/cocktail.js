@@ -173,18 +173,21 @@ export const importCocktailFromCSV = async (cocktail, dbIngredients) => {
       )
 
       if (match) {
-        ingredientInserts.push(`(${recipeId}, ${match.ingredient_id}, ${item.amount})`)
+        ingredientInserts.push({
+          recipeId,
+          ingredientId: match.ingredient_id,
+          quantity: item.amount,
+        })
       } else {
         unknownIngredients.push(item.name)
       }
     }
 
-    if (ingredientInserts.length > 0) {
-      const query = `
-        INSERT INTO recipe_ingredient (recipe_id, ingredient_id, quantity)
-        VALUES ${ingredientInserts.join(',')};
-      `
-      await executeQuery(query)
+    for (const ing of ingredientInserts) {
+      await executeQuery(
+        'INSERT INTO recipe_ingredient (recipe_id, ingredient_id, quantity) VALUES (?, ?, ?);',
+        [ing.recipeId, ing.ingredientId, ing.quantity],
+      )
     }
 
     return { success: true, name: cocktail.name, unknowns: unknownIngredients }
