@@ -4,6 +4,7 @@ import { databaseConfig } from '@/config/database'
 import { dumps } from '@/config/dumps'
 
 const isInitialized = ref(false)
+const SEEDING_FLAG_KEY = 'cocktail_app_db_seeded'
 
 export function useSQLite() {
   const isLoading = ref(false)
@@ -66,26 +67,32 @@ export function useSQLite() {
         })
       }
 
-      // Dumping data into table
-      for (const dump of dumps) {
-        const tableName = dump.schema
+      // Dumping data into table (only on first app launch)
+      const hasSeededBefore = localStorage.getItem(SEEDING_FLAG_KEY) === 'true'
 
-        const result = await promiser('exec', {
-          dbId,
-          sql: `SELECT EXISTS(SELECT 1 FROM ${tableName} LIMIT 1) AS isExist;`,
-          rowMode: 'object',
-          returnValue: 'resultRows',
-        })
+      if (!hasSeededBefore) {
+        for (const dump of dumps) {
+          const tableName = dump.schema
 
-        let exists = result?.result.resultRows[0].isExist
-
-        if (!exists) {
-          let insert = dump.query
-          await promiser('exec', {
+          const result = await promiser('exec', {
             dbId,
-            sql: insert,
+            sql: `SELECT EXISTS(SELECT 1 FROM ${tableName} LIMIT 1) AS isExist;`,
+            rowMode: 'object',
+            returnValue: 'resultRows',
           })
+
+          let exists = result?.result.resultRows[0].isExist
+
+          if (!exists) {
+            let insert = dump.query
+            await promiser('exec', {
+              dbId,
+              sql: insert,
+            })
+          }
         }
+        // Mark that we've seeded the database
+        localStorage.setItem(SEEDING_FLAG_KEY, 'true')
       }
 
       isInitialized.value = true
@@ -163,10 +170,13 @@ export function useSQLite() {
     // 1) kill current worker/promiser
     destroy()
 
-    // 2) delete OPFS files
+    // 2) reset seeding flag so it will seed again
+    localStorage.removeItem(SEEDING_FLAG_KEY)
+
+    // 3) delete OPFS files
     await removeDbFilesFromOPFS()
 
-    // 3) re-init → re-creates tables and seeds from dumps.js
+    // 4) re-init → re-creates tables and seeds from dumps.js
     await initialize()
   }
 
