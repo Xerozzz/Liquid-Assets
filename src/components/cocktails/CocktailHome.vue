@@ -191,8 +191,17 @@ export default {
         await this.retrieveCocktails()
       } catch (err) {
         console.error(err)
+        let message = 'CSV Import Failed'
+        if (err && err.message) {
+          message += ': ' + err.message
+        }
+        if (err && err.cocktailName) {
+          message += ' (Cocktail: ' + err.cocktailName + ')'
+        } else if (err && err.cocktailIndex !== undefined && err.cocktailIndex !== null) {
+          message += ' (at cocktail index ' + err.cocktailIndex + ')'
+        }
         this.notification.notify({
-          message: 'CSV Import Failed: ' + err.message,
+          message,
           severity: 'error',
         })
       } finally {
