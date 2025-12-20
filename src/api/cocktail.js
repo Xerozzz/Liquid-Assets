@@ -4,19 +4,38 @@ const { executeQuery, destroy } = useSQLite()
 // --- Helper to fix Foreign Key Error ---
 const ensureDefaultGlassware = async () => {
   try {
+    // Check if glass_id 1 specifically exists (for cleaner data)
     let check = await executeQuery('SELECT glass_id FROM glassware WHERE glass_id = 1;')
     if (check?.result?.resultRows?.length > 0) return 1
 
+    // If not, check if ANY glass exists and return the first one
     let anyGlass = await executeQuery('SELECT glass_id FROM glassware LIMIT 1;')
     if (anyGlass?.result?.resultRows?.length > 0) return anyGlass.result.resultRows[0].glass_id
 
+    // If table is empty, insert a default glass
     let create = await executeQuery(
       "INSERT INTO glassware (name, brand, model, volume, volume_w_ice) VALUES ('Standard Glass', 'Generic', 'Standard', 300, 200);",
     )
     return Number(create?.result?.lastInsertRowId)
   } catch (e) {
     console.error('Failed to ensure glassware', e)
-    return 1
+    return 1 // Fallback
+  }
+}
+
+// --- Helper to Find Glass by Name ---
+const findGlassByName = async (name) => {
+  if (!name) return null
+  try {
+    const res = await executeQuery('SELECT glass_id FROM glassware WHERE LOWER(name) = LOWER(?)', [
+      name.trim(),
+    ])
+    if (res?.result?.resultRows?.length > 0) {
+      return res.result.resultRows[0].glass_id
+    }
+    return null
+  } catch (e) {
+    return null
   }
 }
 
@@ -139,10 +158,12 @@ export const deleteCocktail = async (recipe_id) => {
 
 /**
  * Imports a single cocktail and its ingredients.
- * PROTECTS AGAINST DUPLICATES by checking name first.
+ * @param {Object} cocktail - { name, instructions, ingredients, glassName (optional) }
+ * @param {Array} dbIngredients - List of existing DB ingredients for matching
  */
 export const importCocktailFromCSV = async (cocktail, dbIngredients) => {
   try {
+    // Check for Duplicate (Case-Insensitive)
     const existing = await executeQuery(
       'SELECT recipe_id FROM recipe WHERE LOWER(name) = LOWER(?) AND is_deleted = 0;',
       [cocktail.name],
@@ -153,9 +174,18 @@ export const importCocktailFromCSV = async (cocktail, dbIngredients) => {
       return { success: false, name: cocktail.name, error: 'Duplicate cocktail already exists' }
     }
 
-    // Get Valid Glass ID
-    const validGlassId = await ensureDefaultGlassware()
+    // Resolve Glass ID
+    let validGlassId
+    if (cocktail.glassName) {
+      validGlassId = await findGlassByName(cocktail.glassName)
+    }
 
+    // Fallback if glass name not found or not provided
+    if (!validGlassId) {
+      validGlassId = await ensureDefaultGlassware()
+    }
+
+    // Create Recipe
     let result = await executeQuery(
       'INSERT INTO recipe (name, glass_id, step_to_make, garnish, notes, image) VALUES (?, ?, ?, ?, ?, ?);',
       [cocktail.name, validGlassId, cocktail.instructions, '', '', null],
@@ -164,10 +194,12 @@ export const importCocktailFromCSV = async (cocktail, dbIngredients) => {
 
     if (!recipeId) throw new Error('Failed to create recipe record')
 
+    // Map and Insert Ingredients
     const ingredientInserts = []
     const unknownIngredients = []
 
     for (const item of cocktail.ingredients) {
+      // Find matching ingredient in DB (Case-insensitive + Trim)
       const match = dbIngredients.find(
         (dbIng) => dbIng.name.toLowerCase().trim() === item.name.toLowerCase().trim(),
       )
