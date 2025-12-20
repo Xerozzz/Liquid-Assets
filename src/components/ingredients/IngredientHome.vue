@@ -138,6 +138,12 @@ export default {
       )
     },
 
+    resetImportState() {
+      this.showImportDialog = false
+      this.parsedIngredients = []
+      this.duplicateIngredients = []
+    },
+
     async confirmImport() {
       this.isImporting = true
       try {
@@ -155,9 +161,7 @@ export default {
             message: 'No new ingredients to import (all are duplicates)',
             severity: 'warn',
           })
-          this.showImportDialog = false
-          this.parsedIngredients = []
-          this.duplicateIngredients = []
+          this.resetImportState()
           this.isImporting = false
           return
         }
@@ -174,9 +178,7 @@ export default {
           message,
           severity: 'success',
         })
-        this.showImportDialog = false
-        this.parsedIngredients = []
-        this.duplicateIngredients = []
+        this.resetImportState()
         await this.retrieveIngredients()
       } catch (error) {
         console.error(error)
