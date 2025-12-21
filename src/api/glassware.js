@@ -1,7 +1,7 @@
 import { useSQLite } from '@/composables/useSQLite'
+const { executeQuery, destroy } = useSQLite()
 
 export const getGlassware = async () => {
-  const { executeQuery, destroy } = useSQLite()
   try {
     let result = await executeQuery('SELECT * FROM glassware;')
     return result?.result.resultRows
@@ -14,7 +14,6 @@ export const getGlassware = async () => {
 }
 
 export const getGlasswareById = async (id) => {
-  const { executeQuery, destroy } = useSQLite()
   try {
     let result = await executeQuery('SELECT * FROM glassware WHERE glass_id = ?;', [id])
     return result?.result.resultRows.length > 0 ? result.result.resultRows[0] : null
@@ -27,7 +26,6 @@ export const getGlasswareById = async (id) => {
 }
 
 export const createGlassware = async (brand, model, volume, volume_fill) => {
-  const { executeQuery, destroy } = useSQLite()
   try {
     const name = `${brand} ${model}`
 
@@ -45,7 +43,6 @@ export const createGlassware = async (brand, model, volume, volume_fill) => {
 }
 
 export const updateGlassware = async (brand, model, volume, volume_fill, glass_id) => {
-  const { executeQuery, destroy } = useSQLite()
   try {
     const name = `${brand} ${model}`
 
@@ -63,7 +60,6 @@ export const updateGlassware = async (brand, model, volume, volume_fill, glass_i
 }
 
 export const deleteGlassware = async (glass_id) => {
-  const { executeQuery, destroy } = useSQLite()
   try {
     let result = await executeQuery('DELETE FROM glassware WHERE glass_id = ?;', [glass_id])
     return result
@@ -72,5 +68,37 @@ export const deleteGlassware = async (glass_id) => {
     throw error
   } finally {
     destroy()
+  }
+}
+
+/**
+ * Bulk insert glassware from CSV import
+ * @param {Array} rows - Array of objects {brand, model, volume, volume_w_ice}
+ */
+export const createMultipleGlassware = async (rows) => {
+  try {
+    if (!rows || rows.length === 0) return
+
+    // Create placeholders: (?,?,?,?,?), (?,?,?,?,?)...
+    // We insert: name, brand, model, volume, volume_w_ice
+    const placeholders = rows.map(() => '(?, ?, ?, ?, ?)').join(',')
+
+    // Flatten data
+    const flatValues = rows.flatMap((r) => [
+      `${r.brand} ${r.model}`, // name (derived)
+      r.brand,
+      r.model,
+      r.volume,
+      r.volume_w_ice,
+    ])
+
+    const query = `INSERT INTO glassware (name, brand, model, volume, volume_w_ice) VALUES ${placeholders};`
+
+    let result = await executeQuery(query, flatValues)
+    destroy()
+    return result
+  } catch (error) {
+    console.error('Bulk Insert Glassware Error:', error)
+    throw error
   }
 }
