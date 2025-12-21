@@ -78,6 +78,7 @@ export default {
       try {
         const dbIngredients = await getIngredients()
 
+        // 1. Split lines but respect quotes (basic split might fail on multi-line remarks)
         const lines = csvText.split(/\r\n|\n/)
 
         // Find header index to map columns
@@ -101,7 +102,7 @@ export default {
 
         if (nameIdx === -1) throw new Error("CSV missing 'Cocktail' column")
 
-
+        // 2. Process Rows
         const cocktailsToImport = []
 
         let i = 1
@@ -114,13 +115,6 @@ export default {
             line += '\n' + lines[i]
           }
 
-          // If we reach the end of the file with an odd number of quotes,
-          // the CSV has an unterminated quoted field.
-          if ((line.match(/"/g) || []).length % 2 !== 0) {
-            throw new Error(
-              `Malformed CSV: unterminated quoted field near line ${i + 1}`,
-            )
-          }
           if (!line.trim()) {
             i++
             continue
@@ -135,15 +129,8 @@ export default {
 
             ingredientMap.forEach((pair) => {
               const ingName = cols[pair.nameIdx]
-              const rawAmt = cols[pair.amountIdx]
-              const ingAmt = rawAmt != null ? parseFloat(rawAmt) : NaN
+              const ingAmt = parseFloat(cols[pair.amountIdx])
 
-              // Warn on invalid numeric values so CSV data quality issues are visible
-              if (ingName && rawAmt && Number.isNaN(ingAmt)) {
-                console.warn(
-                  `Invalid ingredient amount in CSV for cocktail "${name}", ingredient "${ingName}": "${rawAmt}" (line ${i + 1})`
-                )
-              }
               if (ingName && ingAmt > 0) {
                 ingredients.push({
                   name: ingName.replace(/^"|"$/g, ''),
@@ -160,7 +147,9 @@ export default {
         }
 
         this.importStats.total = cocktailsToImport.length
+        console.log(`Found ${cocktailsToImport.length} cocktails to import`)
 
+        // 3. Import
         for (const cocktail of cocktailsToImport) {
           const res = await importCocktailFromCSV(cocktail, dbIngredients)
           if (res.success) {
@@ -175,12 +164,13 @@ export default {
           }
         }
 
+        // 4. Report
         let msg = `Imported ${this.importStats.success} cocktails.`
         let severity = 'success'
 
         if (this.importStats.failed > 0) {
           msg += ` Failed: ${this.importStats.failed}. Check console for details.`
-          severity = 'error'
+          severity = 'error' // Escalate severity if failures occurred
         } else if (this.importStats.missingIngredients.length > 0) {
           msg += ` Warning: Some ingredients unmatched.`
           severity = 'warn'
@@ -191,17 +181,8 @@ export default {
         await this.retrieveCocktails()
       } catch (err) {
         console.error(err)
-        let message = 'CSV Import Failed'
-        if (err && err.message) {
-          message += ': ' + err.message
-        }
-        if (err && err.cocktailName) {
-          message += ' (Cocktail: ' + err.cocktailName + ')'
-        } else if (err && err.cocktailIndex !== undefined && err.cocktailIndex !== null) {
-          message += ' (at cocktail index ' + err.cocktailIndex + ')'
-        }
         this.notification.notify({
-          message,
+          message: 'CSV Import Failed: ' + err.message,
           severity: 'error',
         })
       } finally {
