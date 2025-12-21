@@ -114,6 +114,13 @@ export default {
             line += '\n' + lines[i]
           }
 
+          // If we reach the end of the file with an odd number of quotes,
+          // the CSV has an unterminated quoted field.
+          if ((line.match(/"/g) || []).length % 2 !== 0) {
+            throw new Error(
+              `Malformed CSV: unterminated quoted field near line ${i + 1}`,
+            )
+          }
           if (!line.trim()) {
             i++
             continue
@@ -128,8 +135,15 @@ export default {
 
             ingredientMap.forEach((pair) => {
               const ingName = cols[pair.nameIdx]
-              const ingAmt = parseFloat(cols[pair.amountIdx])
+              const rawAmt = cols[pair.amountIdx]
+              const ingAmt = rawAmt != null ? parseFloat(rawAmt) : NaN
 
+              // Warn on invalid numeric values so CSV data quality issues are visible
+              if (ingName && rawAmt && Number.isNaN(ingAmt)) {
+                console.warn(
+                  `Invalid ingredient amount in CSV for cocktail "${name}", ingredient "${ingName}": "${rawAmt}" (line ${i + 1})`
+                )
+              }
               if (ingName && ingAmt > 0) {
                 ingredients.push({
                   name: ingName.replace(/^"|"$/g, ''),
@@ -146,7 +160,6 @@ export default {
         }
 
         this.importStats.total = cocktailsToImport.length
-        console.log(`Found ${cocktailsToImport.length} cocktails to import`)
 
         for (const cocktail of cocktailsToImport) {
           const res = await importCocktailFromCSV(cocktail, dbIngredients)
@@ -178,8 +191,17 @@ export default {
         await this.retrieveCocktails()
       } catch (err) {
         console.error(err)
+        let message = 'CSV Import Failed'
+        if (err && err.message) {
+          message += ': ' + err.message
+        }
+        if (err && err.cocktailName) {
+          message += ' (Cocktail: ' + err.cocktailName + ')'
+        } else if (err && err.cocktailIndex !== undefined && err.cocktailIndex !== null) {
+          message += ' (at cocktail index ' + err.cocktailIndex + ')'
+        }
         this.notification.notify({
-          message: 'CSV Import Failed: ' + err.message,
+          message,
           severity: 'error',
         })
       } finally {
