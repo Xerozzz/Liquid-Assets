@@ -41,7 +41,41 @@ const findGlassByName = async (name) => {
 
 export const getCocktail = async () => {
   try {
-    let result = await executeQuery('SELECT * FROM recipe WHERE is_deleted = 0;')
+    const query = `
+      SELECT
+        r.*,
+        -- Count missing raw ingredients
+        (
+          SELECT COUNT(*)
+          FROM recipe_ingredient ri
+          JOIN ingredients i ON ri.ingredient_id = i.ingredient_id
+          WHERE ri.recipe_id = r.recipe_id AND (i.is_stocked = 0 OR i.is_stocked IS NULL) AND ri.is_deleted = 0
+        ) +
+        -- Count missing homemade ingredients
+        (
+          SELECT COUNT(*)
+          FROM recipe_hm_ingredient rhi
+          JOIN hm_ingredients hmi ON rhi.hm_ingredient_id = hmi.hm_ingredient_id
+          WHERE rhi.recipe_id = r.recipe_id AND (hmi.is_stocked = 0 OR hmi.is_stocked IS NULL) AND rhi.is_deleted = 0
+        ) as missing_count,
+        -- Get raw ingredient names for search
+        (
+            SELECT GROUP_CONCAT(i.name, ', ')
+            FROM recipe_ingredient ri
+            JOIN ingredients i ON ri.ingredient_id = i.ingredient_id
+            WHERE ri.recipe_id = r.recipe_id AND ri.is_deleted = 0
+        ) as raw_ingredients_str,
+        -- Get homemade ingredient names for search
+        (
+            SELECT GROUP_CONCAT(hmi.name, ', ')
+            FROM recipe_hm_ingredient rhi
+            JOIN hm_ingredients hmi ON rhi.hm_ingredient_id = hmi.hm_ingredient_id
+            WHERE rhi.recipe_id = r.recipe_id AND rhi.is_deleted = 0
+        ) as hm_ingredients_str
+      FROM recipe r
+      WHERE r.is_deleted = 0;
+    `
+    let result = await executeQuery(query)
     destroy()
     return result?.result.resultRows
   } catch (error) {
