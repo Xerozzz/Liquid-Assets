@@ -19,13 +19,71 @@ export default {
       // Import State
       isImporting: false,
       importStats: { total: 0, success: 0, failed: 0, missingIngredients: [] },
+
+      // Filters
+      searchQuery: '',
+      stockOnly: false,
+      maxCost: null,
+      ingredientFilter: '',
     }
   },
+  computed: {
+    filteredCocktails() {
+      return this.queryResult.filter((cocktail) => {
+        // Search (Name)
+        const matchesSearch =
+          !this.searchQuery || cocktail.name.toLowerCase().includes(this.searchQuery.toLowerCase())
+
+        // Stock Filter (missing_count must be 0)
+        const matchesStock = !this.stockOnly || cocktail.missing_count === 0
+
+        // Ingredient Filter (Search in raw and hm ingredient strings)
+        const matchesIngredient =
+          !this.ingredientFilter ||
+          (cocktail.raw_ingredients_str &&
+            cocktail.raw_ingredients_str
+              .toLowerCase()
+              .includes(this.ingredientFilter.toLowerCase())) ||
+          (cocktail.hm_ingredients_str &&
+            cocktail.hm_ingredients_str.toLowerCase().includes(this.ingredientFilter.toLowerCase()))
+
+        return matchesSearch && matchesStock && matchesIngredient
+      })
+    },
+  },
+  watch: {
+    // Update URL when filters change
+    searchQuery(newVal) {
+      this.updateUrlQuery('q', newVal)
+    },
+    ingredientFilter(newVal) {
+      this.updateUrlQuery('ing', newVal)
+    },
+    stockOnly(newVal) {
+      this.updateUrlQuery('stock', newVal ? '1' : null)
+    },
+  },
   methods: {
+    updateUrlQuery(key, value) {
+      const query = { ...this.$route.query }
+      if (value) {
+        query[key] = value
+      } else {
+        delete query[key]
+      }
+      this.$router.replace({ query }).catch(() => {})
+    },
+
     async retrieveCocktails() {
       try {
         this.loading = true
         this.queryResult = await getCocktail()
+
+        // Restore filters from URL
+        const q = this.$route.query
+        if (q.q) this.searchQuery = q.q
+        if (q.ing) this.ingredientFilter = q.ing
+        if (q.stock) this.stockOnly = q.stock === '1'
       } catch (error) {
         this.queryError = error
         this.notification.notify({
@@ -51,7 +109,6 @@ export default {
     },
 
     parseCSVLine(line) {
-      // Handles CSV lines with quoted values containing newlines/commas
       const result = []
       let current = ''
       let inQuote = false
@@ -78,15 +135,11 @@ export default {
       try {
         const dbIngredients = await getIngredients()
 
-        // 1. Split lines but respect quotes (basic split might fail on multi-line remarks)
         const lines = csvText.split(/\r\n|\n/)
-
-        // Find header index to map columns
         const headers = this.parseCSVLine(lines[0] || '').map((h) => h.toLowerCase())
         const nameIdx = headers.indexOf('cocktail')
         const remarksIdx = headers.indexOf('remarks')
 
-        // Identify ingredient pair columns
         const ingredientMap = []
         for (let i = 0; i < headers.length; i++) {
           if (headers[i].startsWith('ingredient')) {
@@ -102,14 +155,10 @@ export default {
 
         if (nameIdx === -1) throw new Error("CSV missing 'Cocktail' column")
 
-        // 2. Process Rows
         const cocktailsToImport = []
-
         let i = 1
         while (i < lines.length) {
           let line = lines[i]
-
-          // Handle multi-line cells
           while ((line.match(/"/g) || []).length % 2 !== 0 && i < lines.length - 1) {
             i++
             line += '\n' + lines[i]
@@ -126,11 +175,9 @@ export default {
 
           if (name) {
             const ingredients = []
-
             ingredientMap.forEach((pair) => {
               const ingName = cols[pair.nameIdx]
               const ingAmt = parseFloat(cols[pair.amountIdx])
-
               if (ingName && ingAmt > 0) {
                 ingredients.push({
                   name: ingName.replace(/^"|"$/g, ''),
@@ -147,9 +194,7 @@ export default {
         }
 
         this.importStats.total = cocktailsToImport.length
-        console.log(`Found ${cocktailsToImport.length} cocktails to import`)
 
-        // 3. Import
         for (const cocktail of cocktailsToImport) {
           const res = await importCocktailFromCSV(cocktail, dbIngredients)
           if (res.success) {
@@ -159,18 +204,16 @@ export default {
             }
           } else {
             this.importStats.failed++
-            // Log specific error for debugging
             console.error(`Failed to import ${cocktail.name}: ${res.error}`)
           }
         }
 
-        // 4. Report
         let msg = `Imported ${this.importStats.success} cocktails.`
         let severity = 'success'
 
         if (this.importStats.failed > 0) {
-          msg += ` Failed: ${this.importStats.failed}. Check console for details.`
-          severity = 'error' // Escalate severity if failures occurred
+          msg += ` Failed: ${this.importStats.failed}. Check console.`
+          severity = 'error'
         } else if (this.importStats.missingIngredients.length > 0) {
           msg += ` Warning: Some ingredients unmatched.`
           severity = 'warn'
@@ -222,8 +265,39 @@ export default {
       </div>
     </div>
 
-    <h1 class="title mt-0 mb-6">Cocktail Menu</h1>
+    <h1 class="title mt-0 mb-4">Cocktail Menu</h1>
 
+    <!-- FILTERS BAR -->
+    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6 space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <!-- Search -->
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-semibold text-gray-500 uppercase">Search Name</label>
+          <InputText v-model="searchQuery" placeholder="e.g. Negroni" class="p-inputtext-sm" />
+        </div>
+
+        <!-- Ingredient Filter -->
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-semibold text-gray-500 uppercase">Filter Ingredient</label>
+          <InputText v-model="ingredientFilter" placeholder="e.g. Gin" class="p-inputtext-sm" />
+        </div>
+
+        <!-- Stock Toggle -->
+        <div class="flex items-center gap-2 pt-5">
+          <Checkbox v-model="stockOnly" :binary="true" inputId="stockFilter" />
+          <label for="stockFilter" class="text-sm font-medium cursor-pointer select-none">
+            Only In Stock
+          </label>
+        </div>
+
+        <!-- Results Count -->
+        <div class="flex items-center justify-end pt-5 text-sm text-gray-500">
+          Showing {{ filteredCocktails.length }} / {{ queryResult.length }}
+        </div>
+      </div>
+    </div>
+
+    <!-- LOADING -->
     <div
       v-if="loading || isImporting"
       class="flex flex-col items-center justify-center py-20 gap-4"
@@ -235,13 +309,23 @@ export default {
       </span>
     </div>
 
+    <!-- GRID -->
     <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       <div
-        v-for="cocktail in queryResult"
+        v-for="cocktail in filteredCocktails"
         :key="cocktail.recipe_id"
-        class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col"
+        class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col relative"
         @click="$router.push(`/cocktail/view/${cocktail.recipe_id}`)"
       >
+        <!-- Stock Warning Overlay if missing ingredients -->
+        <div v-if="cocktail.missing_count > 0" class="absolute top-2 right-2 z-10">
+          <span
+            class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold border border-red-200"
+          >
+            Missing {{ cocktail.missing_count }}
+          </span>
+        </div>
+
         <div class="h-48 w-full bg-gray-50 relative border-b border-gray-100">
           <img
             v-if="cocktail.image"
@@ -256,12 +340,17 @@ export default {
 
         <div class="p-4 text-center">
           <h3 class="font-bold text-xl text-gray-800">{{ cocktail.name }}</h3>
+          <p v-if="cocktail.raw_ingredients_str" class="text-xs text-gray-400 mt-1 truncate">
+            {{ cocktail.raw_ingredients_str }}
+          </p>
         </div>
       </div>
     </div>
 
-    <div v-if="!loading && queryResult.length === 0" class="text-center py-20 text-gray-400">
-      <p>No cocktails found. Click "Create Cocktail" or "Import" to start mixing!</p>
+    <!-- EMPTY STATE -->
+    <div v-if="!loading && filteredCocktails.length === 0" class="text-center py-20 text-gray-400">
+      <p v-if="queryResult.length > 0">No matches found for your filters.</p>
+      <p v-else>No cocktails found. Click "Create Cocktail" or "Import" to start mixing!</p>
     </div>
   </div>
 </template>
