@@ -20,14 +20,38 @@ export default {
       isImporting: false,
       duplicateIngredients: [],
       skipDuplicates: true, // Default behavior
+      searchQuery: '',
     }
   },
+  computed: {
+    filteredIngredients() {
+      if (!this.searchQuery) return this.queryResult
+      const query = this.searchQuery.toLowerCase()
+      return this.queryResult.filter((ing) => ing.name.toLowerCase().includes(query))
+    },
+  },
+  watch: {
+    searchQuery(newVal) {
+      this.updateUrlQuery('q', newVal)
+    },
+  },
   methods: {
+    updateUrlQuery(key, value) {
+      const query = { ...this.$route.query }
+      if (value) {
+        query[key] = value
+      } else {
+        delete query[key]
+      }
+      this.$router.replace({ query }).catch(() => {})
+    },
     async retrieveIngredients() {
       try {
         this.loading = true
         this.queryResult = await getIngredients()
-      } catch (error) {
+        const q = this.$route.query
+        if (q.q) this.searchQuery = q.q
+      } catch {
         this.notification.notify({
           message: 'Failed to load ingredients',
           severity: 'error',
@@ -229,6 +253,15 @@ export default {
 
     <h1 class="title mt-0 mb-6">Pantry & Ingredients</h1>
 
+    <!-- FILTERS BAR -->
+    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6 space-y-4">
+      <!-- Search -->
+      <div class="flex flex-col gap-1">
+        <label class="text-xs font-semibold text-gray-500 uppercase">Search Name</label>
+        <InputText v-model="searchQuery" placeholder="e.g. Syrup" class="p-input text-sm" />
+      </div>
+    </div>
+
     <div v-if="loading" class="flex justify-center py-20">
       <ProgressSpinner />
     </div>
@@ -236,7 +269,7 @@ export default {
     <!-- Ingredient Grid -->
     <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       <div
-        v-for="ing in queryResult"
+        v-for="ing in filteredIngredients"
         :key="ing.ingredient_id"
         class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer flex flex-col justify-between"
         @click="$router.push(`/ingredient/view/${ing.ingredient_id}`)"
@@ -387,6 +420,16 @@ export default {
         />
       </template>
     </Dialog>
+    <!-- Empty State -->
+    <div
+      v-if="!loading && filteredIngredients.length === 0"
+      class="text-center py-20 text-gray-400"
+    >
+      <p v-if="queryResult.length === 0">
+        No homemade ingredients found. Click "Create" or "Import" to start cooking!
+      </p>
+      <p v-else>No matches found for "{{ searchQuery }}".</p>
+    </div>
   </div>
 </template>
 
