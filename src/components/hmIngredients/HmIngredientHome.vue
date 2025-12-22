@@ -19,13 +19,43 @@ export default {
       hmIngredients: [],
       isImporting: false,
       importStats: { total: 0, success: 0, failed: 0, missingIngredients: [] },
+      searchQuery: '',
     }
   },
+  computed: {
+    filteredIngredients() {
+      return this.hmIngredients.filter((item) => {
+        const matchesSearch =
+          !this.searchQuery || item.name.toLowerCase().includes(this.searchQuery.toLowerCase())
+        return matchesSearch
+      })
+    },
+  },
+  watch: {
+    searchQuery(newVal) {
+      this.updateUrlQuery('q', newVal)
+    },
+  },
   methods: {
+    // --- Helper to update URL without reloading ---
+    updateUrlQuery(key, value) {
+      const query = { ...this.$route.query }
+      if (value) {
+        query[key] = value
+      } else {
+        delete query[key]
+      }
+      this.$router.replace({ query }).catch(() => {})
+    },
+
     async getData() {
       this.loading = true
       try {
         const rawData = await getHmIngredient()
+
+        // Restore filter from URL
+        const q = this.$route.query
+        if (q.q) this.searchQuery = q.q
 
         this.hmIngredients = await Promise.all(
           rawData.map(async (item) => {
@@ -238,6 +268,14 @@ export default {
 
     <h1 class="title mt-0 mb-6">Homemade Ingredients</h1>
 
+    <!-- FILTERS BAR -->
+    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6 space-y-4">
+      <!-- Search -->
+      <div class="flex flex-col gap-1">
+        <label class="text-xs font-semibold text-gray-500 uppercase">Search Name</label>
+        <InputText v-model="searchQuery" placeholder="e.g. Syrup" class="p-input text-sm" />
+      </div>
+    </div>
     <div
       v-if="loading || isImporting"
       class="flex flex-col items-center justify-center py-20 gap-4"
@@ -251,7 +289,7 @@ export default {
 
     <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       <div
-        v-for="item in hmIngredients"
+        v-for="item in filteredIngredients"
         :key="item.hm_ingredient_id"
         class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col"
         @click="$router.push(`/hm/view/${item.hm_ingredient_id}`)"
@@ -291,7 +329,7 @@ export default {
           <div class="flex justify-between items-center text-sm">
             <div>
               <p class="font-bold text-gray-700">
-                {{ formatCurrency(item.cost) }}
+                {{ formatCurrency(item.cost) }} / {{ item.unit }}
               </p>
             </div>
 
@@ -301,8 +339,15 @@ export default {
       </div>
     </div>
 
-    <div v-if="!loading && hmIngredients.length === 0" class="text-center py-20 text-gray-400">
-      <p>No homemade ingredients found. Click "Create" or "Import" to start cooking!</p>
+    <!-- Empty State -->
+    <div
+      v-if="!loading && filteredIngredients.length === 0"
+      class="text-center py-20 text-gray-400"
+    >
+      <p v-if="hmIngredients.length === 0">
+        No homemade ingredients found. Click "Create" or "Import" to start cooking!
+      </p>
+      <p v-else>No matches found for "{{ searchQuery }}".</p>
     </div>
   </div>
 </template>
