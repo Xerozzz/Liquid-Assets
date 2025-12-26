@@ -1,108 +1,68 @@
-# Cocktail App
+# Cocktail App v1.0
 
-## Description
+Cocktail costing and inventory companion for bartenders. Track glassware, raw ingredients, homemade components, and full recipes in one offline-friendly Vue app backed by a browser-hosted SQLite database.
 
-Cocktail app for bartenders to input their own custom recipes, note the prices of their ingredients/cocktails and even homemade recipes.
+## Features
 
-### Key features:
+- CRUD for cocktails, ingredients, homemade ingredients, and glassware with nested Vue Router views
+- Automatic cost/yield calculations and stock flags to see what can be made with on-hand items
+- Embedded SQLite (WASM + OPFS) with first-run seeding for demo data and foreign-key constraints enabled
+- PrimeVue UI with themeable components plus Pinia state and Tailwind utility styling
+- Playground view for running saved SQL snippets during development
 
-- Ingredient Management: Add, edit, delete, and search ingredients (with cost per unit)
-- Recipe Management: Add, edit, delete, and search cocktail recipes (with ingredient amounts, costs, and instructions)
-- Inventory Tracking: See current stock and what cocktails you can make
-- Cost Calculation: Automatic calculation of each drink’s cost
+## Tech Stack
 
-### Project Requirements:
+- Vue 3 + Vite 7, Vue Router 4, Pinia 3
+- PrimeVue 4 + Prime Icons, Aura theme, TailwindCSS 4
+- SQLite WASM (`@sqlite.org/sqlite-wasm`) persisted in OPFS
+- Tooling: ESLint + Prettier, JSDoc-generated docs
 
-- All-in-one vue.js frontend application
-- Multi-page (require router)
-- TODO: Need to think about how to store data (MySQL?)
-- No need for authentication (meant for local hosting and private use)
+## Data Model (SQLite)
 
-### DB Tables:
+- `glassware`: shapes/volumes for costing and pour rules
+- `ingredients`: raw items with cost per unit and stock flag
+- `hm_ingredients`: homemade items with yields, cost, and notes
+- `hm_ingredient_components`: maps homemade items to their raw ingredients
+- `recipe`: cocktail/mocktail records with steps, garnish, and glass link
+- `recipe_ingredient` and `recipe_hm_ingredient`: connect recipes to raw and homemade items
 
-- Cocktail/Mocktail Recipes
-- Ingredients Costs and Stock
-- Homemade Ingredient Recipes + Cost
+Tables, schemas, and seed inserts live in [src/config/database.js](src/config/database.js) and [src/config/dumps.js](src/config/dumps.js).
 
-### DB Schema
+## Getting Started
 
-1. Recipes
-   - Name
-   - Glass
-   - Ingredients and ML and cost (to be automatically calculated)
-   - Step to Make
-   - Garnish
-   - Notes
-   - Image
-   - Ratio
-2. Ingredients
-
-   - Cost
-   - Original Quantity per item
-   - cost/ml/g/item
-   - In stock?
-
-3. HM Ingredients
-
-   - Name
-   - Steps to Make
-   - Ingredients and ML and cost (to be automatically calculated)
-   - Notes
-   - Ratio
-   - Cost/ML (auto calculated)
-   - In stock?
-
-4. Glassware
-   - Volume
-   - Volume to fill
-   - Brand
-   - Model
-
-### Pages:
-
-1. Home Page
-2. Cocktails/Mocktails Page
-3. Ingredients Page
-4. Homemade Ingredients Page
-5. Glassware Page
-
-### Features:
-
-1. Creating cocktail/mocktail recipe
-2. Creating ingredients and associated costs
-3. Editing whether ingredients in stock
-4. Creating homemade ingredient recipes
-5. Cost of cocktails and HM ingredients automatically calculated
-6. Comparison of homemade vs store-bought ingredient prices
-7. Automatically adjusting of volumes based on ratio (i.e. how much to use when making 2x or 3x of drink, or when making a drink with different total volume/individual volume)
-8. Conversion of units (Oz -> ML etc)
-9. Show what kind of drinks can be made by ingredients present
-10. Show what drinks can be made from a specific ingredient
-
-## Project Setup
+Prerequisites: Node 18+.
 
 ```sh
-npm install
+npm install            # install deps
+npm run dev            # dev server + regenerate JSDoc
+npm run build          # production bundle
+npm run preview        # preview built app
+npm run lint           # eslint --fix
+npm run format         # prettier src/
+npm run docs           # regenerate docs only
 ```
 
-### Compile and Hot-Reload for Development
+Dev server: http://localhost:5173
 
-```sh
-npm run dev
-```
+Documentation: http://localhost:5173/docs/index.html (generated into public/docs by `npm run docs`).
 
-### Compile and Minify for Production
+## Database & Seeding
 
-```sh
-npm run build
-```
+- SQLite runs in-browser via WASM and persists in OPFS under `mydb.sqlite3`.
+- First load seeds sample data; the flag is stored in `localStorage` as `cocktail_app_db_seeded`.
+- To reseed: clear that flag and the OPFS db files, or call `resetDatabase()` from [src/composables/useSQLite.js](src/composables/useSQLite.js) (which destroys the worker, removes OPFS files, and re-seeds).
+- Foreign keys are enabled at init with `PRAGMA foreign_keys = ON;`.
 
-### Lint with [ESLint](https://eslint.org/)
+## App Layout
 
-```sh
-npm run lint
-```
+- Entry: [src/main.js](src/main.js)
+- Routing: [src/router/index.js](src/router/index.js) (home, cocktails, ingredients, homemade ingredients, glassware, playground)
+- Views: [src/views](src/views) with nested feature components under [src/components](src/components)
+- Utilities/config: [src/composables](src/composables), [src/config](src/config), [src/utils](src/utils)
 
-### Documentation
+## Notes
 
-http://localhost:5173/docs/index.html
+- UI theme is configured via PrimeVue Aura in [src/main.js](src/main.js). Adjust Tailwind styles in [src/index.css](src/index.css) and [src/assets/main.css](src/assets/main.css).
+- If docs generation slows `npm run dev`, run `npm run docs` once and use `vite` directly for local hacking.
+
+Note: README written by GPT5.1
