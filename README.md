@@ -1,6 +1,6 @@
-# Cocktail App v1.0
+# Liquid Assets v1.0
 
-Cocktail costing and inventory companion for bartenders. Track glassware, raw ingredients, homemade components, and full recipes in one offline-friendly Vue app backed by a browser-hosted SQLite database.
+Cocktail costing and inventory companion for bartenders or home enthusiasts. Track glassware, raw ingredients, homemade components, and full recipes in one offline-friendly Vue app backed by a browser-hosted SQLite database.
 
 ## Features
 
