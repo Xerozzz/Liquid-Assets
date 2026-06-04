@@ -1,135 +1,68 @@
-import { useSQLite } from "@/composables/useSQLite";
-const { executeQuery, destroy } = useSQLite();
+import { apiUrl, handleResponse } from './base'
+import { mapRecipeHmIngredient } from './mappers'
 
 export const getRecipeHmIngredient = async () => {
-    try {
-        let result = await executeQuery('SELECT * FROM recipe_hm_ingredient;')
-        destroy()
-        return result?.result.resultRows
-    } catch (error) {
-        console.log(error);
-        return error
-    }
+  const res = await fetch(apiUrl('/api/recipe-hm-ingredients'))
+  const data = await handleResponse(res)
+  return Array.isArray(data) ? data.map(mapRecipeHmIngredient) : data
 }
 
 export const getRecipeHmIngredientById = async (recipe_hm_ingredient_id) => {
-    try {
-        let result = await executeQuery('SELECT * FROM recipe_hm_ingredient WHERE recipe_hm_ingredient_id = ?',
-            [recipe_hm_ingredient_id]
-        );
-        destroy()
-        return result?.result.resultRows[0]
-    } catch (error) {
-        console.log(error);
-        return error
-    }
+  const res = await fetch(apiUrl(`/api/recipe-hm-ingredients/${recipe_hm_ingredient_id}`))
+  const data = await handleResponse(res)
+  return mapRecipeHmIngredient(data)
 }
 
 export const getRecipeHmIngredientByRecipeId = async (recipe_id) => {
-    try {
-        let result = await executeQuery(`
-            SELECT rhi.recipe_id,
-            rhi.recipe_hm_ingredient_id,
-            rhi.hm_ingredient_id,
-            hi.name,
-            rhi.quantity,
-            hi.unit
-            FROM recipe_hm_ingredient rhi 
-            JOIN hm_ingredients hi ON rhi.hm_ingredient_id = hi.hm_ingredient_id
-            WHERE rhi.recipe_id = ?;
-            `,
-            [recipe_id]
-        )
-        destroy()
-        return result?.result.resultRows
-    } catch (error) {
-        console.log(error);
-        return error
-    }
-
+  const res = await fetch(apiUrl(`/api/recipe-hm-ingredients/by-recipe/${recipe_id}`))
+  const data = await handleResponse(res)
+  return mapRecipeHmIngredient(data)
 }
 
 export const createRecipeHmIngredient = async (recipe_id, hm_ingredient_id, quantity) => {
-    try {
-        let result = await executeQuery('INSERT INTO recipe_hm_ingredient (recipe_id, hm_ingredient_id, quantity) VALUES (?, ?, ?)',
-            [recipe_id, hm_ingredient_id, quantity])
-        destroy()
-        return Number(result?.result.lastInsertRowId)
-    } catch (error) {
-        console.log(error);
-        return error
-    }
+  const res = await fetch(apiUrl('/api/recipe-hm-ingredients'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ recipe_id, hm_ingredient_id, quantity }),
+  })
+  const data = await handleResponse(res)
+  return mapRecipeHmIngredient(data)
 }
 
 export const createMultipleRecipeHmIngredient = async (rows) => {
-    try {
-        const placeholders = rows.map(() => '(?, ?, ?)').join(', ');
-        const values = rows.flatMap(row => [row.recipe_id, row.hm_ingredient_id, row.selected_quantity
-        ]);
-
-        // Insert or update the provided rows
-        let result = await executeQuery(
-            `INSERT INTO recipe_hm_ingredient (recipe_id, hm_ingredient_id, quantity) VALUES ${placeholders} 
-            ON CONFLICT(recipe_id, hm_ingredient_id) 
-            DO UPDATE SET 
-            quantity = excluded.quantity
-            `, values);
-
-        // Delete rows not present in the provided ids for the given recipe_id
-        if (rows.length > 0) {
-            const recipe_id = rows[0].recipe_id;
-            const hm_ingredient_ids = rows.map(row => row.hm_ingredient_id);
-            const placeholdersForDelete = hm_ingredient_ids.map(() => '?').join(', ');
-            await executeQuery(
-            `DELETE FROM recipe_hm_ingredient 
-             WHERE recipe_id = ? 
-             AND hm_ingredient_id NOT IN (${placeholdersForDelete})`,
-            [recipe_id, ...hm_ingredient_ids]
-            );
-        }
-        console.log(result)
-        destroy()
-        return result
-    } catch (error) {
-        console.log(error)
-        return error
-    }
+  const res = await fetch(apiUrl('/api/recipe-hm-ingredients/bulk'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(rows),
+  })
+  const data = await handleResponse(res)
+  return mapRecipeHmIngredient(data)
 }
 
-export const updateRecipeHmIngredient = async (recipe_id, hm_ingredient_id, quantity, recipe_hm_ingredient_id) => {
-    try {
-        let result = await executeQuery('UPDATE recipe_hm_ingredient SET recipe_id = ?, hm_ingredient_id = ?, quantity = ? WHERE recipe_hm_ingredient_id = ?;',
-            [recipe_id, hm_ingredient_id, quantity, recipe_hm_ingredient_id])
-        destroy()
-        return result
-    } catch (error) {
-        console.log(error);
-        return error
-    }
+export const updateRecipeHmIngredient = async (
+  recipe_id,
+  hm_ingredient_id,
+  quantity,
+  recipe_hm_ingredient_id,
+) => {
+  const res = await fetch(apiUrl(`/api/recipe-hm-ingredients/${recipe_hm_ingredient_id}`), {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ recipe_id, hm_ingredient_id, quantity }),
+  })
+  return handleResponse(res)
 }
 
 export const deleteRecipeHmIngredient = async (recipe_hm_ingredient_id) => {
-    try {
-        let result = await executeQuery(
-            'DELETE FROM recipe_hm_ingredient WHERE recipe_hm_ingredient_id = ?;',
-            [recipe_hm_ingredient_id])
-        destroy()
-        return result
-    } catch (error) {
-        console.log(error);
-        return error
-    }
+  const res = await fetch(apiUrl(`/api/recipe-hm-ingredients/${recipe_hm_ingredient_id}`), {
+    method: 'DELETE',
+  })
+  return handleResponse(res)
 }
 
 export const deleteRecipeHmIngredientByRecipeId = async (recipe_id) => {
-    try {
-        let result = await executeQuery(
-            'UPDATE recipe_hm_ingredient SET is_deleted = 1, deleted_at = datetime() WHERE recipe_id = ?;',
-            [recipe_id])
-        destroy()
-        return result
-    } catch (error) {
-        console.log(error);
-        return error
-    }
+  const res = await fetch(apiUrl(`/api/recipe-hm-ingredients/by-recipe/${recipe_id}`), {
+    method: 'DELETE',
+  })
+  return handleResponse(res)
 }
