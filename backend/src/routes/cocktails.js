@@ -35,7 +35,19 @@ router.get('/', async (req, res) => {
       FROM recipe r
       WHERE r.is_deleted = false;
     `)
-    res.json(rows)
+    // Convert BigInt values to numbers for JSON serialization
+    const serializedRows = rows.map(row => {
+      const serialized = {}
+      for (const [key, value] of Object.entries(row)) {
+        if (typeof value === 'bigint') {
+          serialized[key] = Number(value)
+        } else {
+          serialized[key] = value
+        }
+      }
+      return serialized
+    })
+    res.json(serializedRows)
   } catch (e) {
     // eslint-disable-next-line no-console
     console.error(e)
