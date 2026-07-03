@@ -3,14 +3,12 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 async function main() {
-  // Clean up existing data (safe for POC)
-  await prisma.recipeHmIngredient.deleteMany()
-  await prisma.recipeIngredient.deleteMany()
-  await prisma.recipe.deleteMany()
-  await prisma.hmIngredientComponent.deleteMany()
-  await prisma.hmIngredient.deleteMany()
-  await prisma.ingredient.deleteMany()
-  await prisma.glassware.deleteMany()
+  const existing = await prisma.ingredient.count()
+  if (existing > 0) {
+    // eslint-disable-next-line no-console
+    console.log('Database already contains data; skipping seed.')
+    return
+  }
 
   // Ingredients
   const ingredients = [

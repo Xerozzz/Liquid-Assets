@@ -58,14 +58,12 @@ model HmIngredient {
 
 model HmIngredientComponent {
   id             Int          @id @default(autoincrement()) @map("hm_ingredient_component_id")
-  hmIngredient   HmIngredient @relation(fields: [hmIngredientId], references: [id])
+  hmIngredient   HmIngredient @relation(fields: [hmIngredientId], references: [id], onDelete: Cascade)
   hmIngredientId Int          @map("hm_ingredient_id")
-  ingredient     Ingredient   @relation(fields: [ingredientId], references: [id])
+  ingredient     Ingredient   @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
   ingredientId   Int          @map("ingredient_id")
   quantity       Float?
-  isDeleted      Boolean      @default(false) @map("is_deleted")
   createdAt      DateTime     @default(now()) @map("created_at")
-  deletedAt      DateTime?    @map("deleted_at")
 
   @@unique([hmIngredientId, ingredientId])
   @@map("hm_ingredient_components")
@@ -91,14 +89,12 @@ model Recipe {
 
 model RecipeIngredient {
   id           Int         @id @default(autoincrement()) @map("recipe_ingredient_id")
-  recipe       Recipe      @relation(fields: [recipeId], references: [id])
+  recipe       Recipe      @relation(fields: [recipeId], references: [id], onDelete: Cascade)
   recipeId     Int         @map("recipe_id")
-  ingredient   Ingredient  @relation(fields: [ingredientId], references: [id])
+  ingredient   Ingredient  @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
   ingredientId Int         @map("ingredient_id")
   quantity     Float
-  isDeleted    Boolean     @default(false) @map("is_deleted")
   createdAt    DateTime    @default(now()) @map("created_at")
-  deletedAt    DateTime?   @map("deleted_at")
 
   @@unique([recipeId, ingredientId])
   @@map("recipe_ingredient")
@@ -106,14 +102,12 @@ model RecipeIngredient {
 
 model RecipeHmIngredient {
   id             Int          @id @default(autoincrement()) @map("recipe_hm_ingredient_id")
-  recipe         Recipe       @relation(fields: [recipeId], references: [id])
+  recipe         Recipe       @relation(fields: [recipeId], references: [id], onDelete: Cascade)
   recipeId       Int          @map("recipe_id")
-  hmIngredient   HmIngredient @relation(fields: [hmIngredientId], references: [id])
+  hmIngredient   HmIngredient @relation(fields: [hmIngredientId], references: [id], onDelete: Restrict)
   hmIngredientId Int          @map("hm_ingredient_id")
   quantity       Float
-  isDeleted      Boolean      @default(false) @map("is_deleted")
   createdAt      DateTime     @default(now()) @map("created_at")
-  deletedAt      DateTime?    @map("deleted_at")
 
   @@unique([recipeId, hmIngredientId])
   @@map("recipe_hm_ingredient")

@@ -1,14 +1,12 @@
 <script>
 import { createGlassware } from '@/api/glassware'
-import { useSQLite } from '@/composables/useSQLite'
 import { useNotificationStore } from '@/stores/notification.store'
 
 export default {
   name: 'GlasswareCreate',
   setup() {
     const notification = useNotificationStore()
-    const { destroy } = useSQLite()
-    return { notification, destroy }
+    return { notification }
   },
   data() {
     return {
@@ -38,7 +36,6 @@ export default {
             message: 'Glassware added successfully',
             severity: 'success',
           })
-          this.destroy()
           this.$router.push('/glassware')
         } catch (error) {
           console.error(error)
@@ -49,9 +46,6 @@ export default {
         }
       }
     },
-  },
-  unmounted() {
-    this.destroy()
   },
 }
 </script>

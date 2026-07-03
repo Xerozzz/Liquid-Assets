@@ -1,5 +1,4 @@
 <script>
-import { useSQLite } from '@/composables/useSQLite'
 import { useNotificationStore } from '@/stores/notification.store'
 import { getIngredients } from '@/api/ingredients'
 import { createMultipleHmIngredientComponents } from '@/api/hm_ingredient_components'
@@ -13,9 +12,8 @@ export default {
   components: { IngredientDatatable },
   setup() {
     const notification = useNotificationStore()
-    const { destroy } = useSQLite()
     const { saveImage } = useImageStorage()
-    return { notification, destroy, saveImage }
+    return { notification, saveImage }
   },
   data() {
     return {
@@ -97,7 +95,7 @@ export default {
 
           let totalCost = this.calculateTotalCost(this.hmIngredientsComponents, values.yield)
 
-          let hmIngredientId = await createHmIngredient(
+          const createdHm = await createHmIngredient(
             values.name,
             totalCost.toFixed(2),
             values.notes,
@@ -106,6 +104,7 @@ export default {
             finalImageFilename,
             values.is_stocked ? 1 : 0,
           )
+          const hmIngredientId = createdHm?.hm_ingredient_id
 
           if (hmIngredientId) {
             if (this.hmIngredientsComponents.length > 0) {
@@ -119,7 +118,6 @@ export default {
               await this.insertIngredientData(ingredients_data)
             }
           }
-          this.destroy()
           this.$router.push('/hm')
         }
       } catch (error) {

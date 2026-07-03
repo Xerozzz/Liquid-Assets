@@ -144,10 +144,7 @@ router.delete('/:id', async (req, res) => {
 router.delete('/by-recipe/:id', async (req, res) => {
   try {
     const recipeId = Number(req.params.id)
-    await prisma.recipeHmIngredient.updateMany({
-      where: { recipeId },
-      data: { isDeleted: true, deletedAt: new Date() },
-    })
+    await prisma.recipeHmIngredient.deleteMany({ where: { recipeId } })
     res.status(204).end()
   } catch (e) {
     // eslint-disable-next-line no-console

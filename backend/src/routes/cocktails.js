@@ -1,53 +1,42 @@
 import express from 'express'
-import { Prisma } from '@prisma/client'
 import prisma from '../prisma.js'
 
 const router = express.Router()
 
 router.get('/', async (req, res) => {
   try {
-    const rows = await prisma.$queryRaw(Prisma.sql`
-      SELECT
-        r.*,
-        (
-          SELECT COUNT(*)
-          FROM recipe_ingredient ri
-          JOIN ingredients i ON ri.ingredient_id = i.ingredient_id
-          WHERE ri.recipe_id = r.recipe_id AND (i.is_stocked = false OR i.is_stocked IS NULL) AND ri.is_deleted = false
-        ) + (
-          SELECT COUNT(*)
-          FROM recipe_hm_ingredient rhi
-          JOIN hm_ingredients hmi ON rhi.hm_ingredient_id = hmi.hm_ingredient_id
-          WHERE rhi.recipe_id = r.recipe_id AND (hmi.is_stocked = false OR hmi.is_stocked IS NULL) AND rhi.is_deleted = false
-        ) AS missing_count,
-        (
-          SELECT STRING_AGG(i.name, ', ')
-          FROM recipe_ingredient ri
-          JOIN ingredients i ON ri.ingredient_id = i.ingredient_id
-          WHERE ri.recipe_id = r.recipe_id AND ri.is_deleted = false
-        ) AS raw_ingredients_str,
-        (
-          SELECT STRING_AGG(hmi.name, ', ')
-          FROM recipe_hm_ingredient rhi
-          JOIN hm_ingredients hmi ON rhi.hm_ingredient_id = hmi.hm_ingredient_id
-          WHERE rhi.recipe_id = r.recipe_id AND rhi.is_deleted = false
-        ) AS hm_ingredients_str
-      FROM recipe r
-      WHERE r.is_deleted = false;
-    `)
-    // Convert BigInt values to numbers for JSON serialization
-    const serializedRows = rows.map(row => {
-      const serialized = {}
-      for (const [key, value] of Object.entries(row)) {
-        if (typeof value === 'bigint') {
-          serialized[key] = Number(value)
-        } else {
-          serialized[key] = value
-        }
-      }
-      return serialized
+    const recipes = await prisma.recipe.findMany({
+      where: { isDeleted: false },
+      include: {
+        ingredients: { include: { ingredient: true } },
+        hmIngredients: { include: { hmIngredient: true } },
+      },
     })
-    res.json(serializedRows)
+
+    const rows = recipes.map((r) => {
+      const rawItems = r.ingredients
+      const hmItems = r.hmIngredients
+
+      const missingCount =
+        rawItems.filter((ri) => !ri.ingredient?.isStocked).length +
+        hmItems.filter((hi) => !hi.hmIngredient?.isStocked).length
+
+      return {
+        recipe_id: r.id,
+        name: r.name,
+        glass_id: r.glassId,
+        step_to_make: r.stepToMake,
+        garnish: r.garnish,
+        notes: r.notes,
+        image: r.image,
+        created_at: r.createdAt,
+        missing_count: missingCount,
+        raw_ingredients_str: rawItems.map((ri) => ri.ingredient?.name).filter(Boolean).join(', '),
+        hm_ingredients_str: hmItems.map((hi) => hi.hmIngredient?.name).filter(Boolean).join(', '),
+      }
+    })
+
+    res.json(rows)
   } catch (e) {
     // eslint-disable-next-line no-console
     console.error(e)
@@ -58,52 +47,52 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const recipeId = Number(req.params.id)
-    const rows = await prisma.$queryRaw(Prisma.sql`
-      WITH base AS (
-        SELECT r.recipe_id,
-               r.name AS recipe_name,
-               g.name AS glass_name,
-               g.glass_id AS glass_id,
-               r.garnish,
-               r.notes,
-               r.image,
-               r.step_to_make
-        FROM recipe r
-        JOIN glassware g ON r.glass_id = g.glass_id
-        WHERE r.is_deleted = false AND r.recipe_id = ${recipeId}
-      ),
-      items AS (
-        SELECT 'ingredient' AS kind,
-               i.ingredient_id AS item_id,
-               i.name AS item_name,
-               i.cost AS item_cost,
-               i.unit AS item_unit,
-               i.is_stocked AS item_stock,
-               ri.quantity AS item_quantity
-        FROM recipe_ingredient ri
-        JOIN ingredients i ON i.ingredient_id = ri.ingredient_id
-        WHERE ri.is_deleted = false AND ri.recipe_id = ${recipeId}
+    const recipe = await prisma.recipe.findFirst({
+      where: { id: recipeId, isDeleted: false },
+      include: {
+        glass: true,
+        ingredients: { include: { ingredient: true } },
+        hmIngredients: { include: { hmIngredient: true } },
+      },
+    })
 
-        UNION ALL
+    if (!recipe) return res.json([])
 
-        SELECT 'hm' AS kind,
-               hmi.hm_ingredient_id AS item_id,
-               hmi.name AS item_name,
-               hmi.cost AS item_cost,
-               hmi.unit AS item_unit,
-               hmi.is_stocked AS item_stock,
-               rhi.quantity AS item_quantity
-        FROM recipe_hm_ingredient rhi
-        JOIN hm_ingredients hmi ON hmi.hm_ingredient_id = rhi.hm_ingredient_id
-        WHERE rhi.is_deleted = false AND rhi.recipe_id = ${recipeId}
-      )
-      SELECT b.*, i.*
-      FROM base b
-      CROSS JOIN items i
-      ORDER BY i.item_name;
-    `)
+    const base = {
+      recipe_id: recipe.id,
+      recipe_name: recipe.name,
+      glass_id: recipe.glassId,
+      glass_name: recipe.glass?.name || '',
+      garnish: recipe.garnish,
+      notes: recipe.notes,
+      image: recipe.image,
+      step_to_make: recipe.stepToMake,
+    }
 
-    res.json(rows)
+    const items = [
+      ...recipe.ingredients.map((ri) => ({
+        kind: 'ingredient',
+        item_id: ri.ingredientId,
+        item_name: ri.ingredient?.name,
+        item_cost: ri.ingredient?.cost,
+        item_unit: ri.ingredient?.unit,
+        item_stock: ri.ingredient?.isStocked,
+        item_quantity: ri.quantity,
+      })),
+      ...recipe.hmIngredients.map((rh) => ({
+        kind: 'hm',
+        item_id: rh.hmIngredientId,
+        item_name: rh.hmIngredient?.name,
+        item_cost: rh.hmIngredient?.cost,
+        item_unit: rh.hmIngredient?.unit,
+        item_stock: rh.hmIngredient?.isStocked,
+        item_quantity: rh.quantity,
+      })),
+    ].sort((a, b) => (a.item_name || '').localeCompare(b.item_name || ''))
+
+    if (items.length === 0) return res.json([{ ...base }])
+
+    res.json(items.map((it) => ({ ...base, ...it })))
   } catch (e) {
     // eslint-disable-next-line no-console
     console.error(e)
@@ -158,7 +147,10 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const id = Number(req.params.id)
-    await prisma.recipe.update({ where: { id }, data: { isDeleted: true } })
+    await prisma.recipe.update({
+      where: { id },
+      data: { isDeleted: true, deletedAt: new Date() },
+    })
     res.status(204).end()
   } catch (e) {
     // eslint-disable-next-line no-console
@@ -185,64 +177,78 @@ router.post('/import', async (req, res) => {
     }
 
     let glass = null
+    const unknowns = []
+
     if (cocktail.glassName) {
       glass = await prisma.glassware.findFirst({
-        where: { name: { equals: cocktail.glassName, mode: 'insensitive' } },
-      })
-    }
-
-    if (!glass) {
-      glass = await prisma.glassware.findFirst()
-    }
-
-    if (!glass) {
-      glass = await prisma.glassware.create({
-        data: {
-          name: 'Standard Glass',
-          brand: 'Generic',
-          model: 'Standard',
-          volume: 300,
-          volumeWIce: 200,
+        where: {
+          name: { equals: cocktail.glassName, mode: 'insensitive' },
+          isDeleted: false,
         },
       })
+      if (!glass) unknowns.push(`glass:${cocktail.glassName}`)
     }
 
-    const recipe = await prisma.recipe.create({
-      data: {
-        name: cocktail.name,
-        glassId: glass.id,
-        stepToMake: cocktail.instructions || '',
-        garnish: '',
-        notes: '',
-        image: null,
-      },
-    })
+    if (!glass) {
+      glass = await prisma.glassware.findFirst({ where: { isDeleted: false } })
+    }
 
-    const dbIngredients = await prisma.ingredient.findMany()
-    const ingredientInserts = []
-    const unknownIngredients = []
+    if (!glass) {
+      return res.json({
+        success: false,
+        name: cocktail.name,
+        error: 'No glassware in database; add glassware before importing',
+      })
+    }
+
+    const [dbIngredients, dbHm] = await Promise.all([
+      prisma.ingredient.findMany({ where: { isDeleted: false } }),
+      prisma.hmIngredient.findMany({ where: { isDeleted: false } }),
+    ])
+
+    const findRaw = (name) =>
+      dbIngredients.find((d) => d.name.toLowerCase().trim() === name.toLowerCase().trim())
+    const findHm = (name) =>
+      dbHm.find((d) => d.name.toLowerCase().trim() === name.toLowerCase().trim())
+
+    const rawInserts = []
+    const hmInserts = []
 
     for (const item of cocktail.ingredients || []) {
-      const match = dbIngredients.find(
-        (dbIng) => dbIng.name.toLowerCase().trim() === item.name.toLowerCase().trim(),
-      )
-
-      if (match) {
-        ingredientInserts.push({
-          recipeId: recipe.id,
-          ingredientId: match.id,
-          quantity: Number(item.amount || 0),
-        })
-      } else {
-        unknownIngredients.push(item.name)
+      const raw = findRaw(item.name)
+      if (raw) {
+        rawInserts.push({ ingredientId: raw.id, quantity: Number(item.amount || 0) })
+        continue
       }
+      const hm = findHm(item.name)
+      if (hm) {
+        hmInserts.push({ hmIngredientId: hm.id, quantity: Number(item.amount || 0) })
+        continue
+      }
+      unknowns.push(item.name)
     }
 
-    for (const row of ingredientInserts) {
-      await prisma.recipeIngredient.create({ data: row })
-    }
+    const recipe = await prisma.$transaction(async (tx) => {
+      const r = await tx.recipe.create({
+        data: {
+          name: cocktail.name,
+          glassId: glass.id,
+          stepToMake: cocktail.instructions || '',
+          garnish: '',
+          notes: '',
+          image: null,
+        },
+      })
+      for (const row of rawInserts) {
+        await tx.recipeIngredient.create({ data: { recipeId: r.id, ...row } })
+      }
+      for (const row of hmInserts) {
+        await tx.recipeHmIngredient.create({ data: { recipeId: r.id, ...row } })
+      }
+      return r
+    })
 
-    res.json({ success: true, name: cocktail.name, unknowns: unknownIngredients })
+    res.json({ success: true, name: cocktail.name, id: recipe.id, unknowns })
   } catch (e) {
     // eslint-disable-next-line no-console
     console.error(e)

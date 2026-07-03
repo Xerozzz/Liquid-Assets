@@ -1,14 +1,12 @@
 <script>
 import { getGlassware, createMultipleGlassware } from '@/api/glassware.js'
-import { useSQLite } from '@/composables/useSQLite'
 import { useNotificationStore } from '@/stores/notification.store'
 
 export default {
   name: 'GlasswareHome',
   setup() {
     const notification = useNotificationStore()
-    const { destroy } = useSQLite()
-    return { notification, destroy }
+    return { notification }
   },
   data() {
     return {
@@ -129,9 +127,6 @@ export default {
   },
   mounted() {
     this.retrieveGlassware()
-  },
-  unmounted() {
-    this.destroy()
   },
 }
 </script>

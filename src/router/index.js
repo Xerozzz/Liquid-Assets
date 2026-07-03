@@ -2,7 +2,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 // Import Views
 import HomeView from '../views/HomeView.vue'
-import PlaygroundView from '@/views/PlaygroundView.vue'
 import IngredientView from '@/views/IngredientView.vue'
 import HmView from '@/views/HmView.vue'
 import GlasswareView from '@/views/GlasswareView.vue'
@@ -149,11 +148,6 @@ const router = createRouter({
           component: GlasswareSpecific,
         },
       ],
-    },
-    {
-      path: '/playground',
-      name: 'playground',
-      component: PlaygroundView,
     },
   ],
 })

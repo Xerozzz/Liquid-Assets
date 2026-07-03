@@ -1,5 +1,4 @@
 <script>
-import { useSQLite } from '@/composables/useSQLite'
 import { useNotificationStore } from '@/stores/notification.store'
 import { getHmIngredient, importHmIngredientFromCSV } from '@/api/hm_ingredients.js'
 import { getIngredients } from '@/api/ingredients.js'
@@ -9,9 +8,8 @@ export default {
   name: 'HmIngredientHome',
   setup() {
     const notification = useNotificationStore()
-    const { destroy } = useSQLite()
     const { getImageUrl } = useImageStorage()
-    return { notification, destroy, getImageUrl }
+    return { notification, getImageUrl }
   },
   data() {
     return {
@@ -58,20 +56,10 @@ export default {
         if (q.q) this.searchQuery = q.q
 
         this.hmIngredients = await Promise.all(
-          rawData.map(async (item) => {
-            let finalUrl = null
-            if (item.image) {
-              if (item.image.startsWith('data:')) {
-                finalUrl = item.image
-              } else {
-                finalUrl = await this.getImageUrl(item.image)
-              }
-            }
-            return {
-              ...item,
-              displayImageUrl: finalUrl,
-            }
-          }),
+          rawData.map(async (item) => ({
+            ...item,
+            displayImageUrl: item.image ? await this.getImageUrl(item.image) : null,
+          })),
         )
       } catch (error) {
         console.error(error)
@@ -234,9 +222,6 @@ export default {
   },
   mounted() {
     this.getData()
-  },
-  unmounted() {
-    this.destroy()
   },
 }
 </script>

@@ -1,5 +1,4 @@
 <script>
-import { useSQLite } from '@/composables/useSQLite'
 import { useNotificationStore } from '@/stores/notification.store'
 import { useImageStorage } from '@/composables/useImageStorage'
 
@@ -13,9 +12,8 @@ export default {
   components: { DeleteDialog },
   setup() {
     const notification = useNotificationStore()
-    const { destroy } = useSQLite()
     const { getImageUrl } = useImageStorage()
-    return { notification, destroy, getImageUrl }
+    return { notification, getImageUrl }
   },
   data() {
     return {
@@ -50,13 +48,8 @@ export default {
           is_stocked: mainData.is_stocked === 1 || mainData.is_stocked === true,
         }
 
-        // --- IMAGE RESOLUTION LOGIC ---
         if (this.hmIngredient.image) {
-          if (this.hmIngredient.image.startsWith('data:')) {
-            this.displayImageUrl = this.hmIngredient.image
-          } else {
-            this.displayImageUrl = await this.getImageUrl(this.hmIngredient.image)
-          }
+          this.displayImageUrl = await this.getImageUrl(this.hmIngredient.image)
         }
 
         // Fetch Components List
@@ -119,9 +112,6 @@ export default {
   },
   mounted() {
     this.getHmIngredient()
-  },
-  unmounted() {
-    this.destroy()
   },
 }
 </script>

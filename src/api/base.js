@@ -1,4 +1,4 @@
-const BASE_API = import.meta.env.VITE_API_URL || 'http://localhost:4000'
+const BASE_API = import.meta.env.VITE_API_URL ?? 'http://localhost:4000'
 
 export const apiUrl = (path) => `${BASE_API}${path}`
 
