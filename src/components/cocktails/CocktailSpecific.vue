@@ -1,6 +1,5 @@
 <script>
 import { deleteCocktail, getCocktailById } from '@/api/cocktail.js'
-import { useSQLite } from '@/composables/useSQLite'
 import { useNotificationStore } from '@/stores/notification.store'
 import { useImageStorage } from '@/composables/useImageStorage'
 import DeleteDialog from '../DeleteDialog.vue'
@@ -12,9 +11,8 @@ export default {
   components: { DeleteDialog },
   setup() {
     const notification = useNotificationStore()
-    const { destroy } = useSQLite()
     const { getImageUrl } = useImageStorage()
-    return { notification, destroy, getImageUrl }
+    return { notification, getImageUrl }
   },
   data() {
     return {
@@ -107,9 +105,6 @@ export default {
   },
   mounted() {
     this.fetchCocktail()
-  },
-  unmounted() {
-    this.destroy()
   },
 }
 </script>

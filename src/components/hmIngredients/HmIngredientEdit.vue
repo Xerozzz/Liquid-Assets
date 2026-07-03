@@ -1,6 +1,6 @@
 <script>
-import { useSQLite } from '@/composables/useSQLite'
 import { useNotificationStore } from '@/stores/notification.store'
+import { useImageStorage } from '@/composables/useImageStorage'
 
 import {
   getHmIngredientComponentByHmIngredientId,
@@ -18,8 +18,8 @@ export default {
   },
   setup() {
     const notification = useNotificationStore()
-    const { destroy } = useSQLite()
-    return { notification, destroy }
+    const { saveImage, getImageUrl } = useImageStorage()
+    return { notification, saveImage, getImageUrl }
   },
   data() {
     return {
@@ -28,6 +28,9 @@ export default {
       ingredients: [],
       hmIngredientComponents: [],
       hmIngredientId: null,
+      selectedFileRaw: null,
+      previewImageUrl: null,
+      resolvedImageUrl: null,
       initialValues: {
         name: '',
         cost: 0,
@@ -38,6 +41,23 @@ export default {
         is_stocked: false,
       },
     }
+  },
+  computed: {
+    displayImageUrl() {
+      return this.previewImageUrl || this.resolvedImageUrl
+    },
+  },
+  watch: {
+    'initialValues.image': {
+      immediate: true,
+      async handler(val) {
+        if (!val) {
+          this.resolvedImageUrl = null
+          return
+        }
+        this.resolvedImageUrl = await this.getImageUrl(val)
+      },
+    },
   },
   methods: {
     async getData() {
@@ -87,11 +107,8 @@ export default {
     },
     onFileSelect(event) {
       const file = event.files[0]
-      const reader = new FileReader()
-      reader.onload = async (e) => {
-        this.initialValues.image = e.target.result
-      }
-      reader.readAsDataURL(file)
+      this.selectedFileRaw = file
+      this.previewImageUrl = URL.createObjectURL(file)
     },
     resolver: ({ values }) => {
       const errors = {}
@@ -124,11 +141,16 @@ export default {
         if (valid) {
           let totalCost = this.calculateTotalCost(this.hmIngredientComponents, values.yield)
 
+          let imageValue = this.initialValues.image
+          if (this.selectedFileRaw) {
+            imageValue = await this.saveImage(this.selectedFileRaw)
+          }
+
           await updateHmIngredient(
             values.name,
             totalCost.toFixed(2),
             values.notes,
-            this.initialValues.image,
+            imageValue,
             values.unit,
             values.yield,
             values.is_stocked ? 1 : 0,
@@ -151,7 +173,6 @@ export default {
             severity: 'success',
           })
 
-          this.destroy()
           this.$router.push('/hm')
         }
       } catch (error) {
@@ -162,9 +183,6 @@ export default {
   mounted() {
     this.hmIngredientId = this.$route.params.id
     this.getData()
-  },
-  unmounted() {
-    // handled by destroy in submit/setup
   },
 }
 </script>
@@ -177,9 +195,9 @@ export default {
   <div v-else class="max-w-5xl mx-auto py-10">
     <h1 class="text-2xl font-bold mb-6 text-center">Edit Homemade Ingredient</h1>
 
-    <div v-if="hmIngredient.image" class="flex justify-center mb-6">
+    <div v-if="displayImageUrl" class="flex justify-center mb-6">
       <img
-        :src="hmIngredient.image"
+        :src="displayImageUrl"
         alt="Ingredient Image"
         class="h-48 rounded-md shadow-sm object-cover"
       />

@@ -1,14 +1,12 @@
 <script>
 import { getIngredients, createMultipleIngredients } from '@/api/ingredients.js'
-import { useSQLite } from '@/composables/useSQLite'
 import { useNotificationStore } from '@/stores/notification.store'
 
 export default {
   name: 'IngredientHome',
   setup() {
     const notification = useNotificationStore()
-    const { destroy } = useSQLite()
-    return { notification, destroy }
+    return { notification }
   },
   data() {
     return {
@@ -221,9 +219,6 @@ export default {
   },
   mounted() {
     this.retrieveIngredients()
-  },
-  unmounted() {
-    this.destroy()
   },
 }
 </script>

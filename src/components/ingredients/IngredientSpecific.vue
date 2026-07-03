@@ -1,6 +1,5 @@
 <script>
 import { deleteIngredient, getIngredientById } from '@/api/ingredients.js'
-import { useSQLite } from '@/composables/useSQLite'
 import { useNotificationStore } from '@/stores/notification.store'
 import DeleteDialog from '../DeleteDialog.vue'
 
@@ -9,8 +8,7 @@ export default {
   components: { DeleteDialog },
   setup() {
     const notification = useNotificationStore()
-    const { destroy } = useSQLite()
-    return { notification, destroy }
+    return { notification }
   },
   data() {
     return {
@@ -69,9 +67,6 @@ export default {
   },
   mounted() {
     this.fetchIngredient()
-  },
-  unmounted() {
-    this.destroy()
   },
 }
 </script>

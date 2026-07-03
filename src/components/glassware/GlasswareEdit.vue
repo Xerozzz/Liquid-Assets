@@ -1,14 +1,12 @@
 <script>
 import { getGlasswareById, updateGlassware } from '@/api/glassware'
-import { useSQLite } from '@/composables/useSQLite'
 import { useNotificationStore } from '@/stores/notification.store'
 
 export default {
   name: 'GlasswareEdit',
   setup() {
     const notification = useNotificationStore()
-    const { destroy } = useSQLite()
-    return { notification, destroy }
+    return { notification }
   },
   data() {
     return {
@@ -79,7 +77,6 @@ export default {
             this.glassId,
           )
           this.notification.notify({ message: 'Updated successfully', severity: 'success' })
-          this.destroy()
           this.$router.push('/glassware')
         } catch (error) {
           console.error(error)
@@ -91,9 +88,6 @@ export default {
   mounted() {
     this.glassId = this.$route.params.id
     this.loadData()
-  },
-  unmounted() {
-    this.destroy()
   },
 }
 </script>
