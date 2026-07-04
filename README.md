@@ -1,68 +1,103 @@
 # Liquid Assets v1.0
 
-Cocktail costing and inventory companion for bartenders or home enthusiasts. Track glassware, raw ingredients, homemade components, and full recipes in one offline-friendly Vue app backed by a browser-hosted SQLite database.
+Cocktail costing and inventory companion for bartenders or home enthusiasts. Track glassware, raw ingredients, homemade components, and full recipes in a Vue frontend backed by an Express + Prisma + Postgres backend, all running in Docker.
 
 ## Features
 
 - CRUD for cocktails, ingredients, homemade ingredients, and glassware with nested Vue Router views
 - Automatic cost/yield calculations and stock flags to see what can be made with on-hand items
-- Embedded SQLite (WASM + OPFS) with first-run seeding for demo data and foreign-key constraints enabled
+- Postgres-backed multi-user database (via Prisma), with schema migrations and seed data applied automatically on first boot
+- Server-hosted image uploads persisted to a Docker volume — images follow users across devices
 - PrimeVue UI with themeable components plus Pinia state and Tailwind utility styling
-- Playground view for running saved SQL snippets during development
+- Nginx reverse-proxies `/api/*` to the backend so the browser only talks to one origin
 
 ## Tech Stack
 
-- Vue 3 + Vite 7, Vue Router 4, Pinia 3
-- PrimeVue 4 + Prime Icons, Aura theme, TailwindCSS 4
-- SQLite WASM (`@sqlite.org/sqlite-wasm`) persisted in OPFS
-- Tooling: ESLint + Prettier, JSDoc-generated docs
+- Frontend: Vue 3 + Vite 7, Vue Router 4, Pinia 3, PrimeVue 4 (Aura), TailwindCSS 4
+- Backend: Node 20 + Express 4, Prisma 5, Multer (uploads)
+- Database: Postgres 15
+- Runtime: Docker Compose (db + backend + frontend)
 
-## Data Model (SQLite)
+## Data Model
 
 - `glassware`: shapes/volumes for costing and pour rules
 - `ingredients`: raw items with cost per unit and stock flag
 - `hm_ingredients`: homemade items with yields, cost, and notes
 - `hm_ingredient_components`: maps homemade items to their raw ingredients
 - `recipe`: cocktail/mocktail records with steps, garnish, and glass link
-- `recipe_ingredient` and `recipe_hm_ingredient`: connect recipes to raw and homemade items
+- `recipe_ingredient` / `recipe_hm_ingredient`: link recipes to raw and homemade items
 
-Tables, schemas, and seed inserts live in [src/config/database.js](src/config/database.js) and [src/config/dumps.js](src/config/dumps.js).
+Soft-delete (`is_deleted`) is used on the top-level entities; the three join tables use hard delete. Schema lives in [backend/prisma/schema.prisma](backend/prisma/schema.prisma); seed data in [backend/prisma/seed.js](backend/prisma/seed.js).
 
-## Getting Started
+## Quick Start (Docker)
 
-Prerequisites: Node 18+.
+Prerequisites: Docker Desktop (with Docker Compose v2).
 
 ```sh
-npm install            # install deps
-npm run dev            # dev server + regenerate JSDoc
-npm run build          # production bundle
-npm run preview        # preview built app
-npm run lint           # eslint --fix
-npm run format         # prettier src/
-npm run docs           # regenerate docs only
+docker compose up --build
+```
+
+On first boot the backend runs `prisma migrate deploy` and (unless a database is already populated) seeds sample data. Then:
+
+- Frontend: http://localhost/
+- Backend health: http://localhost/api/health
+- Postgres: localhost:5432 (user/password: `postgres` / `postgres`)
+
+To stop and remove containers (data volumes preserved):
+
+```sh
+docker compose down
+```
+
+To wipe the database and uploaded images as well:
+
+```sh
+docker compose down -v
+```
+
+## Local Frontend Development (against the containerized backend)
+
+You can point a locally-run Vite dev server at the containerized backend for hot-reload dev.
+
+```sh
+docker compose up -d db backend   # start only db + backend
+npm install
+VITE_API_URL=http://localhost:4000 npm run dev
 ```
 
 Dev server: http://localhost:5173
 
-Documentation: http://localhost:5173/docs/index.html (generated into public/docs by `npm run docs`).
+Other scripts:
 
-## Database & Seeding
+```sh
+npm run build          # production bundle
+npm run preview        # preview built app
+npm run lint           # eslint --fix
+npm run format         # prettier src/
+npm run docs           # regenerate JSDoc
+```
 
-- SQLite runs in-browser via WASM and persists in OPFS under `mydb.sqlite3`.
-- First load seeds sample data; the flag is stored in `localStorage` as `cocktail_app_db_seeded`.
-- To reseed: clear that flag and the OPFS db files, or call `resetDatabase()` from [src/composables/useSQLite.js](src/composables/useSQLite.js) (which destroys the worker, removes OPFS files, and re-seeds).
-- Foreign keys are enabled at init with `PRAGMA foreign_keys = ON;`.
+## Local Backend Development
+
+```sh
+docker compose up -d db
+cd backend
+npm install
+DATABASE_URL='postgres://postgres:postgres@localhost:5432/liquid_assets' \
+  npx prisma migrate deploy
+DATABASE_URL='postgres://postgres:postgres@localhost:5432/liquid_assets' \
+  npm run dev   # or npm start
+```
+
+## Persistence
+
+- Postgres data lives in the `db_data` volume.
+- Uploaded images live in the `images_data` volume, exposed inside the backend at `/app/uploads` and served at `/api/images/:filename`.
 
 ## App Layout
 
 - Entry: [src/main.js](src/main.js)
-- Routing: [src/router/index.js](src/router/index.js) (home, cocktails, ingredients, homemade ingredients, glassware, playground)
+- Routing: [src/router/index.js](src/router/index.js) (home, cocktails, ingredients, homemade ingredients, glassware)
 - Views: [src/views](src/views) with nested feature components under [src/components](src/components)
-- Utilities/config: [src/composables](src/composables), [src/config](src/config), [src/utils](src/utils)
-
-## Notes
-
-- UI theme is configured via PrimeVue Aura in [src/main.js](src/main.js). Adjust Tailwind styles in [src/index.css](src/index.css) and [src/assets/main.css](src/assets/main.css).
-- If docs generation slows `npm run dev`, run `npm run docs` once and use `vite` directly for local hacking.
-
-Note: README written by GPT5.1
+- API wrappers: [src/api](src/api) (see [src/api/base.js](src/api/base.js) and [src/api/mappers.js](src/api/mappers.js))
+- Image helpers: [src/composables/useImageStorage.js](src/composables/useImageStorage.js) → [src/api/images.js](src/api/images.js)

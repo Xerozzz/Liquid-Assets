@@ -12,8 +12,8 @@ import {
   createMultipleRecipeHmIngredient,
 } from '@/api/recipe_hm_ingredient'
 
-import { useSQLite } from '@/composables/useSQLite'
 import { useNotificationStore } from '@/stores/notification.store'
+import { useImageStorage } from '@/composables/useImageStorage'
 
 import IngredientDatatable from '../IngredientDatatable.vue'
 
@@ -24,8 +24,8 @@ export default {
   },
   setup() {
     const notification = useNotificationStore()
-    const { destroy } = useSQLite()
-    return { notification, destroy }
+    const { saveImage, getImageUrl } = useImageStorage()
+    return { notification, saveImage, getImageUrl }
   },
   data() {
     return {
@@ -37,6 +37,9 @@ export default {
       cocktailIngredients: [],
       cocktailHmIngredients: [],
       glassware: [],
+      selectedFileRaw: null,
+      previewImageUrl: null,
+      resolvedImageUrl: null,
       initialValues: {
         name: '',
         glass: '',
@@ -123,11 +126,8 @@ export default {
 
     onFileSelect(event) {
       const file = event.files[0]
-      const reader = new FileReader()
-      reader.onload = async (e) => {
-        this.initialValues.image = e.target.result
-      }
-      reader.readAsDataURL(file)
+      this.selectedFileRaw = file
+      this.previewImageUrl = URL.createObjectURL(file)
     },
 
     resolver: ({ values }) => {
@@ -149,13 +149,18 @@ export default {
           })
         }
         if (valid) {
+          let imageValue = this.initialValues.image
+          if (this.selectedFileRaw) {
+            imageValue = await this.saveImage(this.selectedFileRaw)
+          }
+
           await updateCocktail(
             values.name,
             values.glass,
             values.step_to_make,
             values.garnish,
             values.notes,
-            this.initialValues.image,
+            imageValue,
             this.cocktailId,
           )
 
@@ -182,7 +187,6 @@ export default {
             summary: 'Success',
             severity: 'success',
           })
-          this.destroy() // Close DB
           this.$router.push('/cocktail')
         }
       } catch (error) {
@@ -194,9 +198,22 @@ export default {
     this.cocktailId = this.$route.params.id
     this.getData()
   },
-  unmounted() {
-    // Only destroy if we aren't navigating away via submit (which handles destroy manually)
-    // But it's safer to rely on internal logic or keep connection management robust.
+  computed: {
+    displayImageUrl() {
+      return this.previewImageUrl || this.resolvedImageUrl
+    },
+  },
+  watch: {
+    'initialValues.image': {
+      immediate: true,
+      async handler(val) {
+        if (!val) {
+          this.resolvedImageUrl = null
+          return
+        }
+        this.resolvedImageUrl = await this.getImageUrl(val)
+      },
+    },
   },
 }
 </script>
@@ -209,9 +226,9 @@ export default {
   <div v-else class="max-w-5xl mx-auto py-10">
     <h1 class="text-2xl font-bold mb-6 text-center">Edit Cocktail</h1>
 
-    <div v-if="cocktail.image" class="flex justify-center mb-6">
+    <div v-if="displayImageUrl" class="flex justify-center mb-6">
       <img
-        :src="cocktail.image"
+        :src="displayImageUrl"
         alt="Cocktail Image"
         class="h-48 rounded-md shadow-sm object-cover"
       />
