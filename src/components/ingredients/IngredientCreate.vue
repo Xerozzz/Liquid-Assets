@@ -1,14 +1,12 @@
 <script>
 import { createIngredient } from '@/api/ingredients'
-import { useSQLite } from '@/composables/useSQLite'
 import { useNotificationStore } from '@/stores/notification.store'
 
 export default {
   name: 'IngredientCreate',
   setup() {
     const notification = useNotificationStore()
-    const { destroy } = useSQLite()
-    return { notification, destroy }
+    return { notification }
   },
   data() {
     return {
@@ -46,7 +44,6 @@ export default {
             message: `Ingredient created successfully`,
             severity: 'success',
           })
-          this.destroy() // Close DB before routing
           this.$router.push('/ingredient')
         }
       } catch (error) {
@@ -54,9 +51,6 @@ export default {
         this.notification.notify({ message: 'Error creating ingredient', severity: 'error' })
       }
     },
-  },
-  unmounted() {
-
   },
 }
 </script>

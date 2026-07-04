@@ -1,13 +1,11 @@
 <script>
-import { useSQLite } from '@/composables/useSQLite'
 import { useNotificationStore } from '@/stores/notification.store'
 
 export default {
   name: 'IngredientDatatable',
   setup() {
     const notification = useNotificationStore()
-    const { destroy } = useSQLite()
-    return { notification, destroy }
+    return { notification }
   },
   props: {
     title: {

@@ -6,7 +6,6 @@ import { createCocktail } from '@/api/cocktail'
 import { createMultipleRecipeIngredient } from '@/api/recipe_ingredient'
 import { createMultipleRecipeHmIngredient } from '@/api/recipe_hm_ingredient'
 
-import { useSQLite } from '@/composables/useSQLite'
 import { useNotificationStore } from '@/stores/notification.store'
 import { useImageStorage } from '@/composables/useImageStorage'
 
@@ -19,9 +18,8 @@ export default {
   },
   setup() {
     const notification = useNotificationStore()
-    const { destroy } = useSQLite()
     const { saveImage } = useImageStorage()
-    return { notification, destroy, saveImage }
+    return { notification, saveImage }
   },
   data() {
     return {
@@ -119,7 +117,7 @@ export default {
             console.log('Saved as:', finalImageFilename)
           }
 
-          let recipe_id = await createCocktail(
+          const createdRecipe = await createCocktail(
             values.name,
             values.glass.glass_id,
             values.step_to_make,
@@ -127,6 +125,7 @@ export default {
             values.notes,
             finalImageFilename,
           )
+          const recipe_id = createdRecipe?.recipe_id
 
           if (recipe_id) {
             if (this.recipe_ingredients.length > 0) {
@@ -149,7 +148,6 @@ export default {
               )
               await this.insertHmIngredientData(ingredients_data)
             }
-            this.destroy()
             this.$router.push('/cocktail')
           }
         }
@@ -165,9 +163,6 @@ export default {
   },
   mounted() {
     this.getData()
-  },
-  unmounted() {
-    this.destroy()
   },
 }
 </script>

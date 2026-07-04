@@ -1,14 +1,12 @@
 <script>
 import { updateIngredient, getIngredientById } from '@/api/ingredients'
-import { useSQLite } from '@/composables/useSQLite'
 import { useNotificationStore } from '@/stores/notification.store'
 
 export default {
   name: 'IngredientEdit',
   setup() {
     const notification = useNotificationStore()
-    const { destroy } = useSQLite()
-    return { notification, destroy }
+    return { notification }
   },
   data() {
     return {
@@ -79,7 +77,6 @@ export default {
             this.ingredientId,
           )
           this.notification.notify({ message: 'Updated successfully', severity: 'success' })
-          this.destroy()
           this.$router.push('/ingredient')
         }
       } catch (error) {

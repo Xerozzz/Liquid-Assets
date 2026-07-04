@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Ingredient {
+  id         Int      @id @default(autoincrement()) @map("ingredient_id")
+  name       String
+  cost       Float
+  unit       String
+  isStocked  Boolean  @default(true) @map("is_stocked")
+  isDeleted  Boolean  @default(false) @map("is_deleted")
+  createdAt  DateTime @default(now()) @map("created_at")
+  deletedAt  DateTime? @map("deleted_at")
+
+  recipeLinks RecipeIngredient[]
+  hmComponents HmIngredientComponent[]
+
+  @@map("ingredients")
+}
+
+model Glassware {
+  id           Int      @id @default(autoincrement()) @map("glass_id")
+  name         String
+  brand        String
+  model        String
+  volume       Int
+  volumeWIce   Int      @map("volume_w_ice")
+  isDeleted    Boolean  @default(false) @map("is_deleted")
+  createdAt    DateTime @default(now()) @map("created_at")
+  deletedAt    DateTime? @map("deleted_at")
+  recipes      Recipe[]
+
+  @@map("glassware")
+}
+
+model HmIngredient {
+  id          Int                      @id @default(autoincrement()) @map("hm_ingredient_id")
+  name        String
+  cost        Float
+  yieldAmount Float                    @map("yield")
+  notes       String?
+  unit        String
+  image       String?
+  isStocked   Boolean                  @default(true) @map("is_stocked")
+  isDeleted   Boolean                  @default(false) @map("is_deleted")
+  createdAt   DateTime                 @default(now()) @map("created_at")
+  deletedAt   DateTime?                @map("deleted_at")
+  components  HmIngredientComponent[]
+  recipeLinks RecipeHmIngredient[]
+
+  @@map("hm_ingredients")
+}
+
+model HmIngredientComponent {
+  id             Int          @id @default(autoincrement()) @map("hm_ingredient_component_id")
+  hmIngredient   HmIngredient @relation(fields: [hmIngredientId], references: [id], onDelete: Cascade)
+  hmIngredientId Int          @map("hm_ingredient_id")
+  ingredient     Ingredient   @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
+  ingredientId   Int          @map("ingredient_id")
+  quantity       Float?
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  @@unique([hmIngredientId, ingredientId])
+  @@map("hm_ingredient_components")
+}
+
+model Recipe {
+  id            Int                 @id @default(autoincrement()) @map("recipe_id")
+  name          String
+  glass         Glassware           @relation(fields: [glassId], references: [id])
+  glassId       Int                 @map("glass_id")
+  stepToMake    String              @map("step_to_make")
+  garnish       String?
+  notes         String?
+  image         String?
+  isDeleted     Boolean             @default(false) @map("is_deleted")
+  createdAt     DateTime            @default(now()) @map("created_at")
+  deletedAt     DateTime?           @map("deleted_at")
+  ingredients   RecipeIngredient[]
+  hmIngredients RecipeHmIngredient[]
+
+  @@map("recipe")
+}
+
+model RecipeIngredient {
+  id           Int         @id @default(autoincrement()) @map("recipe_ingredient_id")
+  recipe       Recipe      @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  recipeId     Int         @map("recipe_id")
+  ingredient   Ingredient  @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
+  ingredientId Int         @map("ingredient_id")
+  quantity     Float
+  createdAt    DateTime    @default(now()) @map("created_at")
+
+  @@unique([recipeId, ingredientId])
+  @@map("recipe_ingredient")
+}
+
+model RecipeHmIngredient {
+  id             Int          @id @default(autoincrement()) @map("recipe_hm_ingredient_id")
+  recipe         Recipe       @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  recipeId       Int          @map("recipe_id")
+  hmIngredient   HmIngredient @relation(fields: [hmIngredientId], references: [id], onDelete: Restrict)
+  hmIngredientId Int          @map("hm_ingredient_id")
+  quantity       Float
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  @@unique([recipeId, hmIngredientId])
+  @@map("recipe_hm_ingredient")
+}

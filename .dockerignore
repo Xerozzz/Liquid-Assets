@@ -1,0 +1,12 @@
+node_modules
+backend/node_modules
+.git
+.gitignore
+.env
+.env.*
+dist
+public/docs
+*.log
+npm-debug.log
+.claude
+.vscode
