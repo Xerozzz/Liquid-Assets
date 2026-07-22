@@ -37,17 +37,9 @@ async function main() {
 
   // Glassware
   const glassData = [
-    {
-      name: 'Double Rocks',
-      brand: 'Spiegelau',
-      model: 'Perfect Serve',
-      volume: 360,
-      volumeWIce: 240,
-    },
-    { name: 'Nick & Nora', brand: 'Riedel', model: 'Drink Specific', volume: 140, volumeWIce: 110 },
-    { name: 'Highball', brand: 'Libbey', model: 'Chicago', volume: 300, volumeWIce: 200 },
-    { name: 'Coupe', brand: 'Luminarc', model: 'Barcraft', volume: 220, volumeWIce: 180 },
-    { name: 'Tiki Mug', brand: 'Generic', model: 'Ceramic', volume: 450, volumeWIce: 350 },
+    { name: 'Highball', brand: 'Generic', model: 'Highball', volume: 320, volumeWIce: 220 },
+    { name: 'Rocks Glass', brand: 'Generic', model: 'Rocks Glass', volume: 300, volumeWIce: 200 },
+    { name: 'Coupe', brand: 'Generic', model: 'Coupe', volume: 150, volumeWIce: 150 },
   ]
   const createdGlass = []
   for (const g of glassData) createdGlass.push(await prisma.glassware.create({ data: g }))
@@ -112,7 +104,7 @@ async function main() {
   const recipes = [
     {
       name: 'Negroni',
-      glassId: createdGlass[0].id,
+      glassId: createdGlass[1].id,
       stepToMake:
         'Add all ingredients to mixing glass with ice. Stir until chilled. Strain over large rock.',
       garnish: 'Orange Peel',
@@ -120,28 +112,28 @@ async function main() {
     },
     {
       name: 'Daiquiri',
-      glassId: createdGlass[3].id,
+      glassId: createdGlass[2].id,
       stepToMake: 'Add Rum, Lime, and Syrup to shaker. Shake hard with ice. Double strain.',
       garnish: 'Lime Wheel',
       notes: 'Adjust syrup based on lime acidity.',
     },
     {
       name: 'Old Fashioned',
-      glassId: createdGlass[0].id,
+      glassId: createdGlass[1].id,
       stepToMake: 'Add syrup and bitters. Add Whiskey. Stir with ice.',
       garnish: 'Orange Peel',
       notes: 'Use high proof bourbon.',
     },
     {
       name: "Bee's Knees",
-      glassId: createdGlass[1].id,
+      glassId: createdGlass[2].id,
       stepToMake: 'Shake all ingredients with ice. Fine strain.',
       garnish: 'Lemon Twist',
       notes: 'Gin sour variation.',
     },
     {
       name: 'The Last Word',
-      glassId: createdGlass[3].id,
+      glassId: createdGlass[2].id,
       stepToMake: 'Shake all ingredients with ice.',
       garnish: 'Luxardo Cherry',
       notes: 'Equal parts classic.',
