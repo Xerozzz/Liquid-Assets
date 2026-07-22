@@ -8,6 +8,7 @@ import recipeIngredientsRouter from './routes/recipeIngredients.js'
 import recipeHmIngredientsRouter from './routes/recipeHmIngredients.js'
 import cocktailsRouter from './routes/cocktails.js'
 import imagesRouter from './routes/images.js'
+import chatRouter from './routes/chat.js'
 
 const app = express()
 const PORT = process.env.PORT || 4000
@@ -25,6 +26,7 @@ app.use('/api/recipe-ingredients', recipeIngredientsRouter)
 app.use('/api/recipe-hm-ingredients', recipeHmIngredientsRouter)
 app.use('/api/cocktails', cocktailsRouter)
 app.use('/api/images', imagesRouter)
+app.use('/api/chat', chatRouter)
 
 app.listen(PORT, () => {
   console.log(`Backend listening on port ${PORT}`)
