@@ -1,8 +1,10 @@
 <script>
 import { useNotificationStore } from './stores/notification.store'
 import { useToast } from 'primevue'
+import ChatWidget from './components/ChatWidget.vue'
 
 export default {
+  components: { ChatWidget },
   setup() {
     const toast = useToast()
     return { toast }
@@ -49,4 +51,5 @@ export default {
 <template>
   <Toast />
   <RouterView />
+  <ChatWidget />
 </template>
