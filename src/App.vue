@@ -1,7 +1,6 @@
 <script>
-import { RouterView } from 'vue-router'
 import { useNotificationStore } from './stores/notification.store'
-import { Toast, useToast } from 'primevue'
+import { useToast } from 'primevue'
 
 export default {
   setup() {

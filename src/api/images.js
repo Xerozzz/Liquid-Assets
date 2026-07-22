@@ -16,5 +16,8 @@ export const imageUrl = (filename) => {
 
 export const deleteImage = async (filename) => {
   if (!filename) return
-  await fetch(apiUrl(`/api/images/${encodeURIComponent(filename)}`), { method: 'DELETE' })
+  const res = await fetch(apiUrl(`/api/images/${encodeURIComponent(filename)}`), {
+    method: 'DELETE',
+  })
+  return handleResponse(res)
 }

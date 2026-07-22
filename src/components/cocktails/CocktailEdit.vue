@@ -92,7 +92,18 @@ export default {
       }
     },
     async getCocktailData() {
-      let data = await getCocktailById(this.$route.params.id)
+      let data
+      try {
+        data = await getCocktailById(this.$route.params.id)
+      } catch {
+        this.notification.notify({
+          message: 'Cocktail not found',
+          summary: 'Not found',
+          severity: 'error',
+        })
+        this.$router.replace('/cocktail')
+        return
+      }
       if (data.length == 0) {
         this.$router.replace('/cocktail')
       } else {
@@ -191,6 +202,11 @@ export default {
         }
       } catch (error) {
         console.log(error)
+        this.notification.notify({
+          message: `${error}`,
+          summary: 'Error',
+          severity: 'error',
+        })
       }
     },
   },

@@ -34,6 +34,7 @@ h3 {
   @apply text-lg font-semibold my-2;
 }
 
-td, th {
+td,
+th {
   @apply p-2;
 }

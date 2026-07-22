@@ -86,7 +86,6 @@ export default {
       const file = event.files[0]
       this.selectedFileRaw = file
 
-
       this.initialValues.image = URL.createObjectURL(file)
     },
 

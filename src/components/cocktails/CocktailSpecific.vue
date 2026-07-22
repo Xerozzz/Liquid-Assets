@@ -11,8 +11,8 @@ export default {
   components: { DeleteDialog },
   setup() {
     const notification = useNotificationStore()
-    const { getImageUrl } = useImageStorage()
-    return { notification, getImageUrl }
+    const { getImageUrl, deleteImage } = useImageStorage()
+    return { notification, getImageUrl, deleteImage }
   },
   data() {
     return {
@@ -31,8 +31,7 @@ export default {
         const rows = await getCocktailById(cocktailId)
 
         if (!rows || rows.length === 0) {
-          this.error = new Error('Cocktail not found')
-          return
+          throw new Error('Cocktail not found')
         }
 
         const r = rows[0]
@@ -91,6 +90,9 @@ export default {
         await deleteCocktail(this.$route.params.id)
         await deleteRecipeHmIngredientByRecipeId(this.$route.params.id)
         await deleteRecipeIngredientByRecipeId(this.$route.params.id)
+        if (this.cocktail?.image) {
+          await this.deleteImage(this.cocktail.image)
+        }
         this.notification.notify({
           message: `Cocktail deleted successfully`,
           summary: 'Delete Success',
@@ -99,6 +101,11 @@ export default {
         this.$router.replace('/cocktail')
       } catch (error) {
         console.log(error)
+        this.notification.notify({
+          message: `${error}`,
+          summary: 'Error',
+          severity: 'error',
+        })
       }
     },
     cancelAction() {},

@@ -40,11 +40,5 @@ export const deleteGlassware = async (glass_id) => {
 
 export const createMultipleGlassware = async (rows) => {
   if (!rows || rows.length === 0) return []
-
-  const created = []
-  for (const r of rows) {
-    const item = await createGlassware(r.brand, r.model, r.volume, r.volume_w_ice)
-    created.push(item)
-  }
-  return created
+  return Promise.all(rows.map((r) => createGlassware(r.brand, r.model, r.volume, r.volume_w_ice)))
 }

@@ -41,10 +41,5 @@ export const deleteIngredient = async (ingredient_id) => {
 export const createMultipleIngredients = async (rows) => {
   if (!Array.isArray(rows))
     throw new TypeError('createMultipleIngredients: "rows" must be an array')
-  const created = []
-  for (const r of rows) {
-    const item = await createIngredient(r.name, r.unit, r.cost, r.is_stocked)
-    created.push(item)
-  }
-  return created
+  return Promise.all(rows.map((r) => createIngredient(r.name, r.unit, r.cost, r.is_stocked)))
 }

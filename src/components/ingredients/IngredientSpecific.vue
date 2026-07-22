@@ -57,7 +57,7 @@ export default {
           severity: 'success',
         })
         this.$router.replace('/ingredient')
-      } catch (error) {
+      } catch {
         this.notification.notify({
           message: 'Cannot delete: Ingredient is likely used in a recipe.',
           severity: 'error',

@@ -1,34 +1,31 @@
 import express from 'express'
 import prisma from '../prisma.js'
+import { asyncHandler } from '../asyncHandler.js'
+import { requireString } from '../validate.js'
 
 const router = express.Router()
 
-router.get('/', async (req, res) => {
-  try {
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
     const items = await prisma.hmIngredient.findMany({ where: { isDeleted: false } })
     res.json(items)
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e)
-    res.status(500).json({ error: 'Failed to fetch hm ingredients' })
-  }
-})
+  }, 'Failed to fetch hm ingredients'),
+)
 
-router.get('/:id', async (req, res) => {
-  try {
+router.get(
+  '/:id',
+  asyncHandler(async (req, res) => {
     const id = Number(req.params.id)
     const item = await prisma.hmIngredient.findUnique({ where: { id } })
     if (!item) return res.status(404).json({ error: 'Not found' })
     res.json(item)
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e)
-    res.status(500).json({ error: 'Failed to fetch hm ingredient' })
-  }
-})
+  }, 'Failed to fetch hm ingredient'),
+)
 
-router.get('/:id/components', async (req, res) => {
-  try {
+router.get(
+  '/:id/components',
+  asyncHandler(async (req, res) => {
     const id = Number(req.params.id)
     const item = await prisma.hmIngredient.findUnique({
       where: { id },
@@ -55,16 +52,15 @@ router.get('/:id/components', async (req, res) => {
     }))
 
     res.json(rows)
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e)
-    res.status(500).json({ error: 'Failed to fetch hm ingredient components' })
-  }
-})
+  }, 'Failed to fetch hm ingredient components'),
+)
 
-router.post('/', async (req, res) => {
-  try {
-    const { name, cost, notes, unit, yieldAmount, image, isStocked } = req.body
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    const name = requireString(req.body, 'name')
+    const unit = requireString(req.body, 'unit')
+    const { cost, notes, yieldAmount, image, isStocked } = req.body
     const created = await prisma.hmIngredient.create({
       data: {
         name,
@@ -77,17 +73,16 @@ router.post('/', async (req, res) => {
       },
     })
     res.status(201).json(created)
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e)
-    res.status(500).json({ error: 'Failed to create hm ingredient' })
-  }
-})
+  }, 'Failed to create hm ingredient'),
+)
 
-router.put('/:id', async (req, res) => {
-  try {
+router.put(
+  '/:id',
+  asyncHandler(async (req, res) => {
     const id = Number(req.params.id)
-    const { name, cost, notes, unit, yieldAmount, image, isStocked } = req.body
+    const name = requireString(req.body, 'name')
+    const unit = requireString(req.body, 'unit')
+    const { cost, notes, yieldAmount, image, isStocked } = req.body
     const updated = await prisma.hmIngredient.update({
       where: { id },
       data: {
@@ -101,23 +96,16 @@ router.put('/:id', async (req, res) => {
       },
     })
     res.json(updated)
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e)
-    res.status(500).json({ error: 'Failed to update hm ingredient' })
-  }
-})
+  }, 'Failed to update hm ingredient'),
+)
 
-router.delete('/:id', async (req, res) => {
-  try {
+router.delete(
+  '/:id',
+  asyncHandler(async (req, res) => {
     const id = Number(req.params.id)
     await prisma.hmIngredient.update({ where: { id }, data: { isDeleted: true } })
     res.status(204).end()
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e)
-    res.status(500).json({ error: 'Failed to delete hm ingredient' })
-  }
-})
+  }, 'Failed to delete hm ingredient'),
+)
 
 export default router

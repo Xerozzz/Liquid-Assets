@@ -19,7 +19,7 @@ export default {
         isstocked: false,
         // Helper fields for calculator
         totalcost: null,
-        totalquantity: null
+        totalquantity: null,
       },
     }
   },
@@ -46,7 +46,7 @@ export default {
           unit: ingredient.unit,
           isstocked: ingredient.is_stocked === 1,
           totalcost: null,
-          totalquantity: null
+          totalquantity: null,
         }
       } catch (error) {
         console.error(error)
@@ -66,7 +66,7 @@ export default {
           let finalCost = this.ingredient.cost
 
           if (values.totalcost && values.totalquantity) {
-             finalCost = (Number(values.totalcost) / Number(values.totalquantity)).toFixed(4)
+            finalCost = (Number(values.totalcost) / Number(values.totalquantity)).toFixed(4)
           }
 
           await updateIngredient(
@@ -124,21 +124,29 @@ export default {
       </div>
 
       <div class="p-4 bg-gray-50 rounded-md border border-gray-100">
-         <div class="flex justify-between items-center mb-3">
-             <h3 class="text-sm font-bold text-gray-500 uppercase">Update Cost (Optional)</h3>
-             <span class="text-sm text-gray-600">Current Cost: <strong>${{ ingredient.cost.toFixed(2) }} / {{ ingredient.unit }}</strong></span>
-         </div>
+        <div class="flex justify-between items-center mb-3">
+          <h3 class="text-sm font-bold text-gray-500 uppercase">Update Cost (Optional)</h3>
+          <span class="text-sm text-gray-600"
+            >Current Cost:
+            <strong>${{ ingredient.cost.toFixed(2) }} / {{ ingredient.unit }}</strong></span
+          >
+        </div>
 
-         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-             <div class="flex flex-col gap-1">
-                 <label class="text-sm font-semibold text-gray-700">New Price Paid</label>
-                 <InputNumber name="totalcost" placeholder="Leave empty to keep current" :minFractionDigits="2" fluid />
-             </div>
-             <div class="flex flex-col gap-1">
-                 <label class="text-sm font-semibold text-gray-700">New Quantity</label>
-                 <InputNumber name="totalquantity" placeholder="Leave empty to keep current" fluid />
-             </div>
-         </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-semibold text-gray-700">New Price Paid</label>
+            <InputNumber
+              name="totalcost"
+              placeholder="Leave empty to keep current"
+              :minFractionDigits="2"
+              fluid
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-semibold text-gray-700">New Quantity</label>
+            <InputNumber name="totalquantity" placeholder="Leave empty to keep current" fluid />
+          </div>
+        </div>
       </div>
 
       <div class="flex items-center gap-3">

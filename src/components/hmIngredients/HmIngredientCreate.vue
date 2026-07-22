@@ -122,6 +122,11 @@ export default {
         }
       } catch (error) {
         console.log(error)
+        this.notification.notify({
+          message: `${error}`,
+          summary: 'Error',
+          severity: 'error',
+        })
       }
     },
   },
