@@ -22,6 +22,7 @@ export default {
       error: null,
       ingredients: [],
       totalCost: 0,
+      actualVolume: 0,
     }
   },
   methods: {
@@ -38,6 +39,7 @@ export default {
         this.cocktail = {
           name: r.recipe_name,
           glass: r.glass_name,
+          glassCapacity: r.glass_volume,
           garnish: r.garnish,
           notes: r.notes,
           image: r.image,
@@ -62,6 +64,9 @@ export default {
 
         this.ingredients = items
         this.totalCost = items.reduce((sum, x) => sum + (Number.isFinite(x.cost) ? x.cost : 0), 0)
+        this.actualVolume = items
+          .filter((x) => (x.unit || '').toLowerCase() === 'ml')
+          .reduce((sum, x) => sum + (Number(x.quantity) || 0), 0)
       } catch (error) {
         this.error = error
       } finally {
@@ -139,7 +144,12 @@ export default {
         />
 
         <h3>Glass:</h3>
-        <p>{{ cocktail.glass }}</p>
+        <p>
+          {{ cocktail.glass }}
+          <span v-if="cocktail.glassCapacity" class="text-gray-500">
+            ({{ cocktail.glassCapacity }} ml capacity)
+          </span>
+        </p>
         <h3>Garnish:</h3>
         <p>{{ cocktail.garnish }}</p>
         <h3>Total Cost:</h3>
@@ -164,6 +174,9 @@ export default {
         <h3>Ingredients:</h3>
         <p>
           Total Cost: <b>${{ totalCost.toFixed(2) }}</b>
+        </p>
+        <p>
+          Actual Volume: <b>{{ actualVolume }} ml</b>
         </p>
         <table class="text-center w-full">
           <thead>

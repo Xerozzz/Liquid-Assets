@@ -70,6 +70,7 @@ router.get(
       recipe_name: recipe.name,
       glass_id: recipe.glassId,
       glass_name: recipe.glass?.name || '',
+      glass_volume: recipe.glass?.volume ?? null,
       garnish: recipe.garnish,
       notes: recipe.notes,
       image: recipe.image,

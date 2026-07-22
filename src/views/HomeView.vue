@@ -15,7 +15,7 @@ export default {
 
 <template>
   <div class="min-h-[100vh]">
-    <h1 class="font-bold text-2xl text-center pt-4">Cocktail App</h1>
+    <h1 class="font-bold text-2xl text-center pt-4">Liquid Assets</h1>
     <div class="grid grid-cols-2 items-stretch min-h-[90vh] mt-1 mx-[60px]">
       <button
         v-for="page in pages"
