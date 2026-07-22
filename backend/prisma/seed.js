@@ -5,7 +5,6 @@ const prisma = new PrismaClient()
 async function main() {
   const existing = await prisma.ingredient.count()
   if (existing > 0) {
-    // eslint-disable-next-line no-console
     console.log('Database already contains data; skipping seed.')
     return
   }
@@ -203,7 +202,6 @@ async function main() {
 
 main()
   .catch((e) => {
-    // eslint-disable-next-line no-console
     console.error(e)
     process.exit(1)
   })

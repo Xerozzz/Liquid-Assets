@@ -22,7 +22,7 @@ export default {
       try {
         this.loading = true
         this.glasswareList = await getGlassware()
-      } catch (error) {
+      } catch {
         this.notification.notify({
           message: 'Failed to load glassware',
           severity: 'error',

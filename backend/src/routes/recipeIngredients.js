@@ -1,34 +1,31 @@
 import express from 'express'
 import prisma from '../prisma.js'
+import { asyncHandler } from '../asyncHandler.js'
+import { requireNumber } from '../validate.js'
 
 const router = express.Router()
 
-router.get('/', async (req, res) => {
-  try {
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
     const items = await prisma.recipeIngredient.findMany()
     res.json(items)
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e)
-    res.status(500).json({ error: 'Failed to fetch recipe ingredients' })
-  }
-})
+  }, 'Failed to fetch recipe ingredients'),
+)
 
-router.get('/:id', async (req, res) => {
-  try {
+router.get(
+  '/:id',
+  asyncHandler(async (req, res) => {
     const id = Number(req.params.id)
     const item = await prisma.recipeIngredient.findUnique({ where: { id } })
     if (!item) return res.status(404).json({ error: 'Not found' })
     res.json(item)
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e)
-    res.status(500).json({ error: 'Failed to fetch recipe ingredient' })
-  }
-})
+  }, 'Failed to fetch recipe ingredient'),
+)
 
-router.get('/by-recipe/:id', async (req, res) => {
-  try {
+router.get(
+  '/by-recipe/:id',
+  asyncHandler(async (req, res) => {
     const recipeId = Number(req.params.id)
     const rows = await prisma.recipeIngredient.findMany({
       where: { recipeId },
@@ -45,33 +42,29 @@ router.get('/by-recipe/:id', async (req, res) => {
     }))
 
     res.json(mapped)
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e)
-    res.status(500).json({ error: 'Failed to fetch recipe ingredients for recipe' })
-  }
-})
+  }, 'Failed to fetch recipe ingredients for recipe'),
+)
 
-router.post('/', async (req, res) => {
-  try {
-    const { recipe_id, ingredient_id, quantity } = req.body
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    const recipeId = requireNumber(req.body, 'recipe_id')
+    const ingredientId = requireNumber(req.body, 'ingredient_id')
+    const { quantity } = req.body
     const created = await prisma.recipeIngredient.create({
       data: {
-        recipeId: Number(recipe_id),
-        ingredientId: Number(ingredient_id),
+        recipeId,
+        ingredientId,
         quantity: Number(quantity || 0),
       },
     })
     res.status(201).json(created)
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e)
-    res.status(500).json({ error: 'Failed to create recipe ingredient' })
-  }
-})
+  }, 'Failed to create recipe ingredient'),
+)
 
-router.post('/bulk', async (req, res) => {
-  try {
+router.post(
+  '/bulk',
+  asyncHandler(async (req, res) => {
     const rows = Array.isArray(req.body) ? req.body : []
     if (rows.length === 0) return res.json({ rowsInserted: 0 })
 
@@ -83,74 +76,65 @@ router.post('/bulk', async (req, res) => {
         where: { recipeId, ingredientId: { notIn: ingredientIds } },
       })
 
-      for (const row of rows) {
-        await tx.recipeIngredient.upsert({
-          where: {
-            recipeId_ingredientId: {
+      await Promise.all(
+        rows.map((row) =>
+          tx.recipeIngredient.upsert({
+            where: {
+              recipeId_ingredientId: {
+                recipeId: Number(row.recipe_id),
+                ingredientId: Number(row.ingredient_id),
+              },
+            },
+            update: { quantity: Number(row.selected_quantity || 0) },
+            create: {
               recipeId: Number(row.recipe_id),
               ingredientId: Number(row.ingredient_id),
+              quantity: Number(row.selected_quantity || 0),
             },
-          },
-          update: { quantity: Number(row.selected_quantity || 0) },
-          create: {
-            recipeId: Number(row.recipe_id),
-            ingredientId: Number(row.ingredient_id),
-            quantity: Number(row.selected_quantity || 0),
-          },
-        })
-      }
+          }),
+        ),
+      )
     })
 
     res.json({ rowsInserted: rows.length })
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e)
-    res.status(500).json({ error: 'Failed to bulk upsert recipe ingredients' })
-  }
-})
+  }, 'Failed to bulk upsert recipe ingredients'),
+)
 
-router.put('/:id', async (req, res) => {
-  try {
+router.put(
+  '/:id',
+  asyncHandler(async (req, res) => {
     const id = Number(req.params.id)
-    const { recipe_id, ingredient_id, quantity } = req.body
+    const recipeId = requireNumber(req.body, 'recipe_id')
+    const ingredientId = requireNumber(req.body, 'ingredient_id')
+    const { quantity } = req.body
     const updated = await prisma.recipeIngredient.update({
       where: { id },
       data: {
-        recipeId: Number(recipe_id),
-        ingredientId: Number(ingredient_id),
+        recipeId,
+        ingredientId,
         quantity: Number(quantity || 0),
       },
     })
     res.json(updated)
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e)
-    res.status(500).json({ error: 'Failed to update recipe ingredient' })
-  }
-})
+  }, 'Failed to update recipe ingredient'),
+)
 
-router.delete('/:id', async (req, res) => {
-  try {
+router.delete(
+  '/:id',
+  asyncHandler(async (req, res) => {
     const id = Number(req.params.id)
     await prisma.recipeIngredient.delete({ where: { id } })
     res.status(204).end()
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e)
-    res.status(500).json({ error: 'Failed to delete recipe ingredient' })
-  }
-})
+  }, 'Failed to delete recipe ingredient'),
+)
 
-router.delete('/by-recipe/:id', async (req, res) => {
-  try {
+router.delete(
+  '/by-recipe/:id',
+  asyncHandler(async (req, res) => {
     const recipeId = Number(req.params.id)
     await prisma.recipeIngredient.deleteMany({ where: { recipeId } })
     res.status(204).end()
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e)
-    res.status(500).json({ error: 'Failed to delete recipe ingredients by recipe' })
-  }
-})
+  }, 'Failed to delete recipe ingredients by recipe'),
+)
 
 export default router

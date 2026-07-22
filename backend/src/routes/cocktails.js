@@ -1,10 +1,13 @@
 import express from 'express'
 import prisma from '../prisma.js'
+import { asyncHandler } from '../asyncHandler.js'
+import { requireString, requireNumber } from '../validate.js'
 
 const router = express.Router()
 
-router.get('/', async (req, res) => {
-  try {
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
     const recipes = await prisma.recipe.findMany({
       where: { isDeleted: false },
       include: {
@@ -31,21 +34,24 @@ router.get('/', async (req, res) => {
         image: r.image,
         created_at: r.createdAt,
         missing_count: missingCount,
-        raw_ingredients_str: rawItems.map((ri) => ri.ingredient?.name).filter(Boolean).join(', '),
-        hm_ingredients_str: hmItems.map((hi) => hi.hmIngredient?.name).filter(Boolean).join(', '),
+        raw_ingredients_str: rawItems
+          .map((ri) => ri.ingredient?.name)
+          .filter(Boolean)
+          .join(', '),
+        hm_ingredients_str: hmItems
+          .map((hi) => hi.hmIngredient?.name)
+          .filter(Boolean)
+          .join(', '),
       }
     })
 
     res.json(rows)
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e)
-    res.status(500).json({ error: 'Failed to fetch cocktails' })
-  }
-})
+  }, 'Failed to fetch cocktails'),
+)
 
-router.get('/:id', async (req, res) => {
-  try {
+router.get(
+  '/:id',
+  asyncHandler(async (req, res) => {
     const recipeId = Number(req.params.id)
     const recipe = await prisma.recipe.findFirst({
       where: { id: recipeId, isDeleted: false },
@@ -56,7 +62,7 @@ router.get('/:id', async (req, res) => {
       },
     })
 
-    if (!recipe) return res.json([])
+    if (!recipe) return res.status(404).json({ error: 'Not found' })
 
     const base = {
       recipe_id: recipe.id,
@@ -93,74 +99,68 @@ router.get('/:id', async (req, res) => {
     if (items.length === 0) return res.json([{ ...base }])
 
     res.json(items.map((it) => ({ ...base, ...it })))
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e)
-    res.status(500).json({ error: 'Failed to fetch cocktail details' })
-  }
-})
+  }, 'Failed to fetch cocktail details'),
+)
 
-router.post('/', async (req, res) => {
-  try {
-    const { name, glass_id, step_to_make, garnish, notes, image } = req.body
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    const name = requireString(req.body, 'name')
+    const glassId = requireNumber(req.body, 'glass_id')
+    const stepToMake = requireString(req.body, 'step_to_make')
+    const { garnish, notes, image } = req.body
     const created = await prisma.recipe.create({
       data: {
         name,
-        glassId: Number(glass_id),
-        stepToMake: step_to_make,
+        glassId,
+        stepToMake,
         garnish: garnish || null,
         notes: notes || null,
         image: image || null,
       },
     })
     res.status(201).json(created)
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e)
-    res.status(500).json({ error: 'Failed to create cocktail' })
-  }
-})
+  }, 'Failed to create cocktail'),
+)
 
-router.put('/:id', async (req, res) => {
-  try {
+router.put(
+  '/:id',
+  asyncHandler(async (req, res) => {
     const id = Number(req.params.id)
-    const { name, glass_id, step_to_make, garnish, notes, image } = req.body
+    const name = requireString(req.body, 'name')
+    const glassId = requireNumber(req.body, 'glass_id')
+    const stepToMake = requireString(req.body, 'step_to_make')
+    const { garnish, notes, image } = req.body
     const updated = await prisma.recipe.update({
       where: { id },
       data: {
         name,
-        glassId: Number(glass_id),
-        stepToMake: step_to_make,
+        glassId,
+        stepToMake,
         garnish: garnish || null,
         notes: notes || null,
         image: image || null,
       },
     })
     res.json(updated)
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e)
-    res.status(500).json({ error: 'Failed to update cocktail' })
-  }
-})
+  }, 'Failed to update cocktail'),
+)
 
-router.delete('/:id', async (req, res) => {
-  try {
+router.delete(
+  '/:id',
+  asyncHandler(async (req, res) => {
     const id = Number(req.params.id)
     await prisma.recipe.update({
       where: { id },
       data: { isDeleted: true, deletedAt: new Date() },
     })
     res.status(204).end()
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e)
-    res.status(500).json({ error: 'Failed to delete cocktail' })
-  }
-})
+  }, 'Failed to delete cocktail'),
+)
 
-router.post('/import', async (req, res) => {
-  try {
+router.post(
+  '/import',
+  asyncHandler(async (req, res) => {
     const { cocktail } = req.body
     if (!cocktail?.name) return res.status(400).json({ error: 'Missing cocktail data' })
 
@@ -239,21 +239,19 @@ router.post('/import', async (req, res) => {
           image: null,
         },
       })
-      for (const row of rawInserts) {
-        await tx.recipeIngredient.create({ data: { recipeId: r.id, ...row } })
-      }
-      for (const row of hmInserts) {
-        await tx.recipeHmIngredient.create({ data: { recipeId: r.id, ...row } })
-      }
+      await Promise.all([
+        ...rawInserts.map((row) =>
+          tx.recipeIngredient.create({ data: { recipeId: r.id, ...row } }),
+        ),
+        ...hmInserts.map((row) =>
+          tx.recipeHmIngredient.create({ data: { recipeId: r.id, ...row } }),
+        ),
+      ])
       return r
     })
 
     res.json({ success: true, name: cocktail.name, id: recipe.id, unknowns })
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e)
-    res.status(500).json({ error: 'Failed to import cocktail' })
-  }
-})
+  }, 'Failed to import cocktail'),
+)
 
 export default router

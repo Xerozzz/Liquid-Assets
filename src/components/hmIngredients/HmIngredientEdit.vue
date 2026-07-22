@@ -67,6 +67,11 @@ export default {
         await this.getHmIngredientComponentsData()
       } catch (error) {
         console.log(error)
+        this.notification.notify({
+          message: `${error}`,
+          summary: 'Error',
+          severity: 'error',
+        })
       } finally {
         this.isLoading = false
       }
@@ -177,6 +182,11 @@ export default {
         }
       } catch (error) {
         console.log(error)
+        this.notification.notify({
+          message: `${error}`,
+          summary: 'Error',
+          severity: 'error',
+        })
       }
     },
   },

@@ -4,10 +4,10 @@
 </template>
 
 <script>
-import ConfirmDialog from "primevue/confirmdialog";
+import ConfirmDialog from 'primevue/confirmdialog'
 
 export default {
-  name: "DeleteDialog",
+  name: 'DeleteDialog',
   components: { ConfirmDialog },
-};
+}
 </script>

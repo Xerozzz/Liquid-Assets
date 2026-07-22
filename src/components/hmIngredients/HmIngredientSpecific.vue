@@ -12,8 +12,8 @@ export default {
   components: { DeleteDialog },
   setup() {
     const notification = useNotificationStore()
-    const { getImageUrl } = useImageStorage()
-    return { notification, getImageUrl }
+    const { getImageUrl, deleteImage } = useImageStorage()
+    return { notification, getImageUrl, deleteImage }
   },
   data() {
     return {
@@ -98,6 +98,9 @@ export default {
     async deleteItem() {
       try {
         await deleteHmIngredient(this.$route.params.id)
+        if (this.hmIngredient?.image) {
+          await this.deleteImage(this.hmIngredient.image)
+        }
         this.notification.notify({
           message: `Homemade ingredient deleted successfully`,
           summary: 'Delete Success',
@@ -106,6 +109,11 @@ export default {
         this.$router.replace('/hm')
       } catch (error) {
         console.log(error)
+        this.notification.notify({
+          message: `${error}`,
+          summary: 'Error',
+          severity: 'error',
+        })
       }
     },
     cancelAction() {},

@@ -48,7 +48,6 @@ router.delete('/:name', (req, res) => {
   const full = path.join(UPLOAD_DIR, name)
   fs.unlink(full, (err) => {
     if (err && err.code !== 'ENOENT') {
-      // eslint-disable-next-line no-console
       console.error(err)
       return res.status(500).json({ error: 'Failed to delete image' })
     }

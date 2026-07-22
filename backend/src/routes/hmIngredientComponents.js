@@ -1,34 +1,31 @@
 import express from 'express'
 import prisma from '../prisma.js'
+import { asyncHandler } from '../asyncHandler.js'
+import { requireNumber } from '../validate.js'
 
 const router = express.Router()
 
-router.get('/', async (req, res) => {
-  try {
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
     const items = await prisma.hmIngredientComponent.findMany()
     res.json(items)
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e)
-    res.status(500).json({ error: 'Failed to fetch hm ingredient components' })
-  }
-})
+  }, 'Failed to fetch hm ingredient components'),
+)
 
-router.get('/:id', async (req, res) => {
-  try {
+router.get(
+  '/:id',
+  asyncHandler(async (req, res) => {
     const id = Number(req.params.id)
     const item = await prisma.hmIngredientComponent.findUnique({ where: { id } })
     if (!item) return res.status(404).json({ error: 'Not found' })
     res.json(item)
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e)
-    res.status(500).json({ error: 'Failed to fetch hm ingredient component' })
-  }
-})
+  }, 'Failed to fetch hm ingredient component'),
+)
 
-router.get('/by-hm/:id', async (req, res) => {
-  try {
+router.get(
+  '/by-hm/:id',
+  asyncHandler(async (req, res) => {
     const hmIngredientId = Number(req.params.id)
     const rows = await prisma.hmIngredientComponent.findMany({
       where: { hmIngredientId },
@@ -45,33 +42,29 @@ router.get('/by-hm/:id', async (req, res) => {
     }))
 
     res.json(mapped)
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e)
-    res.status(500).json({ error: 'Failed to fetch components for hm ingredient' })
-  }
-})
+  }, 'Failed to fetch components for hm ingredient'),
+)
 
-router.post('/', async (req, res) => {
-  try {
-    const { hm_ingredient_id, ingredient_id, quantity } = req.body
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    const hmIngredientId = requireNumber(req.body, 'hm_ingredient_id')
+    const ingredientId = requireNumber(req.body, 'ingredient_id')
+    const { quantity } = req.body
     const created = await prisma.hmIngredientComponent.create({
       data: {
-        hmIngredientId: Number(hm_ingredient_id),
-        ingredientId: Number(ingredient_id),
+        hmIngredientId,
+        ingredientId,
         quantity: Number(quantity || 0),
       },
     })
     res.status(201).json(created)
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e)
-    res.status(500).json({ error: 'Failed to create hm ingredient component' })
-  }
-})
+  }, 'Failed to create hm ingredient component'),
+)
 
-router.post('/bulk', async (req, res) => {
-  try {
+router.post(
+  '/bulk',
+  asyncHandler(async (req, res) => {
     const rows = Array.isArray(req.body) ? req.body : []
     if (rows.length === 0) return res.json({ rowsInserted: 0 })
 
@@ -86,62 +79,56 @@ router.post('/bulk', async (req, res) => {
         },
       })
 
-      for (const row of rows) {
-        await tx.hmIngredientComponent.upsert({
-          where: {
-            hmIngredientId_ingredientId: {
+      await Promise.all(
+        rows.map((row) =>
+          tx.hmIngredientComponent.upsert({
+            where: {
+              hmIngredientId_ingredientId: {
+                hmIngredientId: Number(row.hm_ingredient_id),
+                ingredientId: Number(row.ingredient_id),
+              },
+            },
+            update: { quantity: Number(row.selected_quantity || 0) },
+            create: {
               hmIngredientId: Number(row.hm_ingredient_id),
               ingredientId: Number(row.ingredient_id),
+              quantity: Number(row.selected_quantity || 0),
             },
-          },
-          update: { quantity: Number(row.selected_quantity || 0) },
-          create: {
-            hmIngredientId: Number(row.hm_ingredient_id),
-            ingredientId: Number(row.ingredient_id),
-            quantity: Number(row.selected_quantity || 0),
-          },
-        })
-      }
+          }),
+        ),
+      )
     })
 
     res.json({ rowsInserted: rows.length })
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e)
-    res.status(500).json({ error: 'Failed to bulk upsert hm ingredient components' })
-  }
-})
+  }, 'Failed to bulk upsert hm ingredient components'),
+)
 
-router.put('/:id', async (req, res) => {
-  try {
+router.put(
+  '/:id',
+  asyncHandler(async (req, res) => {
     const id = Number(req.params.id)
-    const { hm_ingredient_id, ingredient_id, quantity } = req.body
+    const hmIngredientId = requireNumber(req.body, 'hm_ingredient_id')
+    const ingredientId = requireNumber(req.body, 'ingredient_id')
+    const { quantity } = req.body
     const updated = await prisma.hmIngredientComponent.update({
       where: { id },
       data: {
-        hmIngredientId: Number(hm_ingredient_id),
-        ingredientId: Number(ingredient_id),
+        hmIngredientId,
+        ingredientId,
         quantity: Number(quantity || 0),
       },
     })
     res.json(updated)
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e)
-    res.status(500).json({ error: 'Failed to update hm ingredient component' })
-  }
-})
+  }, 'Failed to update hm ingredient component'),
+)
 
-router.delete('/:id', async (req, res) => {
-  try {
+router.delete(
+  '/:id',
+  asyncHandler(async (req, res) => {
     const id = Number(req.params.id)
     await prisma.hmIngredientComponent.delete({ where: { id } })
     res.status(204).end()
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e)
-    res.status(500).json({ error: 'Failed to delete hm ingredient component' })
-  }
-})
+  }, 'Failed to delete hm ingredient component'),
+)
 
 export default router

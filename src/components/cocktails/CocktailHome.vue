@@ -2,12 +2,14 @@
 import { getCocktail, importCocktailFromCSV } from '@/api/cocktail.js'
 import { getIngredients } from '@/api/ingredients.js'
 import { useNotificationStore } from '@/stores/notification.store'
+import { useImageStorage } from '@/composables/useImageStorage'
 
 export default {
   name: 'CocktailHome',
   setup() {
     const notification = useNotificationStore()
-    return { notification }
+    const { getImageUrl } = useImageStorage()
+    return { notification, getImageUrl }
   },
   data() {
     return {
@@ -75,7 +77,13 @@ export default {
     async retrieveCocktails() {
       try {
         this.loading = true
-        this.queryResult = await getCocktail()
+        const rawResult = await getCocktail()
+        this.queryResult = await Promise.all(
+          rawResult.map(async (cocktail) => ({
+            ...cocktail,
+            displayImageUrl: cocktail.image ? await this.getImageUrl(cocktail.image) : null,
+          })),
+        )
 
         // Restore filters from URL
         const q = this.$route.query
@@ -323,8 +331,8 @@ export default {
 
         <div class="h-48 w-full bg-gray-50 relative border-b border-gray-100">
           <img
-            v-if="cocktail.image"
-            :src="cocktail.image"
+            v-if="cocktail.displayImageUrl"
+            :src="cocktail.displayImageUrl"
             :alt="cocktail.name"
             class="w-full h-full object-cover"
           />
