@@ -88,8 +88,13 @@ export default {
           notes: r.notes,
           image: r.image,
           salePrice: r.sale_price,
+          // Strip any leading "1. "/"1) " the step text already carries — steps are rendered in
+          // an auto-numbered <ol>, so a number baked into the text itself would double up.
           step_to_make: r.step_to_make
-            ? r.step_to_make.split('\n').filter((step) => step.trim() !== '')
+            ? r.step_to_make
+                .split('\n')
+                .map((step) => step.replace(/^\s*\d+[.)]\s*/, '').trim())
+                .filter((step) => step !== '')
             : [],
         }
 

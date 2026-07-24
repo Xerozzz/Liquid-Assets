@@ -253,7 +253,7 @@ export default {
         <Textarea
           style="white-space: pre"
           name="step_to_make"
-          placeholder="1. Add ingredients..."
+          placeholder="Add ingredients to mixing glass with ice...&#10;Stir until chilled...&#10;Strain over rock."
           rows="6"
           fluid
           class="resize-y"

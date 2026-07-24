@@ -63,6 +63,14 @@ are when the work was done, not necessarily committed.
 
 ### Fixed
 
+- **PrimeIcons never actually loaded** — the `primeicons` npm package was a listed dependency and
+  used throughout via raw `<i class="pi pi-*">` markup (nav icons, empty/error states, `Button
+icon="pi pi-*"` props), but its stylesheet was never imported anywhere, so the `@font-face` and
+  glyph-content CSS rules never shipped in the build at all. Every such icon silently rendered as
+  an empty box — PrimeVue's own internal chrome (dropdowns, dialogs, etc.) uses SVG icon
+  components in v4 rather than the classic icon font, which is why this went unnoticed through
+  every earlier visual-pass verification. Fixed with one line: `import 'primeicons/primeicons.css'`
+  in `src/main.js`.
 - **Stale homemade-ingredient costs**: `hm_ingredients.cost` is a stored snapshot computed when
   its components/yield were last edited — it never updated when a _component's_ raw ingredient
   cost changed afterward, silently leaving both the homemade ingredient and every cocktail using

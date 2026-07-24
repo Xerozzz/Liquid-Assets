@@ -8,6 +8,7 @@ import { RosePreset } from './theme'
 import App from './App.vue'
 import router from './router'
 
+import 'primeicons/primeicons.css'
 import './index.css'
 import './assets/main.css'
 const app = createApp(App)

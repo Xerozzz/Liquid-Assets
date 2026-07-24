@@ -14,22 +14,47 @@ automated for you — they need your own Oracle account and browser.
 
 1. Sign up for [Oracle Cloud](https://www.oracle.com/cloud/free/) (free; identity verification may
    ask for a card, but Always Free resources are never charged).
-2. Create a Compute instance using an **Always Free–eligible shape**. As of mid-2026 the two
-   options are:
+2. Create a Compute instance using an **Always Free–eligible shape**. As of mid-2026 there are
+   two, but expect to only see one of them:
    - `VM.Standard.A1.Flex` (Ampere ARM) — up to 2 OCPUs / 12 GB RAM total across all A1 instances.
-     Recommended: comfortably runs Postgres + the backend + nginx + Caddy.
-   - `VM.Standard.E2.1.Micro` (AMD x86) — 1 OCPU / 1 GB RAM, two of these available instead. Tight
-     for this stack; only use this shape if A1 capacity isn't available in your region (Oracle's
-     free ARM capacity is often oversubscribed — if instance creation fails, retry later or try a
-     different Availability Domain).
+     Comfortably runs Postgres + the backend + nginx + Caddy, if it's available — Oracle's free ARM
+     capacity has been oversubscribed for a long time now, and plenty of accounts simply never see
+     this shape offered at all (not a per-attempt capacity error, just absent from the list). If
+     you do see it, use it; if not, don't spend time chasing it, see below.
+   - `VM.Standard.E2.1.Micro` (AMD x86) — 1 OCPU / 1 GB RAM, two of these available instead. This is
+     the realistic default for most accounts today. 1 GB is genuinely tight for this stack, but
+     workable for a single personal user — **add swap** (step 6 below) before your first
+     `docker compose ... up --build`, since the build step (`npm ci` + `vite build` +
+     `prisma generate`) is the most memory-hungry part and the most likely thing to get OOM-killed
+     without it.
      Oracle has a known habit of reclaiming _idle_ free instances after a period of low utilization
      — a self-hosted app with real traffic from you shouldn't trigger this, but it's worth knowing.
-3. Pick an Ubuntu LTS image (24.04 or 22.04) — most Docker install instructions assume it.
+3. Pick an **Ubuntu LTS image** (24.04 or 22.04) via "Change Image" if something else (e.g. Oracle
+   Linux) is selected by default — the commands below assume it; Oracle Linux is RHEL-based
+   (`dnf`/`firewalld` instead of `apt`/`iptables`) and would need every command translated for no
+   real benefit. Unlike shapes, image choice isn't capacity-constrained, so this should always be
+   available regardless of which shape you got.
 4. Generate/download an SSH key pair during creation (or supply your own public key) — you'll need
    it to log in.
 5. Under the instance's attached VNIC, assign a **reserved public IP** (not ephemeral) so the
    address doesn't change on reboot — this is included in the free tier and makes step 4 below
    ("point DNS at it") a one-time task.
+6. **If you're on the 1 GB `E2.1.Micro` shape**, add swap before doing anything else — SSH in and
+   run:
+   ```bash
+   sudo fallocate -l 4G /swapfile
+   sudo chmod 600 /swapfile
+   sudo mkswap /swapfile
+   sudo swapon /swapfile
+   echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+   ```
+   This won't make the build fast, but it turns "OOM-killed mid-build" into "slow but completes."
+   If a build still fails even with swap, build the images on your own machine instead (you
+   already have a working Docker setup from local development) and push them to a free registry
+   (e.g. [GitHub Container Registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)),
+   then have `docker-compose.prod.yml` on the VM reference `image:` instead of `build:` and just
+   `docker compose pull` — not set up in this repo by default since swap resolves it for most
+   people, but worth knowing as a fallback.
 
 ## 2. Open the firewall — twice
 
