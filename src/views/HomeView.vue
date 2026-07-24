@@ -3,10 +3,11 @@ export default {
   data() {
     return {
       pages: [
-        { name: 'Cocktails', path: '/cocktail' },
-        { name: 'Homemade Ingredients', path: '/hm' },
-        { name: 'Ingredients', path: '/ingredient' },
-        { name: 'Glassware', path: '/glassware' },
+        { name: 'Cocktails', path: '/cocktail', icon: 'pi-sparkles' },
+        { name: 'Homemade Ingredients', path: '/hm', icon: 'pi-box' },
+        { name: 'Ingredients', path: '/ingredient', icon: 'pi-list' },
+        { name: 'Glassware', path: '/glassware', icon: 'pi-circle' },
+        { name: 'Restock List', path: '/restock', icon: 'pi-shopping-cart' },
       ],
     }
   },
@@ -15,14 +16,18 @@ export default {
 
 <template>
   <div class="min-h-[100vh]">
-    <h1 class="font-bold text-2xl text-center pt-4">Liquid Assets</h1>
-    <div class="grid grid-cols-2 items-stretch min-h-[90vh] mt-1 mx-[60px]">
+    <h1 class="font-bold text-3xl text-center pt-10 text-primary-900 tracking-tight">
+      Liquid Assets
+    </h1>
+    <p class="text-center text-primary-700 mt-1">Your cocktail costing & inventory companion</p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8 mx-6 sm:mx-[60px]">
       <button
         v-for="page in pages"
-        class="rounded-3xl text-xl cursor-pointer my-5 mx-5"
+        class="sectionbox rounded-3xl text-xl cursor-pointer py-8 flex flex-col items-center gap-3 hover:shadow-lg hover:-translate-y-0.5 transition-all"
         :key="page.name"
         @click="$router.push(page.path)"
       >
+        <i :class="['pi', page.icon, 'text-primary-600']" style="font-size: 1.75rem"></i>
         {{ page.name }}
       </button>
     </div>

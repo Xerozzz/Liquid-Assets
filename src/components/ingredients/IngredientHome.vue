@@ -1,5 +1,5 @@
 <script>
-import { getIngredients, createMultipleIngredients } from '@/api/ingredients.js'
+import { getIngredients, createMultipleIngredients, updateIngredient } from '@/api/ingredients.js'
 import { useNotificationStore } from '@/stores/notification.store'
 
 export default {
@@ -19,18 +19,51 @@ export default {
       duplicateIngredients: [],
       skipDuplicates: true, // Default behavior
       searchQuery: '',
+      togglingId: null,
+      sortBy: 'name_asc',
+      sortOptions: [
+        { label: 'Name (A-Z)', value: 'name_asc' },
+        { label: 'Name (Z-A)', value: 'name_desc' },
+        { label: 'Cost (Low to High)', value: 'cost_asc' },
+        { label: 'Cost (High to Low)', value: 'cost_desc' },
+        { label: 'Out of Stock First', value: 'stock_asc' },
+      ],
     }
   },
   computed: {
     filteredIngredients() {
-      if (!this.searchQuery) return this.queryResult
-      const query = this.searchQuery.toLowerCase()
-      return this.queryResult.filter((ing) => ing.name.toLowerCase().includes(query))
+      const filtered = this.searchQuery
+        ? this.queryResult.filter((ing) =>
+            ing.name.toLowerCase().includes(this.searchQuery.toLowerCase()),
+          )
+        : this.queryResult
+
+      const sorted = [...filtered]
+      switch (this.sortBy) {
+        case 'name_desc':
+          sorted.sort((a, b) => b.name.localeCompare(a.name))
+          break
+        case 'cost_asc':
+          sorted.sort((a, b) => a.cost - b.cost)
+          break
+        case 'cost_desc':
+          sorted.sort((a, b) => b.cost - a.cost)
+          break
+        case 'stock_asc':
+          sorted.sort((a, b) => Number(a.is_stocked) - Number(b.is_stocked))
+          break
+        default:
+          sorted.sort((a, b) => a.name.localeCompare(b.name))
+      }
+      return sorted
     },
   },
   watch: {
     searchQuery(newVal) {
       this.updateUrlQuery('q', newVal)
+    },
+    sortBy(newVal) {
+      this.updateUrlQuery('sort', newVal === 'name_asc' ? null : newVal)
     },
   },
   methods: {
@@ -49,6 +82,7 @@ export default {
         this.queryResult = await getIngredients()
         const q = this.$route.query
         if (q.q) this.searchQuery = q.q
+        if (q.sort) this.sortBy = q.sort
       } catch {
         this.notification.notify({
           message: 'Failed to load ingredients',
@@ -216,6 +250,30 @@ export default {
     formatCurrency(value) {
       return `$${Number(value).toFixed(2)}`
     },
+
+    async toggleStock(ing, event) {
+      event.stopPropagation()
+      this.togglingId = ing.ingredient_id
+      try {
+        const updated = await updateIngredient(
+          ing.name,
+          ing.unit,
+          ing.cost,
+          !ing.is_stocked,
+          ing.ingredient_id,
+        )
+        ing.is_stocked = updated.is_stocked
+        this.notification.notify({
+          message: `${ing.name} marked as ${ing.is_stocked ? 'In Stock' : 'Out of Stock'}`,
+          severity: 'success',
+        })
+      } catch (error) {
+        console.error(error)
+        this.notification.notify({ message: 'Failed to update stock status', severity: 'error' })
+      } finally {
+        this.togglingId = null
+      }
+    },
   },
   mounted() {
     this.retrieveIngredients()
@@ -250,10 +308,24 @@ export default {
 
     <!-- FILTERS BAR -->
     <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6 space-y-4">
-      <!-- Search -->
-      <div class="flex flex-col gap-1">
-        <label class="text-xs font-semibold text-gray-500 uppercase">Search Name</label>
-        <InputText v-model="searchQuery" placeholder="e.g. Syrup" class="p-input text-sm" />
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Search -->
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-semibold text-gray-500 uppercase">Search Name</label>
+          <InputText v-model="searchQuery" placeholder="e.g. Syrup" class="p-inputtext-sm" />
+        </div>
+
+        <!-- Sort -->
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-semibold text-gray-500 uppercase">Sort By</label>
+          <Select
+            v-model="sortBy"
+            :options="sortOptions"
+            optionLabel="label"
+            optionValue="value"
+            class="p-inputtext-sm"
+          />
+        </div>
       </div>
     </div>
 
@@ -266,34 +338,37 @@ export default {
       <div
         v-for="ing in filteredIngredients"
         :key="ing.ingredient_id"
-        class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer flex flex-col justify-between"
+        class="bg-white rounded-lg shadow-sm border border-primary-100 p-6 hover:shadow-md hover:border-primary-300 transition-all cursor-pointer flex flex-col justify-between"
         @click="$router.push(`/ingredient/view/${ing.ingredient_id}`)"
       >
         <div class="text-center mb-4">
           <h3 class="font-bold text-xl text-gray-800">{{ ing.name }}</h3>
         </div>
 
-        <hr class="border-gray-300 mb-4" />
+        <hr class="border-primary-100 mb-4" />
 
         <div class="flex justify-between items-center text-sm">
           <div>
-            <p class="font-bold text-gray-700">
+            <p class="font-bold text-primary-700">
               ${{ ing.cost.toFixed(2) }}
               <span class="font-normal text-gray-500">/ {{ ing.unit }}</span>
             </p>
           </div>
 
-          <div>
-            <span
-              v-if="ing.is_stocked"
-              class="px-2 py-1 rounded-md bg-green-100 text-green-700 font-bold text-xs"
-            >
-              In Stock
-            </span>
-            <span v-else class="px-2 py-1 rounded-md bg-red-100 text-red-700 font-bold text-xs">
-              Out
-            </span>
-          </div>
+          <button
+            type="button"
+            :disabled="togglingId === ing.ingredient_id"
+            @click="toggleStock(ing, $event)"
+            :title="ing.is_stocked ? 'Click to mark Out of Stock' : 'Click to mark In Stock'"
+            :class="[
+              'px-2 py-1 rounded-md font-bold text-xs transition-colors disabled:opacity-50',
+              ing.is_stocked
+                ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                : 'bg-red-100 text-red-700 hover:bg-red-200',
+            ]"
+          >
+            {{ ing.is_stocked ? 'In Stock' : 'Out' }}
+          </button>
         </div>
       </div>
     </div>

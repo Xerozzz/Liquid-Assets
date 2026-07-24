@@ -25,11 +25,21 @@ export default {
       stockOnly: false,
       maxCost: null,
       ingredientFilter: '',
+      sortBy: 'name_asc',
+      sortOptions: [
+        { label: 'Name (A-Z)', value: 'name_asc' },
+        { label: 'Name (Z-A)', value: 'name_desc' },
+        { label: 'Cost (Low to High)', value: 'cost_asc' },
+        { label: 'Cost (High to Low)', value: 'cost_desc' },
+        { label: 'Missing Ingredients (Most First)', value: 'missing_desc' },
+        { label: 'Margin % (Low to High)', value: 'margin_asc' },
+        { label: 'Margin % (High to Low)', value: 'margin_desc' },
+      ],
     }
   },
   computed: {
     filteredCocktails() {
-      return this.queryResult.filter((cocktail) => {
+      const filtered = this.queryResult.filter((cocktail) => {
         // Search (Name)
         const matchesSearch =
           !this.searchQuery || cocktail.name.toLowerCase().includes(this.searchQuery.toLowerCase())
@@ -49,6 +59,35 @@ export default {
 
         return matchesSearch && matchesStock && matchesIngredient
       })
+
+      const sorted = [...filtered]
+      switch (this.sortBy) {
+        case 'name_desc':
+          sorted.sort((a, b) => b.name.localeCompare(a.name))
+          break
+        case 'cost_asc':
+          sorted.sort((a, b) => (a.total_cost || 0) - (b.total_cost || 0))
+          break
+        case 'cost_desc':
+          sorted.sort((a, b) => (b.total_cost || 0) - (a.total_cost || 0))
+          break
+        case 'missing_desc':
+          sorted.sort((a, b) => (b.missing_count || 0) - (a.missing_count || 0))
+          break
+        case 'margin_asc':
+        case 'margin_desc': {
+          const priced = sorted.filter((c) => c.sale_price > 0)
+          const unpriced = sorted.filter((c) => !(c.sale_price > 0))
+          priced.sort((a, b) => {
+            const diff = this.marginPercent(a) - this.marginPercent(b)
+            return this.sortBy === 'margin_asc' ? diff : -diff
+          })
+          return [...priced, ...unpriced]
+        }
+        default:
+          sorted.sort((a, b) => a.name.localeCompare(b.name))
+      }
+      return sorted
     },
   },
   watch: {
@@ -62,8 +101,15 @@ export default {
     stockOnly(newVal) {
       this.updateUrlQuery('stock', newVal ? '1' : null)
     },
+    sortBy(newVal) {
+      this.updateUrlQuery('sort', newVal === 'name_asc' ? null : newVal)
+    },
   },
   methods: {
+    marginPercent(cocktail) {
+      if (!(cocktail.sale_price > 0)) return null
+      return ((cocktail.sale_price - (cocktail.total_cost || 0)) / cocktail.sale_price) * 100
+    },
     updateUrlQuery(key, value) {
       const query = { ...this.$route.query }
       if (value) {
@@ -90,6 +136,7 @@ export default {
         if (q.q) this.searchQuery = q.q
         if (q.ing) this.ingredientFilter = q.ing
         if (q.stock) this.stockOnly = q.stock === '1'
+        if (q.sort) this.sortBy = q.sort
       } catch (error) {
         this.queryError = error
         this.notification.notify({
@@ -238,6 +285,36 @@ export default {
         this.isImporting = false
       }
     },
+
+    csvEscape(value) {
+      const str = String(value ?? '')
+      return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str
+    },
+
+    exportMenuCsv() {
+      const headers = ['Name', 'Cost', 'Sale Price', 'Margin %', 'Ingredients']
+      const rows = this.filteredCocktails.map((c) => {
+        const margin = this.marginPercent(c)
+        return [
+          c.name,
+          Number(c.total_cost || 0).toFixed(2),
+          c.sale_price != null ? Number(c.sale_price).toFixed(2) : '',
+          margin != null ? margin.toFixed(0) : '',
+          c.raw_ingredients_str || '',
+        ]
+          .map(this.csvEscape)
+          .join(',')
+      })
+      const csv = [headers.join(','), ...rows].join('\n')
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `cocktail-menu-${new Date().toISOString().slice(0, 10)}.csv`
+      link.click()
+      URL.revokeObjectURL(url)
+    },
   },
   mounted() {
     this.retrieveCocktails()
@@ -247,9 +324,12 @@ export default {
 
 <template>
   <div class="bodysection">
-    <div class="flex gap-2 mb-2 items-center">
+    <div class="flex flex-wrap gap-2 mb-2 items-center">
       <button class="nav_button" @click="$router.push('/')">Back</button>
       <button class="nav_button" @click="$router.push('/cocktail/create')">Create Cocktail</button>
+      <button class="nav_button" @click="exportMenuCsv" :disabled="filteredCocktails.length === 0">
+        Export Menu (CSV)
+      </button>
 
       <!-- Import Button -->
       <div class="ml-auto">
@@ -272,7 +352,7 @@ export default {
 
     <!-- FILTERS BAR -->
     <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6 space-y-4">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
         <!-- Search -->
         <div class="flex flex-col gap-1">
           <label class="text-xs font-semibold text-gray-500 uppercase">Search Name</label>
@@ -283,6 +363,18 @@ export default {
         <div class="flex flex-col gap-1">
           <label class="text-xs font-semibold text-gray-500 uppercase">Filter Ingredient</label>
           <InputText v-model="ingredientFilter" placeholder="e.g. Gin" class="p-inputtext-sm" />
+        </div>
+
+        <!-- Sort -->
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-semibold text-gray-500 uppercase">Sort By</label>
+          <Select
+            v-model="sortBy"
+            :options="sortOptions"
+            optionLabel="label"
+            optionValue="value"
+            class="p-inputtext-sm"
+          />
         </div>
 
         <!-- Stock Toggle -->
@@ -317,7 +409,7 @@ export default {
       <div
         v-for="cocktail in filteredCocktails"
         :key="cocktail.recipe_id"
-        class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col relative"
+        class="bg-white rounded-lg shadow-sm border border-primary-100 overflow-hidden hover:shadow-md hover:border-primary-300 transition-all duration-200 cursor-pointer flex flex-col relative"
         @click="$router.push(`/cocktail/view/${cocktail.recipe_id}`)"
       >
         <!-- Stock Warning Overlay if missing ingredients -->
@@ -343,6 +435,29 @@ export default {
 
         <div class="p-4 text-center">
           <h3 class="font-bold text-xl text-gray-800">{{ cocktail.name }}</h3>
+          <div class="flex items-center justify-center gap-2 mt-1 flex-wrap">
+            <p class="font-bold text-primary-700">${{ (cocktail.total_cost || 0).toFixed(2) }}</p>
+            <template v-if="cocktail.sale_price != null">
+              <span class="text-gray-300">/</span>
+              <p class="font-bold text-gray-700">${{ Number(cocktail.sale_price).toFixed(2) }}</p>
+              <span
+                v-if="cocktail.sale_price > 0"
+                :class="[
+                  'px-1.5 py-0.5 rounded text-xs font-bold',
+                  cocktail.sale_price - cocktail.total_cost >= 0
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-red-100 text-red-700',
+                ]"
+              >
+                {{
+                  (
+                    ((cocktail.sale_price - cocktail.total_cost) / cocktail.sale_price) *
+                    100
+                  ).toFixed(0)
+                }}%
+              </span>
+            </template>
+          </div>
           <p v-if="cocktail.raw_ingredients_str" class="text-xs text-gray-400 mt-1 truncate">
             {{ cocktail.raw_ingredients_str }}
           </p>

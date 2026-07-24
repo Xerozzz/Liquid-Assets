@@ -2,6 +2,10 @@
 
 Cocktail costing and inventory companion for bartenders or home enthusiasts. Track glassware, raw ingredients, homemade components, and full recipes in a Vue frontend backed by an Express + Prisma + Postgres backend, all running in Docker.
 
+Contributing or working with an AI coding agent? See [AGENTS.md](AGENTS.md) for conventions and
+gotchas, [docs/API.md](docs/API.md) for the REST endpoint reference, and
+[CHANGELOG.md](CHANGELOG.md) for feature history.
+
 ## Features
 
 - CRUD for cocktails, ingredients, homemade ingredients, and glassware with nested Vue Router views

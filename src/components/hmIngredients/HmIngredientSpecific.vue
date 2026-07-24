@@ -131,7 +131,8 @@ export default {
     <ProgressSpinner />
   </div>
 
-  <div v-else-if="error" class="text-center p-10 text-red-500">
+  <div v-else-if="error" class="text-center p-10 text-primary-700">
+    <i class="pi pi-exclamation-circle mb-2 block" style="font-size: 2rem"></i>
     {{ error.message }}
   </div>
 
@@ -142,7 +143,7 @@ export default {
     </button>
     <button class="nav_button" @click="confirmDelete">Delete</button>
 
-    <div class="grid grid-cols-3 gap-11">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-11">
       <div class="sectionbox">
         <h2 class="title">{{ hmIngredient.name }}</h2>
 
@@ -157,7 +158,7 @@ export default {
         <p>{{ hmIngredient.yield }} {{ hmIngredient.unit }}</p>
 
         <h3>Unit Cost:</h3>
-        <p>${{ hmIngredient.cost.toFixed(2) }}</p>
+        <p class="text-3xl font-bold text-primary-700">${{ hmIngredient.cost.toFixed(2) }}</p>
 
         <h3>Status:</h3>
         <div class="mt-1">
@@ -183,34 +184,39 @@ export default {
       <div class="sectionbox">
         <h3>Components:</h3>
         <p class="text-sm text-gray-500 mb-2">Total Batch Cost: ${{ totalCost.toFixed(2) }}</p>
-        <table class="text-center w-full">
-          <thead>
-            <tr>
-              <th>Ingredient</th>
-              <th>Qty</th>
-              <th>Cost</th>
-              <th>Stock</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in ingredients" :key="item.id">
-              <td>{{ item.name }}</td>
-              <td>{{ item.quantity }} {{ item.unit }}</td>
-              <td>${{ Number(item.cost).toFixed(2) }}</td>
-              <td>
-                <span
-                  v-if="item.is_stocked"
-                  class="px-2 py-1 rounded-md bg-green-100 text-green-700 font-bold text-xs"
-                >
-                  In
-                </span>
-                <span v-else class="px-2 py-1 rounded-md bg-red-100 text-red-700 font-bold text-xs">
-                  Out
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="overflow-x-auto">
+          <table class="text-center w-full">
+            <thead>
+              <tr>
+                <th>Ingredient</th>
+                <th>Qty</th>
+                <th>Cost</th>
+                <th>Stock</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in ingredients" :key="item.id">
+                <td>{{ item.name }}</td>
+                <td>{{ item.quantity }} {{ item.unit }}</td>
+                <td>${{ Number(item.cost).toFixed(2) }}</td>
+                <td>
+                  <span
+                    v-if="item.is_stocked"
+                    class="px-2 py-1 rounded-md bg-green-100 text-green-700 font-bold text-xs"
+                  >
+                    In
+                  </span>
+                  <span
+                    v-else
+                    class="px-2 py-1 rounded-md bg-red-100 text-red-700 font-bold text-xs"
+                  >
+                    Out
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>

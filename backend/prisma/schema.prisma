@@ -78,6 +78,7 @@ model Recipe {
   garnish       String?
   notes         String?
   image         String?
+  salePrice     Float?              @map("sale_price")
   isDeleted     Boolean             @default(false) @map("is_deleted")
   createdAt     DateTime            @default(now()) @map("created_at")
   deletedAt     DateTime?           @map("deleted_at")

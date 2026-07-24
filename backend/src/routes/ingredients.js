@@ -2,6 +2,7 @@ import express from 'express'
 import prisma from '../prisma.js'
 import { asyncHandler } from '../asyncHandler.js'
 import { requireString } from '../validate.js'
+import { recalculateHmIngredientCostsForIngredient } from '../services/hmIngredients.js'
 
 const router = express.Router()
 
@@ -47,6 +48,7 @@ router.put(
       where: { id },
       data: { name, unit, cost: Number(cost || 0), isStocked: Boolean(isStocked) },
     })
+    await recalculateHmIngredientCostsForIngredient(id)
     res.json(updated)
   }, 'Failed to update ingredient'),
 )

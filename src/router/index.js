@@ -5,6 +5,7 @@ import HomeView from '../views/HomeView.vue'
 import IngredientView from '@/views/IngredientView.vue'
 import HmView from '@/views/HmView.vue'
 import GlasswareView from '@/views/GlasswareView.vue'
+import RestockView from '@/views/RestockView.vue'
 
 // Import glassware components
 import {
@@ -43,6 +44,11 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView,
+    },
+    {
+      path: '/restock',
+      name: 'restock',
+      component: RestockView,
     },
     {
       path: '/cocktail',

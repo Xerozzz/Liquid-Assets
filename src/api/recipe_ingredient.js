@@ -13,10 +13,11 @@ export const getRecipeIngredientById = async (recipe_ingredient_id) => {
   return mapRecipeIngredient(data)
 }
 
+// Note: the by-recipe endpoint returns a flattened { ingredient_id, name, unit, quantity }
+// shape (not the raw recipe_ingredient entity), so it's returned as-is, unmapped.
 export const getRecipeIngredientByRecipeId = async (recipe_id) => {
   const res = await fetch(apiUrl(`/api/recipe-ingredients/by-recipe/${recipe_id}`))
-  const data = await handleResponse(res)
-  return mapRecipeIngredient(data)
+  return handleResponse(res)
 }
 
 export const createRecipeIngredient = async (recipe_id, ingredient_id, quantity) => {
