@@ -83,11 +83,12 @@ export default {
 <template>
   <DeleteDialog />
 
-  <div v-if="loading" class="text-center p-10">
-    <p>Loading...</p>
+  <div v-if="loading" class="flex justify-center items-center h-64">
+    <ProgressSpinner />
   </div>
 
-  <div v-else-if="error" class="text-center p-10 text-red-500">
+  <div v-else-if="error" class="text-center p-10 text-primary-700">
+    <i class="pi pi-exclamation-circle mb-2 block" style="font-size: 2rem"></i>
     {{ error.message }}
   </div>
 
@@ -106,12 +107,14 @@ export default {
         <div class="grid grid-cols-2 gap-4 mt-2">
           <div>
             <p class="font-bold">Total Volume:</p>
-            <p>{{ glass.volume }} ml</p>
+            <p class="text-2xl font-bold text-primary-700">{{ glass.volume }} ml</p>
           </div>
 
           <div>
             <p class="font-bold">Fill Volume:</p>
-            <p>{{ glass.volume_w_ice ? glass.volume_w_ice + ' ml' : 'N/A' }}</p>
+            <p class="text-2xl font-bold text-primary-700">
+              {{ glass.volume_w_ice ? glass.volume_w_ice + ' ml' : 'N/A' }}
+            </p>
           </div>
         </div>
 

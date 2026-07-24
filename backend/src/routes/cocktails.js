@@ -25,6 +25,16 @@ router.get(
         rawItems.filter((ri) => !ri.ingredient?.isStocked).length +
         hmItems.filter((hi) => !hi.hmIngredient?.isStocked).length
 
+      const totalCost =
+        rawItems.reduce(
+          (sum, ri) => sum + Number(ri.quantity) * Number(ri.ingredient?.cost || 0),
+          0,
+        ) +
+        hmItems.reduce(
+          (sum, hi) => sum + Number(hi.quantity) * Number(hi.hmIngredient?.cost || 0),
+          0,
+        )
+
       return {
         recipe_id: r.id,
         name: r.name,
@@ -35,6 +45,8 @@ router.get(
         image: r.image,
         created_at: r.createdAt,
         missing_count: missingCount,
+        total_cost: totalCost,
+        sale_price: r.salePrice,
         raw_ingredients_str: rawItems
           .map((ri) => ri.ingredient?.name)
           .filter(Boolean)
@@ -75,6 +87,7 @@ router.get(
       notes: recipe.notes,
       image: recipe.image,
       step_to_make: recipe.stepToMake,
+      sale_price: recipe.salePrice,
     }
 
     const items = [
@@ -110,7 +123,7 @@ router.post(
     const name = requireString(req.body, 'name')
     const glassId = requireNumber(req.body, 'glass_id')
     const stepToMake = requireString(req.body, 'step_to_make')
-    const { garnish, notes, image } = req.body
+    const { garnish, notes, image, sale_price } = req.body
     const created = await prisma.recipe.create({
       data: {
         name,
@@ -119,6 +132,7 @@ router.post(
         garnish: garnish || null,
         notes: notes || null,
         image: image || null,
+        salePrice: sale_price != null && sale_price !== '' ? Number(sale_price) : null,
       },
     })
     res.status(201).json(created)
@@ -132,7 +146,7 @@ router.put(
     const name = requireString(req.body, 'name')
     const glassId = requireNumber(req.body, 'glass_id')
     const stepToMake = requireString(req.body, 'step_to_make')
-    const { garnish, notes, image } = req.body
+    const { garnish, notes, image, sale_price } = req.body
     const updated = await prisma.recipe.update({
       where: { id },
       data: {
@@ -142,6 +156,7 @@ router.put(
         garnish: garnish || null,
         notes: notes || null,
         image: image || null,
+        salePrice: sale_price != null && sale_price !== '' ? Number(sale_price) : null,
       },
     })
     res.json(updated)

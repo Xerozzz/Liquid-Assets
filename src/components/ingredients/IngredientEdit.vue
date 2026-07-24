@@ -104,7 +104,7 @@ export default {
       :initialValues="initialValues"
       :resolver="resolver"
       @submit="onFormSubmit"
-      class="bg-white p-8 rounded-lg shadow-md space-y-6"
+      class="bg-white p-8 rounded-lg shadow-md border border-primary-100 space-y-6"
     >
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="flex flex-col gap-1">

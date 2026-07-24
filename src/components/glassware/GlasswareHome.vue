@@ -165,7 +165,7 @@ export default {
       <div
         v-for="glass in glasswareList"
         :key="glass.glass_id"
-        class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer flex flex-col justify-between"
+        class="bg-white rounded-lg shadow-sm border border-primary-100 p-6 hover:shadow-md hover:border-primary-300 transition-all cursor-pointer flex flex-col justify-between"
         @click="$router.push(`/glassware/edit/${glass.glass_id}`)"
       >
         <div class="text-center mb-4">
@@ -173,7 +173,7 @@ export default {
           <p class="text-gray-500">{{ glass.model }}</p>
         </div>
 
-        <hr class="border-gray-300 mb-4" />
+        <hr class="border-primary-100 mb-4" />
 
         <div class="flex justify-between items-center text-sm">
           <div>
@@ -182,7 +182,7 @@ export default {
           </div>
           <div class="text-right">
             <p class="text-gray-600">With Ice</p>
-            <p class="font-bold text-primary">{{ glass.volume_w_ice }} ml</p>
+            <p class="font-bold text-primary-600">{{ glass.volume_w_ice }} ml</p>
           </div>
         </div>
       </div>
