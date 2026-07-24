@@ -56,6 +56,7 @@ export const mapRecipe = (r) => {
     garnish: r.garnish,
     notes: r.notes,
     image: r.image,
+    sale_price: r.sale_price ?? r.salePrice,
     is_deleted: r.is_deleted ?? r.isDeleted,
     created_at: r.created_at ?? normalizeDate(r.createdAt),
     deleted_at: r.deleted_at ?? normalizeDate(r.deletedAt),

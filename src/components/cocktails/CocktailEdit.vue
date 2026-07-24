@@ -47,6 +47,7 @@ export default {
         garnish: '',
         notes: '',
         image: '',
+        sale_price: null,
       },
     }
   },
@@ -115,6 +116,7 @@ export default {
           garnish: this.cocktail.garnish,
           notes: this.cocktail.notes,
           image: this.cocktail.image,
+          sale_price: this.cocktail.sale_price,
         }
       }
     },
@@ -173,6 +175,7 @@ export default {
             values.notes,
             imageValue,
             this.cocktailId,
+            values.sale_price,
           )
 
           let cocktailIngredients = this.cocktailIngredients.map(
@@ -260,7 +263,7 @@ export default {
           if ($event.target.tagName !== 'TEXTAREA') $event.preventDefault()
         }
       "
-      class="space-y-6 bg-white p-8 rounded-lg shadow-md"
+      class="space-y-6 bg-white p-8 rounded-lg shadow-md border border-primary-100"
     >
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="flex flex-col gap-1">
@@ -293,6 +296,20 @@ export default {
           <InputText name="garnish" placeholder="Garnish" fluid />
         </div>
 
+        <div class="flex flex-col gap-1">
+          <label class="font-semibold">Sale Price (Optional)</label>
+          <InputNumber
+            name="sale_price"
+            placeholder="0.00"
+            mode="currency"
+            currency="USD"
+            locale="en-US"
+            fluid
+          />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
         <div class="flex flex-col gap-1">
           <label class="font-semibold">Update Image</label>
           <FileUpload

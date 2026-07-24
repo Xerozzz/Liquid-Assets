@@ -5,6 +5,8 @@ import { useImageStorage } from '@/composables/useImageStorage'
 import DeleteDialog from '../DeleteDialog.vue'
 import { deleteRecipeHmIngredientByRecipeId } from '@/api/recipe_hm_ingredient'
 import { deleteRecipeIngredientByRecipeId } from '@/api/recipe_ingredient'
+import { getIngredientById, updateIngredient } from '@/api/ingredients'
+import { getHmIngredientById, updateHmIngredient } from '@/api/hm_ingredients'
 
 export default {
   name: 'CocktailSpecific',
@@ -23,9 +25,51 @@ export default {
       ingredients: [],
       totalCost: 0,
       actualVolume: 0,
+      togglingId: null,
     }
   },
+  computed: {
+    margin() {
+      if (this.cocktail?.salePrice == null) return null
+      return Number(this.cocktail.salePrice) - this.totalCost
+    },
+    marginPercent() {
+      if (this.margin == null || !this.cocktail.salePrice) return null
+      return (this.margin / Number(this.cocktail.salePrice)) * 100
+    },
+  },
   methods: {
+    async toggleIngredientStock(item) {
+      this.togglingId = `${item.kind}-${item.id}`
+      try {
+        if (item.kind === 'ingredient') {
+          const ing = await getIngredientById(item.id)
+          await updateIngredient(ing.name, ing.unit, ing.cost, !ing.is_stocked, ing.ingredient_id)
+        } else {
+          const hm = await getHmIngredientById(item.id)
+          await updateHmIngredient(
+            hm.name,
+            hm.cost,
+            hm.notes,
+            hm.image,
+            hm.unit,
+            hm.yield,
+            !hm.is_stocked,
+            hm.hm_ingredient_id,
+          )
+        }
+        item.stock = !item.stock
+        this.notification.notify({
+          message: `${item.name} marked as ${item.stock ? 'In Stock' : 'Out of Stock'}`,
+          severity: 'success',
+        })
+      } catch (error) {
+        console.error(error)
+        this.notification.notify({ message: 'Failed to update stock status', severity: 'error' })
+      } finally {
+        this.togglingId = null
+      }
+    },
     async fetchCocktail() {
       try {
         const cocktailId = this.$route.params.id
@@ -43,6 +87,7 @@ export default {
           garnish: r.garnish,
           notes: r.notes,
           image: r.image,
+          salePrice: r.sale_price,
           step_to_make: r.step_to_make
             ? r.step_to_make.split('\n').filter((step) => step.trim() !== '')
             : [],
@@ -123,8 +168,13 @@ export default {
 
 <template>
   <DeleteDialog />
-  <div v-if="loading">Loading...</div>
-  <div v-else-if="error">{{ error.message }}</div>
+  <div v-if="loading" class="flex justify-center items-center h-64">
+    <ProgressSpinner />
+  </div>
+  <div v-else-if="error" class="text-center p-10 text-primary-700">
+    <i class="pi pi-exclamation-circle mb-2 block" style="font-size: 2rem"></i>
+    {{ error.message }}
+  </div>
   <div v-else class="bodysection">
     <button class="nav_button" @click="$router.push('/cocktail')">Back</button>
     <button class="nav_button" @click="$router.push(`/cocktail/edit/${this.$route.params.id}`)">
@@ -132,7 +182,7 @@ export default {
     </button>
     <button class="nav_button" @click="confirmDelete">Delete</button>
 
-    <div class="grid grid-cols-3 gap-11">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-11">
       <div class="sectionbox">
         <h2 class="title">{{ cocktail.name }}</h2>
 
@@ -152,8 +202,31 @@ export default {
         </p>
         <h3>Garnish:</h3>
         <p>{{ cocktail.garnish }}</p>
-        <h3>Total Cost:</h3>
-        <p>${{ totalCost.toFixed(2) }}</p>
+
+        <div class="grid grid-cols-2 gap-4 mt-2">
+          <div>
+            <h3>Cost:</h3>
+            <p class="text-3xl font-bold text-primary-700">${{ totalCost.toFixed(2) }}</p>
+          </div>
+          <div>
+            <h3>Sale Price:</h3>
+            <p v-if="cocktail.salePrice != null" class="text-3xl font-bold text-primary-700">
+              ${{ Number(cocktail.salePrice).toFixed(2) }}
+            </p>
+            <p v-else class="text-gray-400 italic">Not set</p>
+          </div>
+        </div>
+
+        <div v-if="margin != null" class="mt-2">
+          <h3>Margin:</h3>
+          <p :class="['text-xl font-bold', margin >= 0 ? 'text-green-600' : 'text-red-600']">
+            ${{ margin.toFixed(2) }}
+            <span class="text-sm font-normal text-gray-500">
+              ({{ marginPercent.toFixed(0) }}%)
+            </span>
+          </p>
+        </div>
+
         <h3>Notes:</h3>
         <p>{{ cocktail.notes }}</p>
       </div>
@@ -178,37 +251,49 @@ export default {
         <p>
           Actual Volume: <b>{{ actualVolume }} ml</b>
         </p>
-        <table class="text-center w-full">
-          <thead>
-            <tr>
-              <th>Ingredient</th>
-              <th>Quantity</th>
-              <th>Cost</th>
-              <th>Stock Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in ingredients" :key="`${item.kind}-${item.item_id}`">
-              <td><span v-if="item.kind === 'hm'">(HM) </span>{{ item.name }}</td>
-              <td>
-                {{ item.quantity }} <span v-if="item.unit">{{ item.unit }}</span>
-              </td>
-              <td>${{ Number(item.cost).toFixed(2) }}</td>
+        <div class="overflow-x-auto">
+          <table class="text-center w-full">
+            <thead>
+              <tr>
+                <th>Ingredient</th>
+                <th>Quantity</th>
+                <th>Cost</th>
+                <th>Stock Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in ingredients" :key="`${item.kind}-${item.item_id}`">
+                <td><span v-if="item.kind === 'hm'">(HM) </span>{{ item.name }}</td>
+                <td>
+                  {{ item.quantity }} <span v-if="item.unit">{{ item.unit }}</span>
+                </td>
+                <td>${{ Number(item.cost).toFixed(2) }}</td>
 
-              <td>
-                <span
-                  v-if="item.stock"
-                  class="px-2 py-1 rounded-md bg-green-100 text-green-700 font-bold text-xs"
-                >
-                  In Stock
-                </span>
-                <span v-else class="px-2 py-1 rounded-md bg-red-100 text-red-700 font-bold text-xs">
-                  Out
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                <td>
+                  <span
+                    v-if="item.stock"
+                    class="px-2 py-1 rounded-md bg-green-100 text-green-700 font-bold text-xs"
+                  >
+                    In Stock
+                  </span>
+                  <div v-else class="flex items-center justify-center gap-2">
+                    <span class="px-2 py-1 rounded-md bg-red-100 text-red-700 font-bold text-xs">
+                      Out
+                    </span>
+                    <button
+                      type="button"
+                      :disabled="togglingId === `${item.kind}-${item.id}`"
+                      class="text-xs font-semibold text-primary-700 hover:text-primary-900 underline disabled:opacity-50"
+                      @click="toggleIngredientStock(item)"
+                    >
+                      Mark In Stock
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>

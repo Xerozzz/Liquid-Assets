@@ -66,7 +66,7 @@ export default {
 
     <div
       v-else
-      class="w-80 h-[28rem] bg-white rounded-lg shadow-xl border border-gray-200 flex flex-col overflow-hidden"
+      class="w-[calc(100vw-2.5rem)] max-w-80 h-[28rem] max-h-[calc(100vh-6rem)] bg-white rounded-lg shadow-xl border border-gray-200 flex flex-col overflow-hidden"
     >
       <div class="flex items-center justify-between px-3 py-2 bg-blue-600 text-white">
         <span class="font-semibold text-sm">Liquid Assets Assistant</span>

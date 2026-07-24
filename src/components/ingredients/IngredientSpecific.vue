@@ -74,11 +74,14 @@ export default {
 <template>
   <DeleteDialog />
 
-  <div v-if="loading" class="flex justify-center p-10"><ProgressSpinner /></div>
-  <div v-else-if="error" class="text-center p-10 text-red-500">{{ error.message }}</div>
+  <div v-if="loading" class="flex justify-center items-center h-64"><ProgressSpinner /></div>
+  <div v-else-if="error" class="text-center p-10 text-primary-700">
+    <i class="pi pi-exclamation-circle mb-2 block" style="font-size: 2rem"></i>
+    {{ error.message }}
+  </div>
 
   <div v-else class="bodysection">
-    <div class="flex gap-2 mb-4">
+    <div class="flex flex-wrap gap-2 mb-4">
       <button class="nav_button" @click="$router.push('/ingredient')">Back</button>
       <button
         class="nav_button"
@@ -89,14 +92,14 @@ export default {
       <button class="nav_button" @click="confirmDelete">Delete</button>
     </div>
 
-    <div class="border border-black rounded-md p-6 w-full md:w-1/2">
-      <h1 class="text-3xl font-bold mb-1">{{ ingredient.name }}</h1>
-      <p class="text-gray-600 mb-8">Ingredient ID: {{ ingredient.ingredient_id }}</p>
+    <div class="sectionbox w-full md:w-1/2">
+      <h1 class="title">{{ ingredient.name }}</h1>
+      <p class="text-gray-500 mb-6">Ingredient ID: {{ ingredient.ingredient_id }}</p>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div>
           <p class="font-bold text-lg">Cost/{{ ingredient.unit }}</p>
-          <p class="text-lg mb-4">${{ ingredient.cost.toFixed(2) }}</p>
+          <p class="text-3xl font-bold text-primary-700 mb-4">${{ ingredient.cost.toFixed(2) }}</p>
 
           <p class="font-bold text-lg">Unit Type</p>
           <p class="text-lg capitalize">{{ ingredient.unit }}</p>
