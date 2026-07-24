@@ -9,6 +9,28 @@ are when the work was done, not necessarily committed.
 
 ### Added
 
+- **Deployment: HTTP Basic Auth + HTTPS for a public single-user deployment.** Opt-in Basic Auth
+  at the nginx layer (`docker-entrypoint.d/90-basic-auth.sh` generates the htpasswd file and an
+  nginx `auth.conf` at container start from `BASIC_AUTH_USER`/`BASIC_AUTH_PASSWORD`; a no-op when
+  unset, so local dev is unaffected). New `docker-compose.prod.yml` adds a Caddy reverse proxy for
+  automatic Let's Encrypt HTTPS given a `DOMAIN`, and keeps the app off the host's public ports
+  entirely (only Caddy binds 80/443). New [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) walks through
+  deploying this to a free Oracle Cloud Always Free VM with a free DuckDNS domain.
+  Found along the way: the frontend's `VITE_API_URL` (when set to an absolute URL, as the old
+  `.env_example` default did) makes the browser call the backend directly, bypassing nginx — and
+  therefore Basic Auth — entirely; also, `docker-compose.yml`'s backend port mapping was bound to
+  all interfaces (`0.0.0.0`), reachable from the network even with Basic Auth configured. Both
+  fixed: `.env_example`'s `VITE_API_URL` now defaults to blank (same-origin, nginx-proxied), and
+  the backend's dev port mapping is now bound to `127.0.0.1` only.
+- **Automated backend tests** — a small vitest + supertest suite under `backend/test/` covering
+  cost/margin computation, the hm-ingredient cost cascade fix below, and basic route validation.
+  `backend/src/index.js` now exports `app` and skips `app.listen` under `NODE_ENV=test` so tests
+  can drive the real Express app against the real (dockerized) Postgres without a separate test
+  DB. Run via `docker compose exec backend npm test`.
+- **Chatbot pricing/margin awareness** — `list_cocktails`/`get_cocktail` tools now return cost,
+  sale price, and margin (via new shared `computeRecipeCost`/`computeMargin` helpers in
+  `backend/src/services/cocktails.js`); `create_cocktail` accepts an optional `sale_price`; new
+  `update_cocktail_price` tool sets/updates a cocktail's price by name.
 - **Cocktail selling price & margin** — `sale_price` field on recipes (nullable). Create/Edit
   forms take a price; the detail page shows Cost / Sale Price / Margin ($ and %); list cards show
   a cost/price/margin badge; list view has a "Margin %" sort option.

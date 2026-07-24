@@ -1,0 +1,75 @@
+# Standalone production compose file — adds Caddy in front of the app for automatic HTTPS
+# (via Let's Encrypt) and keeps frontend/backend off the host's public ports entirely; only
+# Caddy binds 80/443. Deliberately NOT an override of docker-compose.yml (Compose merges array
+# fields like `ports` by concatenation, not replacement, which made "don't publish this port in
+# prod" unreliable to express as an override) — this is a separate, complete file.
+#
+# Usage: docker compose -f docker-compose.prod.yml up --build -d
+# See docs/DEPLOYMENT.md for the full setup (VM, DNS, env vars).
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-liquid_assets}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-liquid_assets}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgres://postgres:postgres@db:5432/liquid_assets}
+      UPLOAD_DIR: /app/uploads
+      SEED_ON_START: ${SEED_ON_START:-true}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-flash-lite-latest}
+    volumes:
+      - images_data:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: on-failure
+    # No `ports:` — reachable only from other containers on this network, never from the host.
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+    environment:
+      BASIC_AUTH_USER: ${BASIC_AUTH_USER:?BASIC_AUTH_USER is required for a public deployment}
+      BASIC_AUTH_PASSWORD: ${BASIC_AUTH_PASSWORD:?BASIC_AUTH_PASSWORD is required for a public deployment}
+    depends_on:
+      - backend
+    restart: on-failure
+    # No `ports:` — only Caddy is exposed to the internet; it reverse-proxies here internally.
+
+  caddy:
+    image: caddy:2-alpine
+    environment:
+      DOMAIN: ${DOMAIN:?DOMAIN is required (e.g. a free DuckDNS subdomain) — see docs/DEPLOYMENT.md}
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+    restart: on-failure
+
+volumes:
+  db_data:
+  images_data:
+  caddy_data:
+  caddy_config:

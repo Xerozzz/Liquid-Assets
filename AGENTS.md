@@ -18,9 +18,23 @@ selling price/margin, and pour volume per recipe.
 - `backend/src/` — Express routes, one file per resource under `backend/src/routes/`, Prisma as
   the only DB access layer (`backend/src/prisma.js`).
 - `backend/prisma/schema.prisma` — source of truth for the data model.
-- Nginx (`nginx.conf`) reverse-proxies `/api/*` to the backend in the Docker build, so the
-  frontend and backend share one origin in production; in local dev the frontend talks to the
-  backend directly via `VITE_API_URL`.
+- Nginx (`nginx.conf`) reverse-proxies `/api/*` to the backend. `VITE_API_URL` (baked into the
+  frontend at build time) controls whether the browser actually uses that proxy or calls the
+  backend directly: **leave it blank** for same-origin, nginx-proxied calls (required for
+  `docker-compose.prod.yml`'s Basic Auth to cover the API at all — an absolute URL here bypasses
+  nginx, and therefore Basic Auth, entirely). It's only meant to be set for the separate
+  `npm run dev`-against-a-container workflow in the README, where there's no nginx involved.
+- Two Compose files: `docker-compose.yml` for local dev (no auth, backend port bound to
+  `127.0.0.1` only), `docker-compose.prod.yml` for a real deployment (adds Caddy for automatic
+  HTTPS, requires `BASIC_AUTH_USER`/`PASSWORD`/`DOMAIN`, nothing but Caddy touches the host's
+  ports). See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). Deliberately two separate files rather
+  than an override, because Compose merges array fields like `ports` by concatenation, not
+  replacement, which made "don't publish this port in prod" unreliable to express as an override.
+- HTTP Basic Auth is generated at container start, not build time: `docker-entrypoint.d/90-basic-auth.sh`
+  (copied into the frontend image, run automatically by nginx's own base-image entrypoint) hashes
+  `BASIC_AUTH_PASSWORD` into `/etc/nginx/.htpasswd` and writes `/etc/nginx/auth.conf`, which
+  `nginx.conf` always `include`s. Unset those two env vars and it's a no-op — this is how local
+  dev stays password-free without a separate nginx config.
 
 ## Naming convention: snake_case over the wire, camelCase in Prisma
 
@@ -115,15 +129,31 @@ Gemini-backed agentic tool-calling loop (`backend/src/routes/chat.js`), tools de
 you add tools, keep that constraint unless a human explicitly asks to change it. `GEMINI_MODEL`
 defaults to `gemini-flash-lite-latest` (an alias, not a pinned version) specifically to avoid
 hardcoding a model name that Google later deprecates — don't hardcode a dated model version here.
+`list_cocktails`/`get_cocktail` include cost/sale_price/margin via the shared
+`computeRecipeCost`/`computeMargin` helpers in `backend/src/services/cocktails.js` — reuse those
+rather than re-deriving the cost formula if you add another cost-aware tool or route.
+
+## Automated tests
+
+`backend/test/` has a small vitest + supertest suite — there's no separate test database, tests
+run against the real (dockerized) Postgres via the actual Express app (`backend/src/index.js`
+exports `app` and skips `app.listen` when `NODE_ENV === 'test'`, which vitest sets automatically).
+Run them with `docker compose exec backend npm test` (needs the backend image rebuilt first if
+`backend/package.json` or source changed). Tests create their own throwaway rows and clean up
+after themselves via the real DELETE endpoints in an `afterAll` — don't add tests that mutate
+seeded/imported demo data without an equivalent cleanup step. This suite is intentionally thin
+(cost/margin computation, the hm-ingredient cost cascade, basic validation) — it exists to catch
+regressions in the business logic that's actually easy to get subtly wrong, not to cover every
+route.
 
 ## Verifying changes
 
-1. `npx eslint src backend/src` and `npx prettier --write` the files you touched (repo has no
-   automated test suite — lint/format plus manual verification is the whole safety net).
+1. `npx eslint src backend/src` and `npx prettier --write` the files you touched.
 2. `docker compose up --build -d` and check `docker compose logs backend --tail=40` for migration
    and startup errors.
-3. Exercise the changed feature in the browser and check the browser console + backend logs for
-   errors — there's no CI, so this is the actual verification step, not optional.
+3. `docker compose exec backend npm test` — the automated suite is small, so also exercise the
+   changed feature in the browser and check the browser console + backend logs for errors; there's
+   no CI, so this is still the primary verification step, not optional.
 4. If you changed anything that reads/writes existing data via a browser test (e.g. toggling stock
    status, setting a price), revert the test value afterward so the seeded/imported demo data
    doesn't accumulate stray edits from verification runs.

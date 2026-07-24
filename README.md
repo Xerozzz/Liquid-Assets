@@ -81,6 +81,15 @@ npm run format         # prettier src/
 npm run docs           # regenerate JSDoc
 ```
 
+## Deploying it for real (public internet access)
+
+Local Docker Compose has no authentication — fine on your own machine, not fine once it's
+reachable from the internet. For a real deployment: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) walks
+through running this on a free Oracle Cloud VM with HTTP Basic Auth and real HTTPS (via
+[docker-compose.prod.yml](docker-compose.prod.yml), which adds a Caddy reverse proxy). Basic Auth
+itself is opt-in everywhere via `BASIC_AUTH_USER`/`BASIC_AUTH_PASSWORD` in `.env` — leave both
+blank and nothing changes from the setup above.
+
 ## Local Backend Development
 
 ```sh

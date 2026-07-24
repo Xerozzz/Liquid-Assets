@@ -2,7 +2,7 @@ import express from 'express'
 import prisma from '../prisma.js'
 import { asyncHandler } from '../asyncHandler.js'
 import { requireString, requireNumber } from '../validate.js'
-import { importCocktail } from '../services/cocktails.js'
+import { importCocktail, computeRecipeCost } from '../services/cocktails.js'
 
 const router = express.Router()
 
@@ -20,20 +20,7 @@ router.get(
     const rows = recipes.map((r) => {
       const rawItems = r.ingredients
       const hmItems = r.hmIngredients
-
-      const missingCount =
-        rawItems.filter((ri) => !ri.ingredient?.isStocked).length +
-        hmItems.filter((hi) => !hi.hmIngredient?.isStocked).length
-
-      const totalCost =
-        rawItems.reduce(
-          (sum, ri) => sum + Number(ri.quantity) * Number(ri.ingredient?.cost || 0),
-          0,
-        ) +
-        hmItems.reduce(
-          (sum, hi) => sum + Number(hi.quantity) * Number(hi.hmIngredient?.cost || 0),
-          0,
-        )
+      const { totalCost, missingCount } = computeRecipeCost(r)
 
       return {
         recipe_id: r.id,

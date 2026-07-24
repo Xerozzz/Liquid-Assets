@@ -11,7 +11,8 @@ services:
     # ports:
     #   - '5432:5432'
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-liquid_assets}']
+      test:
+        ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-liquid_assets}']
       interval: 5s
       timeout: 5s
       retries: 10
@@ -30,7 +31,10 @@ services:
       db:
         condition: service_healthy
     ports:
-      - '${PORT:-4000}:${PORT:-4000}'
+      # Bound to loopback only: reachable as localhost:4000 from this machine (e.g. for the
+      # documented local-frontend-dev workflow), but never from the network — the backend
+      # must only be reachable through nginx (and its Basic Auth) on a real deployment.
+      - '127.0.0.1:${PORT:-4000}:${PORT:-4000}'
     restart: on-failure
 
   frontend:
@@ -39,6 +43,9 @@ services:
       dockerfile: Dockerfile.frontend
       args:
         VITE_API_URL: ${VITE_API_URL}
+    environment:
+      BASIC_AUTH_USER: ${BASIC_AUTH_USER:-}
+      BASIC_AUTH_PASSWORD: ${BASIC_AUTH_PASSWORD:-}
     ports:
       - '80:80'
     depends_on:

@@ -1,6 +1,33 @@
 import prisma from '../prisma.js'
 
 /**
+ * Computes a recipe's total cost and out-of-stock count from its (already-included)
+ * ingredients/hmIngredients. Shared by the cocktails list route and the chatbot tools so the
+ * cost formula only lives in one place.
+ */
+export function computeRecipeCost(recipe) {
+  const rawItems = recipe.ingredients || []
+  const hmItems = recipe.hmIngredients || []
+
+  const missingCount =
+    rawItems.filter((ri) => !ri.ingredient?.isStocked).length +
+    hmItems.filter((hi) => !hi.hmIngredient?.isStocked).length
+
+  const totalCost =
+    rawItems.reduce((sum, ri) => sum + Number(ri.quantity) * Number(ri.ingredient?.cost || 0), 0) +
+    hmItems.reduce((sum, hi) => sum + Number(hi.quantity) * Number(hi.hmIngredient?.cost || 0), 0)
+
+  return { totalCost, missingCount }
+}
+
+/** Total cost with the recipe's sale price factored in, or null margin fields if unpriced. */
+export function computeMargin(totalCost, salePrice) {
+  if (!(salePrice > 0)) return { margin: null, marginPercent: null }
+  const margin = salePrice - totalCost
+  return { margin, marginPercent: (margin / salePrice) * 100 }
+}
+
+/**
  * Creates a recipe by matching a glass and ingredients by name, used by both
  * the CSV import route and the chatbot's create_cocktail tool.
  */
@@ -78,6 +105,7 @@ export async function importCocktail(cocktail) {
         garnish: '',
         notes: '',
         image: null,
+        salePrice: cocktail.salePrice != null ? Number(cocktail.salePrice) : null,
       },
     })
     await Promise.all([

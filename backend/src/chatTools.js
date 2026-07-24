@@ -1,7 +1,7 @@
 import prisma from './prisma.js'
 import { ValidationError } from './asyncHandler.js'
 import { requireString } from './validate.js'
-import { importCocktail } from './services/cocktails.js'
+import { importCocktail, computeRecipeCost, computeMargin } from './services/cocktails.js'
 
 // No delete tools are exposed here on purpose — the chatbot can create and
 // update records but destructive actions still have to go through the UI.
@@ -10,13 +10,13 @@ export const toolDeclarations = [
   {
     name: 'list_cocktails',
     description:
-      'List all cocktails with their cost/stock status. Use this to answer questions about what cocktails exist or can be made.',
+      'List all cocktails with their cost, sale price, margin, and stock status. Use this to answer questions about what cocktails exist, can be made, or their profitability.',
     parameters: { type: 'OBJECT', properties: {} },
   },
   {
     name: 'get_cocktail',
     description:
-      'Get full recipe details (ingredients, steps, garnish) for a single cocktail by name.',
+      'Get full recipe details (ingredients, steps, garnish, cost, sale price, margin) for a single cocktail by name.',
     parameters: {
       type: 'OBJECT',
       properties: {
@@ -105,8 +105,24 @@ export const toolDeclarations = [
             required: ['name', 'amount'],
           },
         },
+        sale_price: {
+          type: 'NUMBER',
+          description: 'Optional menu price for this cocktail, used to compute margin.',
+        },
       },
       required: ['name'],
+    },
+  },
+  {
+    name: 'update_cocktail_price',
+    description: "Set or update an existing cocktail's menu sale price by name.",
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        name: { type: 'STRING' },
+        sale_price: { type: 'NUMBER', description: 'New sale price.' },
+      },
+      required: ['name', 'sale_price'],
     },
   },
 ]
@@ -120,17 +136,23 @@ export const toolHandlers = {
         hmIngredients: { include: { hmIngredient: true } },
       },
     })
-    return recipes.map((r) => ({
-      id: r.id,
-      name: r.name,
-      missing_count:
-        r.ingredients.filter((ri) => !ri.ingredient?.isStocked).length +
-        r.hmIngredients.filter((hi) => !hi.hmIngredient?.isStocked).length,
-      ingredients: [
-        ...r.ingredients.map((ri) => ri.ingredient?.name).filter(Boolean),
-        ...r.hmIngredients.map((hi) => hi.hmIngredient?.name).filter(Boolean),
-      ],
-    }))
+    return recipes.map((r) => {
+      const { totalCost, missingCount } = computeRecipeCost(r)
+      const { margin, marginPercent } = computeMargin(totalCost, r.salePrice)
+      return {
+        id: r.id,
+        name: r.name,
+        cost: totalCost,
+        sale_price: r.salePrice,
+        margin,
+        margin_percent: marginPercent,
+        missing_count: missingCount,
+        ingredients: [
+          ...r.ingredients.map((ri) => ri.ingredient?.name).filter(Boolean),
+          ...r.hmIngredients.map((hi) => hi.hmIngredient?.name).filter(Boolean),
+        ],
+      }
+    })
   },
 
   get_cocktail: async (args) => {
@@ -145,6 +167,9 @@ export const toolHandlers = {
     })
     if (!recipe) return { error: `No cocktail found named "${name}"` }
 
+    const { totalCost, missingCount } = computeRecipeCost(recipe)
+    const { margin, marginPercent } = computeMargin(totalCost, recipe.salePrice)
+
     return {
       id: recipe.id,
       name: recipe.name,
@@ -152,6 +177,11 @@ export const toolHandlers = {
       garnish: recipe.garnish,
       notes: recipe.notes,
       steps: recipe.stepToMake,
+      cost: totalCost,
+      sale_price: recipe.salePrice,
+      margin,
+      margin_percent: marginPercent,
+      missing_count: missingCount,
       ingredients: [
         ...recipe.ingredients.map((ri) => ({
           name: ri.ingredient?.name,
@@ -252,6 +282,24 @@ export const toolHandlers = {
       glassName: args.glass_name,
       instructions: args.instructions,
       ingredients: Array.isArray(args.ingredients) ? args.ingredients : [],
+      salePrice: args.sale_price,
     })
+  },
+
+  update_cocktail_price: async (args) => {
+    const name = requireString(args, 'name')
+    if (typeof args.sale_price !== 'number' || !Number.isFinite(args.sale_price)) {
+      throw new ValidationError('"sale_price" must be a number')
+    }
+    const recipe = await prisma.recipe.findFirst({
+      where: { name: { equals: name, mode: 'insensitive' }, isDeleted: false },
+    })
+    if (!recipe) throw new ValidationError(`No cocktail found named "${name}"`)
+
+    const updated = await prisma.recipe.update({
+      where: { id: recipe.id },
+      data: { salePrice: args.sale_price },
+    })
+    return { id: updated.id, name: updated.name, sale_price: updated.salePrice }
   },
 }

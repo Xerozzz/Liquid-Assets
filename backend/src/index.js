@@ -28,6 +28,12 @@ app.use('/api/cocktails', cocktailsRouter)
 app.use('/api/images', imagesRouter)
 app.use('/api/chat', chatRouter)
 
-app.listen(PORT, () => {
-  console.log(`Backend listening on port ${PORT}`)
-})
+// Skip listening under the test runner so tests can import `app` and drive it via supertest
+// without also binding the port (vitest sets NODE_ENV=test by default).
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`Backend listening on port ${PORT}`)
+  })
+}
+
+export default app
