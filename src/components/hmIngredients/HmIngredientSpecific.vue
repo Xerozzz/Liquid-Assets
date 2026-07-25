@@ -6,10 +6,11 @@ import { getHmIngredientById, deleteHmIngredient } from '@/api/hm_ingredients'
 import { getHmIngredientComponentByHmIngredientId } from '@/api/hm_ingredient_components'
 
 import DeleteDialog from '../DeleteDialog.vue'
+import RecipePlaceholder from '@/components/RecipePlaceholder.vue'
 
 export default {
   name: 'HmIngredientSpecific',
-  components: { DeleteDialog },
+  components: { DeleteDialog, RecipePlaceholder },
   setup() {
     const notification = useNotificationStore()
     const { getImageUrl, deleteImage } = useImageStorage()
@@ -153,6 +154,9 @@ export default {
           :src="displayImageUrl"
           alt="Item Image"
         />
+        <div v-else class="w-80 h-60 rounded shadow-sm mb-4 overflow-hidden">
+          <RecipePlaceholder :name="hmIngredient.name" />
+        </div>
 
         <h3>Yield:</h3>
         <p>{{ hmIngredient.yield }} {{ hmIngredient.unit }}</p>

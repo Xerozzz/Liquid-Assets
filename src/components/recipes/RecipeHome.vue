@@ -3,9 +3,11 @@ import { getRecipe, importRecipeFromCSV } from '@/api/recipe.js'
 import { getIngredients } from '@/api/ingredients.js'
 import { useNotificationStore } from '@/stores/notification.store'
 import { useImageStorage } from '@/composables/useImageStorage'
+import RecipePlaceholder from '@/components/RecipePlaceholder.vue'
 
 export default {
   name: 'RecipeHome',
+  components: { RecipePlaceholder },
   setup() {
     const notification = useNotificationStore()
     const { getImageUrl } = useImageStorage()
@@ -450,9 +452,7 @@ export default {
             :alt="cocktail.name"
             class="w-full h-full object-cover"
           />
-          <div v-else class="w-full h-full flex items-center justify-center text-gray-300">
-            <i class="pi pi-image" style="font-size: 3rem"></i>
-          </div>
+          <RecipePlaceholder v-else :name="cocktail.name" />
         </div>
 
         <div class="p-4 text-center">

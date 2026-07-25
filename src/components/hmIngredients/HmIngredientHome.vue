@@ -7,9 +7,11 @@ import {
 } from '@/api/hm_ingredients.js'
 import { getIngredients } from '@/api/ingredients.js'
 import { useImageStorage } from '@/composables/useImageStorage'
+import RecipePlaceholder from '@/components/RecipePlaceholder.vue'
 
 export default {
   name: 'HmIngredientHome',
+  components: { RecipePlaceholder },
   setup() {
     const notification = useNotificationStore()
     const { getImageUrl } = useImageStorage()
@@ -363,9 +365,7 @@ export default {
             :alt="item.name"
             class="w-full h-full object-cover"
           />
-          <div v-else class="w-full h-full flex items-center justify-center text-gray-300">
-            <i class="pi pi-image" style="font-size: 3rem"></i>
-          </div>
+          <RecipePlaceholder v-else :name="item.name" />
 
           <div class="absolute top-2 right-2">
             <button

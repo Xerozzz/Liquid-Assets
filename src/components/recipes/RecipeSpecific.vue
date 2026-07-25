@@ -7,10 +7,11 @@ import { deleteRecipeHmIngredientByRecipeId } from '@/api/recipe_hm_ingredient'
 import { deleteRecipeIngredientByRecipeId } from '@/api/recipe_ingredient'
 import { getIngredientById, updateIngredient } from '@/api/ingredients'
 import { getHmIngredientById, updateHmIngredient } from '@/api/hm_ingredients'
+import RecipePlaceholder from '@/components/RecipePlaceholder.vue'
 
 export default {
   name: 'RecipeSpecific',
-  components: { DeleteDialog },
+  components: { DeleteDialog, RecipePlaceholder },
   setup() {
     const notification = useNotificationStore()
     const { getImageUrl, deleteImage } = useImageStorage()
@@ -206,6 +207,9 @@ export default {
           alt="Cocktail Image"
           class="w-80 h-auto rounded shadow-sm mb-4"
         />
+        <div v-else class="w-80 h-60 rounded shadow-sm mb-4 overflow-hidden">
+          <RecipePlaceholder :name="cocktail.name" />
+        </div>
 
         <h3>Glass:</h3>
         <p>
