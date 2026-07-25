@@ -1,0 +1,37 @@
+name: Deploy to VM
+
+# Auto-deploy on every push to main. Manual runs are also allowed from the
+# Actions tab via workflow_dispatch.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Never let two deploys run at once; if a new push arrives mid-deploy, let the
+# running one finish and queue the newest (don't cancel a half-applied deploy).
+concurrency:
+  group: deploy-vm
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH in and update the stack
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          # The build on a 1 GB VM (npm ci + vite build) is slow — give it room.
+          command_timeout: 30m
+          script: |
+            set -e
+            cd ~/liquid-assets
+            git fetch --all
+            # Force the working tree to match origin/main exactly. This does NOT
+            # touch untracked files, so the gitignored .env (your secrets) is safe.
+            git reset --hard origin/main
+            docker compose -f docker-compose.prod.yml up --build -d
+            # Reclaim disk from old image layers so the 30 GB disk doesn't fill up.
+            docker image prune -f
