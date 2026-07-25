@@ -8,8 +8,25 @@ and workflow so you don't have to re-derive them from scratch.
 
 "Liquid Assets" — a cocktail costing and inventory tool. Vue 3 frontend, Express + Prisma +
 Postgres backend, Docker Compose runtime. Tracks raw ingredients, homemade ingredients (syrups,
-infusions, etc. built from raw ingredients), glassware, and cocktail recipes, and computes cost,
-selling price/margin, and pour volume per recipe.
+infusions, etc. built from raw ingredients), glassware, and cocktail/mocktail recipes, and computes
+cost, selling price/margin, and pour volume per recipe.
+
+## Cocktails and mocktails are one resource, two sections
+
+There's a single `recipe` table and a single `/api/cocktails` backend resource for both —
+mocktails are just `isMocktail: true` (`is_mocktail` in JSON). The frontend gives them separate
+routes/pages anyway (`/cocktail/*` and `/mocktail/*`, both a distinct nav card from Home) by
+reusing the **same** components (`src/components/recipes/Recipe{Home,Create,Edit,Specific}.vue`)
+for both route trees, parameterized by `this.$route.meta.isMocktail` — set once on each top-level
+route in `src/router/index.js` (`{ path: '/cocktail', meta: { isMocktail: false }, ... }` /
+`{ path: '/mocktail', meta: { isMocktail: true }, ... }`), then read by the shared components to
+pick the right API filter, page title/labels, and navigation target. This was a deliberate choice
+over a fully separate `Mocktail` model/table/routes: the two are structurally identical (same
+cost/margin logic, same ingredient-linking join tables), so a second full CRUD stack would've been
+pure duplication for a single boolean's worth of difference. If a genuine behavioral difference
+between the two ever shows up (not just wording), that's the signal to reconsider — until then,
+new recipe-related backend logic should stay category-agnostic (operate on `is_mocktail` as just
+another field) rather than branching.
 
 ## Architecture at a glance
 

@@ -1,11 +1,11 @@
 <script>
-import { getCocktail, importCocktailFromCSV } from '@/api/cocktail.js'
+import { getRecipe, importRecipeFromCSV } from '@/api/recipe.js'
 import { getIngredients } from '@/api/ingredients.js'
 import { useNotificationStore } from '@/stores/notification.store'
 import { useImageStorage } from '@/composables/useImageStorage'
 
 export default {
-  name: 'CocktailHome',
+  name: 'RecipeHome',
   setup() {
     const notification = useNotificationStore()
     const { getImageUrl } = useImageStorage()
@@ -38,6 +38,18 @@ export default {
     }
   },
   computed: {
+    isMocktail() {
+      return this.$route.meta.isMocktail === true
+    },
+    basePath() {
+      return this.isMocktail ? '/mocktail' : '/cocktail'
+    },
+    pageTitle() {
+      return this.isMocktail ? 'Mocktail Menu' : 'Cocktail Menu'
+    },
+    itemLabel() {
+      return this.isMocktail ? 'Mocktail' : 'Cocktail'
+    },
     filteredCocktails() {
       const filtered = this.queryResult.filter((cocktail) => {
         // Search (Name)
@@ -104,6 +116,9 @@ export default {
     sortBy(newVal) {
       this.updateUrlQuery('sort', newVal === 'name_asc' ? null : newVal)
     },
+    '$route.meta.isMocktail'() {
+      this.retrieveCocktails()
+    },
   },
   methods: {
     marginPercent(cocktail) {
@@ -123,7 +138,7 @@ export default {
     async retrieveCocktails() {
       try {
         this.loading = true
-        const rawResult = await getCocktail()
+        const rawResult = await getRecipe(this.isMocktail ? 'mocktail' : 'cocktail')
         this.queryResult = await Promise.all(
           rawResult.map(async (cocktail) => ({
             ...cocktail,
@@ -140,7 +155,7 @@ export default {
       } catch (error) {
         this.queryError = error
         this.notification.notify({
-          message: 'Failed to load cocktails',
+          message: `Failed to load ${this.itemLabel.toLowerCase()}s`,
           severity: 'error',
         })
       } finally {
@@ -240,7 +255,12 @@ export default {
             })
 
             if (ingredients.length > 0) {
-              cocktailsToImport.push({ name, instructions, ingredients })
+              cocktailsToImport.push({
+                name,
+                instructions,
+                ingredients,
+                isMocktail: this.isMocktail,
+              })
             }
           }
           i++
@@ -249,7 +269,7 @@ export default {
         this.importStats.total = cocktailsToImport.length
 
         for (const cocktail of cocktailsToImport) {
-          const res = await importCocktailFromCSV(cocktail, dbIngredients)
+          const res = await importRecipeFromCSV(cocktail, dbIngredients)
           if (res.success) {
             this.importStats.success++
             if (res.unknowns.length > 0) {
@@ -261,7 +281,7 @@ export default {
           }
         }
 
-        let msg = `Imported ${this.importStats.success} cocktails.`
+        let msg = `Imported ${this.importStats.success} ${this.itemLabel.toLowerCase()}s.`
         let severity = 'success'
 
         if (this.importStats.failed > 0) {
@@ -311,7 +331,7 @@ export default {
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `cocktail-menu-${new Date().toISOString().slice(0, 10)}.csv`
+      link.download = `${this.itemLabel.toLowerCase()}-menu-${new Date().toISOString().slice(0, 10)}.csv`
       link.click()
       URL.revokeObjectURL(url)
     },
@@ -326,7 +346,9 @@ export default {
   <div class="bodysection">
     <div class="flex flex-wrap gap-2 mb-2 items-center">
       <button class="nav_button" @click="$router.push('/')">Back</button>
-      <button class="nav_button" @click="$router.push('/cocktail/create')">Create Cocktail</button>
+      <button class="nav_button" @click="$router.push(`${basePath}/create`)">
+        Create {{ itemLabel }}
+      </button>
       <button class="nav_button" @click="exportMenuCsv" :disabled="filteredCocktails.length === 0">
         Export Menu (CSV)
       </button>
@@ -341,14 +363,14 @@ export default {
           :auto="true"
           customUpload
           @select="onFileSelect"
-          chooseLabel="Import Cocktails"
+          :chooseLabel="`Import ${itemLabel}s`"
           class="p-button-sm"
           :disabled="isImporting"
         />
       </div>
     </div>
 
-    <h1 class="title mt-0 mb-4">Cocktail Menu</h1>
+    <h1 class="title mt-0 mb-4">{{ pageTitle }}</h1>
 
     <!-- FILTERS BAR -->
     <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6 space-y-4">
@@ -410,7 +432,7 @@ export default {
         v-for="cocktail in filteredCocktails"
         :key="cocktail.recipe_id"
         class="bg-white rounded-lg shadow-sm border border-primary-100 overflow-hidden hover:shadow-md hover:border-primary-300 transition-all duration-200 cursor-pointer flex flex-col relative"
-        @click="$router.push(`/cocktail/view/${cocktail.recipe_id}`)"
+        @click="$router.push(`${basePath}/view/${cocktail.recipe_id}`)"
       >
         <!-- Stock Warning Overlay if missing ingredients -->
         <div v-if="cocktail.missing_count > 0" class="absolute top-2 right-2 z-10">
@@ -468,7 +490,10 @@ export default {
     <!-- EMPTY STATE -->
     <div v-if="!loading && filteredCocktails.length === 0" class="text-center py-20 text-gray-400">
       <p v-if="queryResult.length > 0">No matches found for your filters.</p>
-      <p v-else>No cocktails found. Click "Create Cocktail" or "Import" to start mixing!</p>
+      <p v-else>
+        No {{ itemLabel.toLowerCase() }}s found. Click "Create {{ itemLabel }}" or "Import" to start
+        mixing!
+      </p>
     </div>
   </div>
 </template>

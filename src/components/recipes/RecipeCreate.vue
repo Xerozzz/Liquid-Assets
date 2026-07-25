@@ -2,7 +2,7 @@
 import { getGlassware } from '@/api/glassware'
 import { getHmIngredient } from '@/api/hm_ingredients'
 import { getIngredients } from '@/api/ingredients'
-import { createCocktail } from '@/api/cocktail'
+import { createRecipe } from '@/api/recipe'
 import { createMultipleRecipeIngredient } from '@/api/recipe_ingredient'
 import { createMultipleRecipeHmIngredient } from '@/api/recipe_hm_ingredient'
 
@@ -12,7 +12,7 @@ import { useImageStorage } from '@/composables/useImageStorage'
 import IngredientDatatable from '../IngredientDatatable.vue'
 
 export default {
-  name: 'CocktailCreate',
+  name: 'RecipeCreate',
   components: {
     IngredientDatatable,
   },
@@ -39,6 +39,17 @@ export default {
         sale_price: null,
       },
     }
+  },
+  computed: {
+    isMocktail() {
+      return this.$route.meta.isMocktail === true
+    },
+    basePath() {
+      return this.isMocktail ? '/mocktail' : '/cocktail'
+    },
+    itemLabel() {
+      return this.isMocktail ? 'Mocktail' : 'Cocktail'
+    },
   },
   methods: {
     async getData() {
@@ -102,7 +113,7 @@ export default {
         if (this.recipe_ingredients.length === 0 && this.recipe_hm_ingredients.length === 0) {
           valid = false
           this.notification.notify({
-            message: `Cocktail cannot be made without any ingredients.`,
+            message: `${this.itemLabel} cannot be made without any ingredients.`,
             summary: 'No ingredients added',
             severity: 'error',
           })
@@ -112,12 +123,10 @@ export default {
           let finalImageFilename = ''
 
           if (this.selectedFileRaw) {
-            console.log('Saving image to storage...')
             finalImageFilename = await this.saveImage(this.selectedFileRaw)
-            console.log('Saved as:', finalImageFilename)
           }
 
-          const createdRecipe = await createCocktail(
+          const createdRecipe = await createRecipe(
             values.name,
             values.glass.glass_id,
             values.step_to_make,
@@ -125,6 +134,7 @@ export default {
             values.notes,
             finalImageFilename,
             values.sale_price,
+            this.isMocktail,
           )
           const recipe_id = createdRecipe?.recipe_id
 
@@ -149,7 +159,7 @@ export default {
               )
               await this.insertHmIngredientData(ingredients_data)
             }
-            this.$router.push('/cocktail')
+            this.$router.push(this.basePath)
           }
         }
       } catch (error) {
@@ -170,7 +180,7 @@ export default {
 
 <template>
   <div class="max-w-5xl mx-auto py-10">
-    <h1 class="text-2xl font-bold mb-6 text-center">Create New Cocktail</h1>
+    <h1 class="text-2xl font-bold mb-6 text-center">Create New {{ itemLabel }}</h1>
 
     <Form
       v-slot="$form"
@@ -293,8 +303,8 @@ export default {
       </div>
 
       <div class="flex justify-center gap-4 mt-8">
-        <Button label="Cancel" severity="secondary" @click="$router.push('/cocktail')" />
-        <Button type="submit" label="Create Cocktail" class="w-48" />
+        <Button label="Cancel" severity="secondary" @click="$router.push(basePath)" />
+        <Button type="submit" :label="`Create ${itemLabel}`" class="w-48" />
       </div>
     </Form>
   </div>

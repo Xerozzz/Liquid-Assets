@@ -1,7 +1,7 @@
 <script>
 import { getIngredients, updateIngredient } from '@/api/ingredients.js'
 import { getHmIngredient, updateHmIngredient } from '@/api/hm_ingredients.js'
-import { getCocktail } from '@/api/cocktail.js'
+import { getRecipe } from '@/api/recipe.js'
 import { useNotificationStore } from '@/stores/notification.store'
 
 const splitNames = (str) => (str ? str.split(',').map((s) => s.trim().toLowerCase()) : [])
@@ -68,7 +68,7 @@ export default {
         const [ingredients, hmIngredients, cocktails] = await Promise.all([
           getIngredients(),
           getHmIngredient(),
-          getCocktail(),
+          getRecipe(),
         ])
         this.ingredients = ingredients
         this.hmIngredients = hmIngredients
@@ -130,7 +130,7 @@ export default {
     <h1 class="title mt-0 mb-2">Restock List</h1>
     <p class="text-gray-500 mb-6">
       Ingredients and homemade components currently marked out of stock, ranked by how many
-      cocktails they're blocking.
+      cocktails and mocktails they're blocking.
     </p>
 
     <div v-if="loading" class="flex justify-center py-20">
@@ -145,7 +145,7 @@ export default {
         </div>
         <div class="sectionbox text-center">
           <p class="text-3xl font-bold text-primary-700">{{ affectedCocktailCount }}</p>
-          <p class="text-sm text-gray-500 mt-1">Cocktails Affected</p>
+          <p class="text-sm text-gray-500 mt-1">Recipes Affected</p>
         </div>
         <div class="sectionbox text-center">
           <p class="text-3xl font-bold text-primary-700">
@@ -179,9 +179,7 @@ export default {
                 v-if="item.affected.length > 0"
                 class="px-2 py-0.5 rounded-md bg-red-100 text-red-700 text-xs font-bold"
               >
-                Blocks {{ item.affected.length }} cocktail{{
-                  item.affected.length === 1 ? '' : 's'
-                }}
+                Blocks {{ item.affected.length }} recipe{{ item.affected.length === 1 ? '' : 's' }}
               </span>
             </div>
             <p class="text-sm text-gray-500 mt-1">
@@ -194,7 +192,9 @@ export default {
                 :key="c.recipe_id"
                 type="button"
                 class="px-2 py-1 rounded-md bg-gray-100 text-gray-700 text-xs hover:bg-gray-200 transition-colors"
-                @click="$router.push(`/cocktail/view/${c.recipe_id}`)"
+                @click="
+                  $router.push(`${c.is_mocktail ? '/mocktail' : '/cocktail'}/view/${c.recipe_id}`)
+                "
               >
                 {{ c.name }}
               </button>

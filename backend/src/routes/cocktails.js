@@ -9,8 +9,12 @@ const router = express.Router()
 router.get(
   '/',
   asyncHandler(async (req, res) => {
+    const where = { isDeleted: false }
+    if (req.query.type === 'cocktail') where.isMocktail = false
+    if (req.query.type === 'mocktail') where.isMocktail = true
+
     const recipes = await prisma.recipe.findMany({
-      where: { isDeleted: false },
+      where,
       include: {
         ingredients: { include: { ingredient: true } },
         hmIngredients: { include: { hmIngredient: true } },
@@ -34,6 +38,7 @@ router.get(
         missing_count: missingCount,
         total_cost: totalCost,
         sale_price: r.salePrice,
+        is_mocktail: r.isMocktail,
         raw_ingredients_str: rawItems
           .map((ri) => ri.ingredient?.name)
           .filter(Boolean)
@@ -75,6 +80,7 @@ router.get(
       image: recipe.image,
       step_to_make: recipe.stepToMake,
       sale_price: recipe.salePrice,
+      is_mocktail: recipe.isMocktail,
     }
 
     const items = [
@@ -110,7 +116,7 @@ router.post(
     const name = requireString(req.body, 'name')
     const glassId = requireNumber(req.body, 'glass_id')
     const stepToMake = requireString(req.body, 'step_to_make')
-    const { garnish, notes, image, sale_price } = req.body
+    const { garnish, notes, image, sale_price, is_mocktail } = req.body
     const created = await prisma.recipe.create({
       data: {
         name,
@@ -120,6 +126,7 @@ router.post(
         notes: notes || null,
         image: image || null,
         salePrice: sale_price != null && sale_price !== '' ? Number(sale_price) : null,
+        isMocktail: Boolean(is_mocktail),
       },
     })
     res.status(201).json(created)
@@ -133,7 +140,7 @@ router.put(
     const name = requireString(req.body, 'name')
     const glassId = requireNumber(req.body, 'glass_id')
     const stepToMake = requireString(req.body, 'step_to_make')
-    const { garnish, notes, image, sale_price } = req.body
+    const { garnish, notes, image, sale_price, is_mocktail } = req.body
     const updated = await prisma.recipe.update({
       where: { id },
       data: {
@@ -144,6 +151,7 @@ router.put(
         notes: notes || null,
         image: image || null,
         salePrice: sale_price != null && sale_price !== '' ? Number(sale_price) : null,
+        isMocktail: Boolean(is_mocktail),
       },
     })
     res.json(updated)

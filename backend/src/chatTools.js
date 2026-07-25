@@ -10,13 +10,13 @@ export const toolDeclarations = [
   {
     name: 'list_cocktails',
     description:
-      'List all cocktails with their cost, sale price, margin, and stock status. Use this to answer questions about what cocktails exist, can be made, or their profitability.',
+      'List all cocktails and mocktails (each item has an is_mocktail flag) with their cost, sale price, margin, and stock status. Use this to answer questions about what exists, can be made, or its profitability.',
     parameters: { type: 'OBJECT', properties: {} },
   },
   {
     name: 'get_cocktail',
     description:
-      'Get full recipe details (ingredients, steps, garnish, cost, sale price, margin) for a single cocktail by name.',
+      'Get full recipe details (ingredients, steps, garnish, cost, sale price, margin, is_mocktail) for a single cocktail or mocktail by name.',
     parameters: {
       type: 'OBJECT',
       properties: {
@@ -83,7 +83,7 @@ export const toolDeclarations = [
   {
     name: 'create_cocktail',
     description:
-      'Create a new cocktail recipe. Ingredient names are matched (case-insensitive) against existing raw and homemade ingredients — unmatched names are reported back instead of failing the whole request.',
+      'Create a new cocktail or mocktail recipe. Ingredient names are matched (case-insensitive) against existing raw and homemade ingredients — unmatched names are reported back instead of failing the whole request.',
     parameters: {
       type: 'OBJECT',
       properties: {
@@ -93,7 +93,7 @@ export const toolDeclarations = [
           description:
             'Name of an existing glassware entry. Falls back to any glassware if omitted or not found.',
         },
-        instructions: { type: 'STRING', description: 'Steps to make the cocktail.' },
+        instructions: { type: 'STRING', description: 'Steps to make the drink.' },
         ingredients: {
           type: 'ARRAY',
           items: {
@@ -107,7 +107,11 @@ export const toolDeclarations = [
         },
         sale_price: {
           type: 'NUMBER',
-          description: 'Optional menu price for this cocktail, used to compute margin.',
+          description: 'Optional menu price for this drink, used to compute margin.',
+        },
+        is_mocktail: {
+          type: 'BOOLEAN',
+          description: 'True if this is a non-alcoholic mocktail rather than a cocktail.',
         },
       },
       required: ['name'],
@@ -142,6 +146,7 @@ export const toolHandlers = {
       return {
         id: r.id,
         name: r.name,
+        is_mocktail: r.isMocktail,
         cost: totalCost,
         sale_price: r.salePrice,
         margin,
@@ -173,6 +178,7 @@ export const toolHandlers = {
     return {
       id: recipe.id,
       name: recipe.name,
+      is_mocktail: recipe.isMocktail,
       glass: recipe.glass?.name || null,
       garnish: recipe.garnish,
       notes: recipe.notes,
@@ -283,6 +289,7 @@ export const toolHandlers = {
       instructions: args.instructions,
       ingredients: Array.isArray(args.ingredients) ? args.ingredients : [],
       salePrice: args.sale_price,
+      isMocktail: args.is_mocktail,
     })
   },
 

@@ -1,5 +1,5 @@
 <script>
-import { deleteCocktail, getCocktailById } from '@/api/cocktail.js'
+import { deleteRecipe, getRecipeById } from '@/api/recipe.js'
 import { useNotificationStore } from '@/stores/notification.store'
 import { useImageStorage } from '@/composables/useImageStorage'
 import DeleteDialog from '../DeleteDialog.vue'
@@ -9,7 +9,7 @@ import { getIngredientById, updateIngredient } from '@/api/ingredients'
 import { getHmIngredientById, updateHmIngredient } from '@/api/hm_ingredients'
 
 export default {
-  name: 'CocktailSpecific',
+  name: 'RecipeSpecific',
   components: { DeleteDialog },
   setup() {
     const notification = useNotificationStore()
@@ -29,6 +29,15 @@ export default {
     }
   },
   computed: {
+    isMocktail() {
+      return this.$route.meta.isMocktail === true
+    },
+    basePath() {
+      return this.isMocktail ? '/mocktail' : '/cocktail'
+    },
+    itemLabel() {
+      return this.isMocktail ? 'Mocktail' : 'Cocktail'
+    },
     margin() {
       if (this.cocktail?.salePrice == null) return null
       return Number(this.cocktail.salePrice) - this.totalCost
@@ -73,10 +82,10 @@ export default {
     async fetchCocktail() {
       try {
         const cocktailId = this.$route.params.id
-        const rows = await getCocktailById(cocktailId)
+        const rows = await getRecipeById(cocktailId)
 
         if (!rows || rows.length === 0) {
-          throw new Error('Cocktail not found')
+          throw new Error(`${this.itemLabel} not found`)
         }
 
         const r = rows[0]
@@ -125,7 +134,7 @@ export default {
     },
     confirmDelete() {
       this.$confirm.require({
-        header: 'Delete Cocktail',
+        header: `Delete ${this.itemLabel}`,
         message: 'This action cannot be undone. Do you want to proceed?',
         icon: 'pi pi-exclamation-triangle',
         acceptLabel: 'Yes, Delete',
@@ -142,18 +151,18 @@ export default {
     },
     async deleteItem() {
       try {
-        await deleteCocktail(this.$route.params.id)
+        await deleteRecipe(this.$route.params.id)
         await deleteRecipeHmIngredientByRecipeId(this.$route.params.id)
         await deleteRecipeIngredientByRecipeId(this.$route.params.id)
         if (this.cocktail?.image) {
           await this.deleteImage(this.cocktail.image)
         }
         this.notification.notify({
-          message: `Cocktail deleted successfully`,
+          message: `${this.itemLabel} deleted successfully`,
           summary: 'Delete Success',
           severity: 'success',
         })
-        this.$router.replace('/cocktail')
+        this.$router.replace(this.basePath)
       } catch (error) {
         console.log(error)
         this.notification.notify({
@@ -181,8 +190,8 @@ export default {
     {{ error.message }}
   </div>
   <div v-else class="bodysection">
-    <button class="nav_button" @click="$router.push('/cocktail')">Back</button>
-    <button class="nav_button" @click="$router.push(`/cocktail/edit/${this.$route.params.id}`)">
+    <button class="nav_button" @click="$router.push(basePath)">Back</button>
+    <button class="nav_button" @click="$router.push(`${basePath}/edit/${this.$route.params.id}`)">
       Edit
     </button>
     <button class="nav_button" @click="confirmDelete">Delete</button>

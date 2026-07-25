@@ -15,14 +15,10 @@ import {
   GlasswareSpecific,
 } from '@/components/glassware/'
 
-// Import Cocktail Components
-import CocktailView from '@/views/CocktailView.vue'
-import {
-  CocktailCreate,
-  CocktailEdit,
-  CocktailSpecific,
-  CocktailHome,
-} from '@/components/cocktails/'
+// Import Recipe Components — shared by both the /cocktail and /mocktail route trees,
+// distinguished at runtime via each route's `meta.isMocktail` (see AGENTS.md).
+import RecipeView from '@/views/RecipeView.vue'
+import { RecipeCreate, RecipeEdit, RecipeSpecific, RecipeHome } from '@/components/recipes/'
 import {
   IngredientHome,
   IngredientSpecific,
@@ -53,27 +49,56 @@ const router = createRouter({
     {
       path: '/cocktail',
       name: 'cocktail',
-      component: CocktailView,
+      component: RecipeView,
+      meta: { isMocktail: false },
       children: [
         {
           path: '',
           name: 'cocktail-home',
-          component: CocktailHome,
+          component: RecipeHome,
         },
         {
           path: 'view/:id',
           name: 'cocktail-specific',
-          component: CocktailSpecific,
+          component: RecipeSpecific,
         },
         {
           path: 'create',
           name: 'cocktail-create',
-          component: CocktailCreate,
+          component: RecipeCreate,
         },
         {
           path: 'edit/:id',
           name: 'cocktail-edit',
-          component: CocktailEdit,
+          component: RecipeEdit,
+        },
+      ],
+    },
+    {
+      path: '/mocktail',
+      name: 'mocktail',
+      component: RecipeView,
+      meta: { isMocktail: true },
+      children: [
+        {
+          path: '',
+          name: 'mocktail-home',
+          component: RecipeHome,
+        },
+        {
+          path: 'view/:id',
+          name: 'mocktail-specific',
+          component: RecipeSpecific,
+        },
+        {
+          path: 'create',
+          name: 'mocktail-create',
+          component: RecipeCreate,
+        },
+        {
+          path: 'edit/:id',
+          name: 'mocktail-edit',
+          component: RecipeEdit,
         },
       ],
     },

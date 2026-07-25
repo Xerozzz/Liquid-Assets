@@ -1,5 +1,5 @@
 <script>
-import { getCocktailById, updateCocktail } from '@/api/cocktail'
+import { getRecipeById, updateRecipe } from '@/api/recipe'
 import { getGlassware } from '@/api/glassware'
 import { getHmIngredient } from '@/api/hm_ingredients'
 import { getIngredients } from '@/api/ingredients'
@@ -18,7 +18,7 @@ import { useImageStorage } from '@/composables/useImageStorage'
 import IngredientDatatable from '../IngredientDatatable.vue'
 
 export default {
-  name: 'CocktailEdit',
+  name: 'RecipeEdit',
   components: {
     IngredientDatatable,
   },
@@ -51,6 +51,20 @@ export default {
       },
     }
   },
+  computed: {
+    isMocktail() {
+      return this.$route.meta.isMocktail === true
+    },
+    basePath() {
+      return this.isMocktail ? '/mocktail' : '/cocktail'
+    },
+    itemLabel() {
+      return this.isMocktail ? 'Mocktail' : 'Cocktail'
+    },
+    displayImageUrl() {
+      return this.previewImageUrl || this.resolvedImageUrl
+    },
+  },
   methods: {
     async getData() {
       try {
@@ -64,7 +78,6 @@ export default {
         this.isLoading = false
       }
     },
-    // ... [KEEPING EXISTING DATA METHODS SAME AS BEFORE] ...
     async getIngredientData() {
       this.ingredients = await getIngredients()
     },
@@ -95,18 +108,18 @@ export default {
     async getCocktailData() {
       let data
       try {
-        data = await getCocktailById(this.$route.params.id)
+        data = await getRecipeById(this.$route.params.id)
       } catch {
         this.notification.notify({
-          message: 'Cocktail not found',
+          message: `${this.itemLabel} not found`,
           summary: 'Not found',
           severity: 'error',
         })
-        this.$router.replace('/cocktail')
+        this.$router.replace(this.basePath)
         return
       }
       if (data.length == 0) {
-        this.$router.replace('/cocktail')
+        this.$router.replace(this.basePath)
       } else {
         this.cocktail = data[0]
         this.initialValues = {
@@ -156,7 +169,7 @@ export default {
         if (this.cocktailIngredients.length === 0 && this.cocktailHmIngredients.length === 0) {
           valid = false
           this.notification.notify({
-            message: `Cocktail cannot be made without any ingredients.`,
+            message: `${this.itemLabel} cannot be made without any ingredients.`,
             summary: 'No ingredients',
             severity: 'error',
           })
@@ -167,7 +180,7 @@ export default {
             imageValue = await this.saveImage(this.selectedFileRaw)
           }
 
-          await updateCocktail(
+          await updateRecipe(
             values.name,
             values.glass,
             values.step_to_make,
@@ -176,6 +189,7 @@ export default {
             imageValue,
             this.cocktailId,
             values.sale_price,
+            this.cocktail.is_mocktail,
           )
 
           let cocktailIngredients = this.cocktailIngredients.map(
@@ -197,11 +211,11 @@ export default {
           await this.insertHmIngredientData(cocktailHmIngredients)
 
           this.notification.notify({
-            message: `Cocktail updated successfully`,
+            message: `${this.itemLabel} updated successfully`,
             summary: 'Success',
             severity: 'success',
           })
-          this.$router.push('/cocktail')
+          this.$router.push(this.basePath)
         }
       } catch (error) {
         console.log(error)
@@ -216,11 +230,6 @@ export default {
   mounted() {
     this.cocktailId = this.$route.params.id
     this.getData()
-  },
-  computed: {
-    displayImageUrl() {
-      return this.previewImageUrl || this.resolvedImageUrl
-    },
   },
   watch: {
     'initialValues.image': {
@@ -243,7 +252,7 @@ export default {
   </div>
 
   <div v-else class="max-w-5xl mx-auto py-10">
-    <h1 class="text-2xl font-bold mb-6 text-center">Edit Cocktail</h1>
+    <h1 class="text-2xl font-bold mb-6 text-center">Edit {{ itemLabel }}</h1>
 
     <div v-if="displayImageUrl" class="flex justify-center mb-6">
       <img
@@ -365,7 +374,7 @@ export default {
       </div>
 
       <div class="flex justify-center gap-4 mt-8">
-        <Button label="Cancel" severity="secondary" @click="$router.push('/cocktail')" />
+        <Button label="Cancel" severity="secondary" @click="$router.push(basePath)" />
         <Button type="submit" label="Save Changes" class="w-48" />
       </div>
     </Form>

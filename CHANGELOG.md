@@ -9,6 +9,17 @@ are when the work was done, not necessarily committed.
 
 ### Added
 
+- **Mocktails section** — a full separate nav section (`/mocktail`, own list/create/edit/detail
+  pages) alongside Cocktails, rather than a filter on the existing list. Backed by the same
+  `recipe` table (new `is_mocktail` column) and the same `/api/cocktails` endpoint (now accepts
+  `?type=cocktail`/`?type=mocktail`) rather than a duplicated schema/route/service, since the two
+  are structurally identical — see the "one resource, two sections" note in AGENTS.md. The
+  frontend components were renamed and made category-aware instead of forked:
+  `src/components/cocktails/Cocktail{Home,Create,Edit,Specific}.vue` →
+  `src/components/recipes/Recipe{Home,Create,Edit,Specific}.vue`, reused by both `/cocktail` and
+  `/mocktail` route trees via `route.meta.isMocktail`. `src/api/cocktail.js` similarly became
+  `src/api/recipe.js`. `RestockView.vue` and the chatbot's cocktail tools now surface both
+  categories (with `is_mocktail` on each item) instead of just cocktails.
 - **Deployment: HTTP Basic Auth + HTTPS for a public single-user deployment.** Opt-in Basic Auth
   at the nginx layer (`docker-entrypoint.d/90-basic-auth.sh` generates the htpasswd file and an
   nginx `auth.conf` at container start from `BASIC_AUTH_USER`/`BASIC_AUTH_PASSWORD`; a no-op when

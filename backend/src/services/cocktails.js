@@ -106,6 +106,7 @@ export async function importCocktail(cocktail) {
         notes: '',
         image: null,
         salePrice: cocktail.salePrice != null ? Number(cocktail.salePrice) : null,
+        isMocktail: Boolean(cocktail.isMocktail),
       },
     })
     await Promise.all([

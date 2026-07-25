@@ -55,28 +55,36 @@ Syrups/infusions/etc built from raw ingredients. Same raw-row shape as ingredien
 | PUT    | `/:id` | same as POST                           |                                                        |
 | DELETE | `/:id` | —                                      | Soft delete                                            |
 
-## Cocktails (`/api/cocktails`)
+## Cocktails & Mocktails (`/api/cocktails`)
 
-The most heavily custom-shaped resource — **neither list nor detail returns the raw Prisma row.**
+One resource serves both — see the "one resource, two sections" note in
+[AGENTS.md](../AGENTS.md). The most heavily custom-shaped resource — **neither list nor detail
+returns the raw Prisma row.**
 
 - `GET /` — one row per recipe, each with computed fields: `total_cost` (sum of
   `quantity × ingredient.cost` across raw + homemade ingredients), `missing_count` (how many of its
-  ingredients are out of stock), `sale_price`, and `raw_ingredients_str`/`hm_ingredients_str`
-  (comma-joined ingredient names — used for the client-side ingredient filter/search and by
-  `RestockView.vue` to cross-reference which cocktails an out-of-stock item blocks).
+  ingredients are out of stock), `sale_price`, `is_mocktail`, and
+  `raw_ingredients_str`/`hm_ingredients_str` (comma-joined ingredient names — used for the
+  client-side ingredient filter/search and by `RestockView.vue` to cross-reference which recipes
+  an out-of-stock item blocks). Accepts `?type=cocktail` or `?type=mocktail` to filter by
+  `is_mocktail`; omit it to get both (used by `RestockView.vue`, which cross-references across
+  both categories, and by the chatbot).
 - `GET /:id` — returns an **array**, one row per ingredient in the recipe, each row spreading the
-  same recipe-level fields (`recipe_name`, `glass_name`, `glass_volume`, `sale_price`, ...) plus
-  per-item fields (`kind: 'ingredient' | 'hm'`, `item_id`, `item_name`, `item_cost`, `item_unit`,
-  `item_stock`, `item_quantity`). If the recipe has no ingredients, returns a single-element array
-  with just the recipe-level fields. Frontend cost/margin math is done client-side in
-  `CocktailSpecific.vue` from these rows.
-- `POST /`, `PUT /:id` — body: `{ name, glass_id, step_to_make, garnish, notes, image, sale_price }`.
-  `sale_price` is optional/nullable.
+  same recipe-level fields (`recipe_name`, `glass_name`, `glass_volume`, `sale_price`,
+  `is_mocktail`, ...) plus per-item fields (`kind: 'ingredient' | 'hm'`, `item_id`, `item_name`,
+  `item_cost`, `item_unit`, `item_stock`, `item_quantity`). If the recipe has no ingredients,
+  returns a single-element array with just the recipe-level fields. Frontend cost/margin math is
+  done client-side in `RecipeSpecific.vue` from these rows.
+- `POST /`, `PUT /:id` — body:
+  `{ name, glass_id, step_to_make, garnish, notes, image, sale_price, is_mocktail }`. `sale_price`
+  is optional/nullable; `is_mocktail` defaults to `false`.
 - `DELETE /:id` — soft delete.
-- `POST /import` — body `{ cocktail: { name, instructions, ingredients: [{name, amount}, ...] } }`.
-  Used by the CSV/PDF import flows; delegates to `importCocktail()` in
-  `backend/src/services/cocktails.js`. Skips (doesn't overwrite) recipes that already exist by
-  case-insensitive name match, and reports any ingredient names it couldn't match in the response.
+- `POST /import` — body
+  `{ cocktail: { name, instructions, ingredients: [{name, amount}, ...], isMocktail } }`. Used by
+  the CSV/PDF import flows and the chatbot's `create_cocktail` tool; delegates to
+  `importCocktail()` in `backend/src/services/cocktails.js`. Skips (doesn't overwrite) recipes
+  that already exist by case-insensitive name match, and reports any ingredient names it couldn't
+  match in the response.
 
 ## Recipe ↔ Ingredient links (`/api/recipe-ingredients`, `/api/recipe-hm-ingredients`)
 

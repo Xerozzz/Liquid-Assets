@@ -8,7 +8,7 @@ gotchas, [docs/API.md](docs/API.md) for the REST endpoint reference, and
 
 ## Features
 
-- CRUD for cocktails, ingredients, homemade ingredients, and glassware with nested Vue Router views
+- CRUD for cocktails, mocktails, ingredients, homemade ingredients, and glassware with nested Vue Router views
 - Automatic cost/yield calculations and stock flags to see what can be made with on-hand items
 - Postgres-backed multi-user database (via Prisma), with schema migrations and seed data applied automatically on first boot
 - Server-hosted image uploads persisted to a Docker volume — images follow users across devices
@@ -110,7 +110,7 @@ DATABASE_URL='postgres://postgres:postgres@localhost:5432/liquid_assets' \
 ## App Layout
 
 - Entry: [src/main.js](src/main.js)
-- Routing: [src/router/index.js](src/router/index.js) (home, cocktails, ingredients, homemade ingredients, glassware)
+- Routing: [src/router/index.js](src/router/index.js) (home, cocktails, mocktails, ingredients, homemade ingredients, glassware)
 - Views: [src/views](src/views) with nested feature components under [src/components](src/components)
 - API wrappers: [src/api](src/api) (see [src/api/base.js](src/api/base.js) and [src/api/mappers.js](src/api/mappers.js))
 - Image helpers: [src/composables/useImageStorage.js](src/composables/useImageStorage.js) → [src/api/images.js](src/api/images.js)

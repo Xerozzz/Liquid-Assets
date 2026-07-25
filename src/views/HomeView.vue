@@ -4,6 +4,7 @@ export default {
     return {
       pages: [
         { name: 'Cocktails', path: '/cocktail', icon: 'pi-sparkles' },
+        { name: 'Mocktails', path: '/mocktail', icon: 'pi-star' },
         { name: 'Homemade Ingredients', path: '/hm', icon: 'pi-box' },
         { name: 'Ingredients', path: '/ingredient', icon: 'pi-list' },
         { name: 'Glassware', path: '/glassware', icon: 'pi-circle' },

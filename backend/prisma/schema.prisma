@@ -79,6 +79,7 @@ model Recipe {
   notes         String?
   image         String?
   salePrice     Float?              @map("sale_price")
+  isMocktail    Boolean             @default(false) @map("is_mocktail")
   isDeleted     Boolean             @default(false) @map("is_deleted")
   createdAt     DateTime            @default(now()) @map("created_at")
   deletedAt     DateTime?           @map("deleted_at")
