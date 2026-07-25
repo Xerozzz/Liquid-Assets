@@ -45,6 +45,13 @@ export default {
         this.$nextTick(() => this.scrollToBottom())
       }
     },
+    onEnterKey(event) {
+      // Shift+Enter (or other modifiers) -> let the textarea insert a newline.
+      if (event.shiftKey || event.ctrlKey || event.altKey || event.metaKey) return
+      // Plain Enter -> send, and stop the newline from being inserted.
+      event.preventDefault()
+      this.sendMessage()
+    },
     scrollToBottom() {
       const el = this.$refs.messageList
       if (el) el.scrollTop = el.scrollHeight
@@ -103,13 +110,14 @@ export default {
       </div>
 
       <form class="flex border-t border-gray-200" @submit.prevent="sendMessage">
-        <input
+        <textarea
           v-model="input"
-          type="text"
+          rows="1"
           placeholder="Ask something..."
-          class="flex-1 px-3 py-2 text-sm outline-none"
+          class="flex-1 px-3 py-2 text-sm outline-none resize-none max-h-24"
           :disabled="loading"
-        />
+          @keydown.enter="onEnterKey"
+        ></textarea>
         <button
           type="submit"
           class="px-3 text-blue-600 cursor-pointer disabled:opacity-40"

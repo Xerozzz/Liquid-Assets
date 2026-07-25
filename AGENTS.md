@@ -163,6 +163,43 @@ seeded/imported demo data without an equivalent cleanup step. This suite is inte
 regressions in the business logic that's actually easy to get subtly wrong, not to cover every
 route.
 
+## Show updates locally after every edit
+
+After making changes, rebuild locally so the user can see the result automatically, without being
+asked.
+
+**The user views the app at the dockerized frontend, http://localhost/ (port 80) — NOT the Vite
+dev server.** That container serves a production build baked at image-build time, so `src/` edits
+do NOT appear there until the frontend image is rebuilt. A running `npm run dev` on :5173 will
+hot-reload, but the user isn't looking at it, so don't rely on it as the thing they'll see. When
+in doubt about which URL the change landed on, verify against http://localhost/, not :5173.
+
+Which rebuild depends on what changed:
+
+- **Frontend (`src/`, or anything baked into the frontend image — `nginx.conf`, Dockerfile,
+  entrypoint)** — rebuild the frontend container:
+
+  ```sh
+  docker compose up --build -d frontend
+  ```
+
+  Then tell the user to hard-refresh http://localhost/ (Ctrl+Shift+R) — the browser caches the old
+  hashed JS bundle, so a plain reload can still show the pre-rebuild UI.
+- **Backend (`backend/src/`), Prisma schema, or a new migration** — rebuild and restart the backend
+  container, then confirm it came up clean:
+
+  ```sh
+  docker compose up --build -d backend
+  docker compose logs backend --tail=40
+  ```
+
+- **Docker/nginx/compose config affecting multiple services** — full rebuild:
+  `docker compose up --build -d`.
+
+(For fast iteration while actively developing, `VITE_API_URL=http://localhost:4000 npm run dev`
+on :5173 hot-reloads `src/` without a rebuild — but a frontend image rebuild is still required for
+the change to reach the user's http://localhost/.)
+
 ## Verifying changes
 
 1. `npx eslint src backend/src` and `npx prettier --write` the files you touched.
