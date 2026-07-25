@@ -10,6 +10,13 @@ that file and in [AGENTS.md](../AGENTS.md) for why it's a separate file rather t
 This assumes some comfort with SSH and a Linux shell. None of the cloud console steps below can be
 automated for you — they need your own Oracle account and browser.
 
+> **Prefer (or stuck needing) Google Cloud instead of Oracle?** Oracle's free ARM shape is often
+> unavailable and its AMD `E2.1.Micro` frequently returns "Out of capacity". Google Cloud's Always
+> Free `e2-micro` is a solid alternative — see
+> [Deploying on Google Cloud instead](#deploying-on-google-cloud-instead-always-free-e2-micro) near
+> the end. It's a plain VM, so everything from "Install Docker" onward here applies unchanged; only
+> VM creation, the firewall, and the static IP differ.
+
 ## 1. Create the VM
 
 1. Sign up for [Oracle Cloud](https://www.oracle.com/cloud/free/) (free; identity verification may
@@ -116,6 +123,68 @@ docker compose -f docker-compose.prod.yml logs -f caddy   # watch it obtain the 
 Caddy requests the certificate on first start; this takes a few seconds once DNS + firewall are
 correct. Once it's up, visit `https://yourname.duckdns.org` — the browser will prompt for the
 Basic Auth username/password before showing anything.
+
+## Deploying on Google Cloud instead (Always Free `e2-micro`)
+
+A drop-in alternative to the Oracle steps above when Oracle capacity won't cooperate. Unlike AWS's
+free tier, GCP's `e2-micro` has **no 12-month expiry**, and unlike Oracle it is **not reclaimed when
+idle**. It's an ordinary VM, so only the provider-specific bits below differ — **everything from
+[section 3 (Install Docker)](#3-install-docker) onward, plus [Operating it afterward](#operating-it-afterward),
+applies verbatim.**
+
+### Free-tier guardrails (get these exact or you'll be billed)
+
+Always Free covers exactly one such VM per billing account per month, and only with these settings:
+
+- **Region**: `us-west1`, `us-central1`, or `us-east1` — no other region is free.
+- **Machine type**: `e2-micro` (2 shared vCPU / 1 GB).
+- **Boot disk**: **Standard persistent disk** (not Balanced/SSD), **≤ 30 GB**.
+- **Static external IP**: free only while **attached** to a running instance.
+- **Egress**: ~1 GB/month from North America is free — ample for a personal app.
+
+Two gotchas that fool almost everyone:
+
+- **The create-instance cost estimate shows the full list price (~$6/mo) and does _not_ reflect the
+  Always Free discount.** Your real invoice applies a free-tier credit that zeroes out one eligible
+  `e2-micro`. To reassure yourself, set a **Billing → Budgets & alerts** budget of $1, and after a day
+  check **Billing → Reports** for the matching "Free Tier" discount line.
+- **Upgrade from the free trial before it ends.** Signup grants a $300 / 90-day trial. Always Free
+  itself never expires, but if the trial lapses while the account is still in trial mode, Google
+  stops and deletes your resources. Upgrading to a full (pay-as-you-go) billing account keeps Always
+  Free running and still charges nothing within the limits above.
+
+### 1. Create the VM
+
+In **Compute Engine → Create instance**:
+
+- **Region / zone**: one of the three free regions above; zone "Any" is fine.
+- **Machine**: series **E2**, type **`e2-micro`**.
+- **Boot disk → Change**: **Ubuntu 24.04 LTS (x86/64, amd64)**, type **Standard persistent disk**,
+  size **30 GB**.
+- **Firewall**: tick **Allow HTTP traffic** and **Allow HTTPS traffic**.
+
+Create it. Capacity in these regions is reliable — no "out of capacity" retry loop like Oracle.
+
+### 2. Reserve a static IP
+
+**VPC network → IP addresses**, find the instance's row, change its **Type** from **Ephemeral** to
+**Static**, and name it. Note the address — it goes into DuckDNS ([section 4](#4-get-a-free-domain-needed-for-real-https)).
+Keep it attached to the running VM to stay free.
+
+### 3. Firewall — just once (no OS-level step)
+
+The **Allow HTTP/HTTPS** checkboxes at creation are all you need. Unlike Oracle's Ubuntu images,
+GCP's do **not** ship default-deny `iptables` rules, so **skip [section 2's](#2-open-the-firewall--twice)
+`iptables` commands entirely** — there's no second, OS-level firewall to open.
+
+### 4. SSH in, add swap, then rejoin the shared steps
+
+Click the **SSH** button on the instance page for an in-browser terminal (no keys to manage). Then:
+
+- Run the **swap** block from [section 1, step 6](#1-create-the-vm) above — `e2-micro` is also 1 GB,
+  so swap is just as critical here to avoid an OOM-killed build.
+- Continue from [section 3 (Install Docker)](#3-install-docker) through
+  [section 6 (Bring it up)](#6-bring-it-up), then [Operating it afterward](#operating-it-afterward).
 
 ## Operating it afterward
 
