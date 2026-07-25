@@ -1,37 +1,83 @@
-name: Deploy to VM
+name: Build and Deploy
 
-# Auto-deploy on every push to main. Manual runs are also allowed from the
-# Actions tab via workflow_dispatch.
+# Build the images on GitHub's runners (fast, plenty of RAM), push them to GHCR,
+# then have the 1 GB VM just pull + restart — it never builds anything itself.
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
-# Never let two deploys run at once; if a new push arrives mid-deploy, let the
-# running one finish and queue the newest (don't cancel a half-applied deploy).
 concurrency:
   group: deploy-vm
   cancel-in-progress: false
 
+env:
+  BACKEND_IMAGE: ghcr.io/xerozzz/liquid-assets-backend
+  FRONTEND_IMAGE: ghcr.io/xerozzz/liquid-assets-frontend
+
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # lets GITHUB_TOKEN push to GHCR
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ env.BACKEND_IMAGE }}:latest
+            ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.frontend
+          # VITE_API_URL must be blank in prod so the browser calls the API
+          # same-origin through Caddy (and stays behind Basic Auth). See AGENTS.md.
+          build-args: |
+            VITE_API_URL=
+          push: true
+          tags: |
+            ${{ env.FRONTEND_IMAGE }}:latest
+            ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
   deploy:
+    needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: SSH in and update the stack
+      - name: SSH in, pull the new images, restart
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VM_HOST }}
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_KEY }}
-          # The build on a 1 GB VM (npm ci + vite build) is slow — give it room.
-          command_timeout: 30m
+          command_timeout: 10m
           script: |
             set -e
             cd ~/liquid-assets
+            # Refresh compose file / Caddyfile (these are used at runtime from the repo).
             git fetch --all
-            # Force the working tree to match origin/main exactly. This does NOT
-            # touch untracked files, so the gitignored .env (your secrets) is safe.
             git reset --hard origin/main
-            docker compose -f docker-compose.prod.yml up --build -d
-            # Reclaim disk from old image layers so the 30 GB disk doesn't fill up.
+            # Pull the freshly built images (VM must be `docker login`ed to GHCR once).
+            docker compose -f docker-compose.prod.yml pull backend frontend
+            docker compose -f docker-compose.prod.yml up -d
             docker image prune -f

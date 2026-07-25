@@ -24,6 +24,9 @@ services:
       retries: 10
 
   backend:
+    # Prebuilt in CI and pulled from GHCR (the 1 GB VM can't build vite/npm without thrashing).
+    # `build:` is kept as a from-source fallback; the CI/deploy flow uses the image, not the build.
+    image: ghcr.io/xerozzz/liquid-assets-backend:latest
     build: ./backend
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgres://postgres:postgres@db:5432/liquid_assets}
@@ -40,6 +43,8 @@ services:
     # No `ports:` — reachable only from other containers on this network, never from the host.
 
   frontend:
+    # Prebuilt in CI (with VITE_API_URL baked blank) and pulled from GHCR. See backend note above.
+    image: ghcr.io/xerozzz/liquid-assets-frontend:latest
     build:
       context: .
       dockerfile: Dockerfile.frontend
