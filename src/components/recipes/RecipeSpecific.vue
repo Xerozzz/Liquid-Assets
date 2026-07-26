@@ -239,7 +239,7 @@ export default {
           <h3>Margin:</h3>
           <p :class="['text-xl font-bold', margin >= 0 ? 'text-green-600' : 'text-red-600']">
             ${{ margin.toFixed(2) }}
-            <span class="text-sm font-normal text-gray-500">
+            <span v-if="marginPercent != null" class="text-sm font-normal text-gray-500">
               ({{ marginPercent.toFixed(0) }}%)
             </span>
           </p>

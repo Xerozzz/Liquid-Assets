@@ -139,10 +139,17 @@ Always Free covers exactly one such VM per billing account per month, and only w
 - **Region**: `us-west1`, `us-central1`, or `us-east1` — no other region is free.
 - **Machine type**: `e2-micro` (2 shared vCPU / 1 GB).
 - **Boot disk**: **Standard persistent disk** (not Balanced/SSD), **≤ 30 GB**.
-- **Static external IP**: free only while **attached** to a running instance.
 - **Egress**: ~1 GB/month from North America is free — ample for a personal app.
 
-Two gotchas that fool almost everyone:
+**Not free — the one unavoidable cost: the external IPv4 address.** Since 1 Feb 2024, Google charges
+**$0.005/hour (~$3.65/month) for an in-use external IPv4 address**, and this applies **even to an
+Always Free `e2-micro`**. So a publicly-reachable GCP VM is not truly $0 — the compute and disk are
+free, but the public IP is not. During the 90-day trial the $300 credit covers it; after that it
+bills ~$3.65/month. If you need a genuinely $0 public deployment, the external IP is the dealbreaker —
+self-host behind a Cloudflare Tunnel or Tailscale instead (no public IP, so no charge). Oracle's
+Always Free, by contrast, does include public IPs at no cost.
+
+Two more gotchas that fool almost everyone:
 
 - **The create-instance cost estimate shows the full list price (~$6/mo) and does _not_ reflect the
   Always Free discount.** Your real invoice applies a free-tier credit that zeroes out one eligible
