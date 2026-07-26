@@ -40,6 +40,10 @@ export default {
       selectedFileRaw: null,
       previewImageUrl: null,
       resolvedImageUrl: null,
+      // Sale price is controlled directly (not via @primevue/forms) so that clearing
+      // the field to empty/null actually propagates — the form-managed InputNumber
+      // silently reverts to the previous value when emptied.
+      salePrice: null,
       initialValues: {
         name: '',
         glass: '',
@@ -131,6 +135,7 @@ export default {
           image: this.cocktail.image,
           sale_price: this.cocktail.sale_price,
         }
+        this.salePrice = this.cocktail.sale_price ?? null
       }
     },
 
@@ -188,7 +193,7 @@ export default {
             values.notes,
             imageValue,
             this.cocktailId,
-            values.sale_price,
+            this.salePrice,
             this.cocktail.is_mocktail,
           )
 
@@ -307,14 +312,28 @@ export default {
 
         <div class="flex flex-col gap-1">
           <label class="font-semibold">Sale Price (Optional)</label>
-          <InputNumber
-            name="sale_price"
-            placeholder="0.00"
-            mode="currency"
-            currency="USD"
-            locale="en-US"
-            fluid
-          />
+          <div class="flex items-center gap-2">
+            <InputNumber
+              v-model="salePrice"
+              placeholder="0.00"
+              mode="currency"
+              currency="USD"
+              locale="en-US"
+              :min="0"
+              class="flex-1"
+              fluid
+            />
+            <button
+              type="button"
+              class="px-3 py-2 text-sm text-gray-500 hover:text-red-600 border border-gray-200 rounded cursor-pointer disabled:opacity-40 disabled:cursor-default"
+              :disabled="salePrice == null"
+              aria-label="Clear sale price"
+              title="Clear sale price"
+              @click="salePrice = null"
+            >
+              <i class="pi pi-times"></i>
+            </button>
+          </div>
         </div>
       </div>
 

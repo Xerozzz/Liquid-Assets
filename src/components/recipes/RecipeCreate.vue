@@ -29,6 +29,9 @@ export default {
       recipe_ingredients: [],
       recipe_hm_ingredients: [],
       selectedFileRaw: null,
+      // Controlled directly (not via @primevue/forms) so the field can be cleared
+      // back to empty — the form-managed InputNumber silently reverts when emptied.
+      salePrice: null,
       initialValues: {
         name: '',
         glass: '',
@@ -133,7 +136,7 @@ export default {
             values.garnish,
             values.notes,
             finalImageFilename,
-            values.sale_price,
+            this.salePrice,
             this.isMocktail,
           )
           const recipe_id = createdRecipe?.recipe_id
@@ -226,14 +229,28 @@ export default {
 
         <div class="flex flex-col gap-1">
           <label class="font-semibold">Sale Price (Optional)</label>
-          <InputNumber
-            name="sale_price"
-            placeholder="0.00"
-            mode="currency"
-            currency="USD"
-            locale="en-US"
-            fluid
-          />
+          <div class="flex items-center gap-2">
+            <InputNumber
+              v-model="salePrice"
+              placeholder="0.00"
+              mode="currency"
+              currency="USD"
+              locale="en-US"
+              :min="0"
+              class="flex-1"
+              fluid
+            />
+            <button
+              type="button"
+              class="px-3 py-2 text-sm text-gray-500 hover:text-red-600 border border-gray-200 rounded cursor-pointer disabled:opacity-40 disabled:cursor-default"
+              :disabled="salePrice == null"
+              aria-label="Clear sale price"
+              title="Clear sale price"
+              @click="salePrice = null"
+            >
+              <i class="pi pi-times"></i>
+            </button>
+          </div>
         </div>
       </div>
 
