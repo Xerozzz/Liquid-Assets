@@ -139,9 +139,7 @@ export default {
 
   <div v-else class="bodysection">
     <button class="nav_button" @click="$router.push('/hm')">Back</button>
-    <button class="nav_button" @click="$router.push(`/hm/edit/${this.$route.params.id}`)">
-      Edit
-    </button>
+    <router-link class="nav_button" :to="`/hm/edit/${$route.params.id}`"> Edit </router-link>
     <button class="nav_button" @click="confirmDelete">Delete</button>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-11">

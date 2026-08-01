@@ -83,12 +83,9 @@ export default {
   <div v-else class="bodysection">
     <div class="flex flex-wrap gap-2 mb-4">
       <button class="nav_button" @click="$router.push('/ingredient')">Back</button>
-      <button
-        class="nav_button"
-        @click="$router.push(`/ingredient/edit/${ingredient.ingredient_id}`)"
-      >
+      <router-link class="nav_button" :to="`/ingredient/edit/${ingredient.ingredient_id}`">
         Edit
-      </button>
+      </router-link>
       <button class="nav_button" @click="confirmDelete">Delete</button>
     </div>
 

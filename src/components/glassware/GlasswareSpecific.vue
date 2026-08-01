@@ -94,9 +94,7 @@ export default {
 
   <div v-else class="bodysection">
     <button class="nav_button" @click="$router.push('/glassware')">Back</button>
-    <button class="nav_button" @click="$router.push(`/glassware/edit/${glass.glass_id}`)">
-      Edit
-    </button>
+    <router-link class="nav_button" :to="`/glassware/edit/${glass.glass_id}`"> Edit </router-link>
     <button class="nav_button" @click="confirmDelete">Delete</button>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-11 mt-6">

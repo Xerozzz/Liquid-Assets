@@ -338,9 +338,21 @@ export default {
       <div
         v-for="ing in filteredIngredients"
         :key="ing.ingredient_id"
-        class="bg-white rounded-lg shadow-sm border border-primary-100 p-6 hover:shadow-md hover:border-primary-300 transition-all cursor-pointer flex flex-col justify-between"
+        class="bg-white rounded-lg shadow-sm border border-primary-100 p-6 hover:shadow-md hover:border-primary-300 transition-all cursor-pointer flex flex-col justify-between relative"
         @click="$router.push(`/ingredient/view/${ing.ingredient_id}`)"
       >
+        <!-- Edit shortcut — a real link (middle-click / ctrl-click opens a new tab).
+             @click.stop keeps a plain click from also triggering the card's view navigation. -->
+        <router-link
+          :to="`/ingredient/edit/${ing.ingredient_id}`"
+          class="absolute top-2 left-2 z-10 bg-white/90 hover:bg-white text-primary-700 px-2 py-1 rounded text-xs font-bold border border-primary-200 shadow-sm"
+          title="Edit"
+          aria-label="Edit"
+          @click.stop
+        >
+          <i class="pi pi-pencil"></i>
+        </router-link>
+
         <div class="text-center mb-4">
           <h3 class="font-bold text-xl text-gray-800">{{ ing.name }}</h3>
         </div>

@@ -436,6 +436,18 @@ export default {
         class="bg-white rounded-lg shadow-sm border border-primary-100 overflow-hidden hover:shadow-md hover:border-primary-300 transition-all duration-200 cursor-pointer flex flex-col relative"
         @click="$router.push(`${basePath}/view/${cocktail.recipe_id}`)"
       >
+        <!-- Edit shortcut — a real link, so middle-click / ctrl-click opens it in a new tab.
+             @click.stop keeps a plain click from also triggering the card's view navigation. -->
+        <router-link
+          :to="`${basePath}/edit/${cocktail.recipe_id}`"
+          class="absolute top-2 left-2 z-10 bg-white/90 hover:bg-white text-primary-700 px-2 py-1 rounded text-xs font-bold border border-primary-200 shadow-sm"
+          title="Edit"
+          aria-label="Edit"
+          @click.stop
+        >
+          <i class="pi pi-pencil"></i>
+        </router-link>
+
         <!-- Stock Warning Overlay if missing ingredients -->
         <div v-if="cocktail.missing_count > 0" class="absolute top-2 right-2 z-10">
           <span

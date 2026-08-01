@@ -1,3 +1,6 @@
 {$DOMAIN} {
+	# Compress responses to the browser (zstd for modern clients, gzip fallback).
+	# Skips anything the frontend already compressed, so no double-encoding.
+	encode zstd gzip
 	reverse_proxy frontend:80
 }

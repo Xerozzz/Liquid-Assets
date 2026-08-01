@@ -1,37 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
-// Import Views
-import HomeView from '../views/HomeView.vue'
-import IngredientView from '@/views/IngredientView.vue'
-import HmView from '@/views/HmView.vue'
-import GlasswareView from '@/views/GlasswareView.vue'
-import RestockView from '@/views/RestockView.vue'
-
-// Import glassware components
-import {
-  GlasswareHome,
-  GlasswareCreate,
-  GlasswareEdit,
-  GlasswareSpecific,
-} from '@/components/glassware/'
-
-// Import Recipe Components — shared by both the /cocktail and /mocktail route trees,
-// distinguished at runtime via each route's `meta.isMocktail` (see AGENTS.md).
-import RecipeView from '@/views/RecipeView.vue'
-import { RecipeCreate, RecipeEdit, RecipeSpecific, RecipeHome } from '@/components/recipes/'
-import {
-  IngredientHome,
-  IngredientSpecific,
-  IngredientCreate,
-  IngredientEdit,
-} from '@/components/ingredients'
-
-import {
-  HmIngredientCreate,
-  HmIngredientEdit,
-  HmIngredientSpecific,
-  HmIngredientHome,
-} from '@/components/hmIngredients'
+// Routes are lazy-loaded (`() => import(...)`) so each page becomes its own chunk.
+// The initial download then only includes the landing page + shared code instead of
+// the whole app (which pulls in heavy PrimeVue widgets — DataTable, FileUpload, Dialog —
+// used only on the CRUD pages). Views/components are imported by their file path (not the
+// barrel index files) so Vite can split each one out.
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -39,144 +12,144 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: HomeView,
+      component: () => import('@/views/HomeView.vue'),
     },
     {
       path: '/restock',
       name: 'restock',
-      component: RestockView,
+      component: () => import('@/views/RestockView.vue'),
     },
     {
       path: '/cocktail',
       name: 'cocktail',
-      component: RecipeView,
+      component: () => import('@/views/RecipeView.vue'),
       meta: { isMocktail: false },
       children: [
         {
           path: '',
           name: 'cocktail-home',
-          component: RecipeHome,
+          component: () => import('@/components/recipes/RecipeHome.vue'),
         },
         {
           path: 'view/:id',
           name: 'cocktail-specific',
-          component: RecipeSpecific,
+          component: () => import('@/components/recipes/RecipeSpecific.vue'),
         },
         {
           path: 'create',
           name: 'cocktail-create',
-          component: RecipeCreate,
+          component: () => import('@/components/recipes/RecipeCreate.vue'),
         },
         {
           path: 'edit/:id',
           name: 'cocktail-edit',
-          component: RecipeEdit,
+          component: () => import('@/components/recipes/RecipeEdit.vue'),
         },
       ],
     },
     {
       path: '/mocktail',
       name: 'mocktail',
-      component: RecipeView,
+      component: () => import('@/views/RecipeView.vue'),
       meta: { isMocktail: true },
       children: [
         {
           path: '',
           name: 'mocktail-home',
-          component: RecipeHome,
+          component: () => import('@/components/recipes/RecipeHome.vue'),
         },
         {
           path: 'view/:id',
           name: 'mocktail-specific',
-          component: RecipeSpecific,
+          component: () => import('@/components/recipes/RecipeSpecific.vue'),
         },
         {
           path: 'create',
           name: 'mocktail-create',
-          component: RecipeCreate,
+          component: () => import('@/components/recipes/RecipeCreate.vue'),
         },
         {
           path: 'edit/:id',
           name: 'mocktail-edit',
-          component: RecipeEdit,
+          component: () => import('@/components/recipes/RecipeEdit.vue'),
         },
       ],
     },
     {
       path: '/ingredient',
       name: 'ingredient',
-      component: IngredientView,
+      component: () => import('@/views/IngredientView.vue'),
       children: [
         {
           path: '',
-          component: IngredientHome,
+          component: () => import('@/components/ingredients/IngredientHome.vue'),
         },
         {
           path: 'view/:id',
-          component: IngredientSpecific,
+          component: () => import('@/components/ingredients/IngredientSpecific.vue'),
         },
         {
           path: 'create',
           name: 'create',
-          component: IngredientCreate,
+          component: () => import('@/components/ingredients/IngredientCreate.vue'),
         },
         {
           path: 'edit/:id',
           name: 'edit',
-          component: IngredientEdit,
+          component: () => import('@/components/ingredients/IngredientEdit.vue'),
         },
       ],
     },
     {
       path: '/hm',
       name: 'hm',
-      component: HmView,
+      component: () => import('@/views/HmView.vue'),
       children: [
         {
           path: '',
           name: 'hm-home',
-          component: HmIngredientHome,
+          component: () => import('@/components/hmIngredients/HmIngredientHome.vue'),
         },
         {
           path: 'view/:id',
           name: 'hm-specific',
-          component: HmIngredientSpecific,
+          component: () => import('@/components/hmIngredients/HmIngredientSpecific.vue'),
         },
         {
           path: 'create',
           name: 'hm-create',
-          component: HmIngredientCreate,
+          component: () => import('@/components/hmIngredients/HmIngredientCreate.vue'),
         },
         {
           path: 'edit/:id',
           name: 'hm-edit',
-          component: HmIngredientEdit,
+          component: () => import('@/components/hmIngredients/HmIngredientEdit.vue'),
         },
       ],
     },
     {
       path: '/glassware',
       name: 'glassware',
-      component: GlasswareView,
+      component: () => import('@/views/GlasswareView.vue'),
       children: [
         {
           path: '',
-          component: GlasswareHome,
+          component: () => import('@/components/glassware/GlasswareHome.vue'),
         },
         {
           path: 'create',
           name: 'glassware-create',
-          component: GlasswareCreate,
+          component: () => import('@/components/glassware/GlasswareCreate.vue'),
         },
         {
           path: 'edit/:id',
           name: 'glassware-edit',
-          component: GlasswareEdit,
+          component: () => import('@/components/glassware/GlasswareEdit.vue'),
         },
         {
           path: 'view/:id',
           name: 'glassware-view',
-          component: GlasswareSpecific,
+          component: () => import('@/components/glassware/GlasswareSpecific.vue'),
         },
       ],
     },
