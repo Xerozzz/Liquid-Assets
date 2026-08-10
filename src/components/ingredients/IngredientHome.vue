@@ -20,6 +20,9 @@ export default {
       skipDuplicates: true, // Default behavior
       searchQuery: '',
       togglingId: null,
+      // Pagination — render one page of cards at a time instead of all at once.
+      first: 0,
+      pageSize: 24,
       sortBy: 'name_asc',
       sortOptions: [
         { label: 'Name (A-Z)', value: 'name_asc' },
@@ -57,16 +60,27 @@ export default {
       }
       return sorted
     },
+    // The single page of cards actually rendered.
+    pagedIngredients() {
+      return this.filteredIngredients.slice(this.first, this.first + this.pageSize)
+    },
   },
   watch: {
     searchQuery(newVal) {
+      this.first = 0
       this.updateUrlQuery('q', newVal)
     },
     sortBy(newVal) {
+      this.first = 0
       this.updateUrlQuery('sort', newVal === 'name_asc' ? null : newVal)
     },
   },
   methods: {
+    onPage(event) {
+      this.first = event.first
+      this.pageSize = event.rows
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    },
     updateUrlQuery(key, value) {
       const query = { ...this.$route.query }
       if (value) {
@@ -336,7 +350,7 @@ export default {
     <!-- Ingredient Grid -->
     <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       <div
-        v-for="ing in filteredIngredients"
+        v-for="ing in pagedIngredients"
         :key="ing.ingredient_id"
         class="bg-white rounded-lg shadow-sm border border-primary-100 p-6 hover:shadow-md hover:border-primary-300 transition-all cursor-pointer flex flex-col justify-between relative"
         @click="$router.push(`/ingredient/view/${ing.ingredient_id}`)"
@@ -384,6 +398,17 @@ export default {
         </div>
       </div>
     </div>
+
+    <!-- Pagination -->
+    <Paginator
+      v-if="!loading && filteredIngredients.length > pageSize"
+      :first="first"
+      :rows="pageSize"
+      :totalRecords="filteredIngredients.length"
+      :rowsPerPageOptions="[12, 24, 48, 96]"
+      class="mt-6"
+      @page="onPage"
+    />
 
     <!-- Empty State -->
     <div v-if="!loading && queryResult.length === 0" class="text-center py-20 text-gray-400">

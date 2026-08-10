@@ -22,6 +22,11 @@ export default {
       isImporting: false,
       importStats: { total: 0, success: 0, failed: 0, missingIngredients: [] },
 
+      // Pagination — the full filtered set is rendered one page at a time so we
+      // don't paint hundreds of cards (and their SVG placeholders) on every load.
+      first: 0,
+      pageSize: 24,
+
       // Filters
       searchQuery: '',
       stockOnly: false,
@@ -103,19 +108,27 @@ export default {
       }
       return sorted
     },
+    // The single page of cards actually rendered.
+    pagedCocktails() {
+      return this.filteredCocktails.slice(this.first, this.first + this.pageSize)
+    },
   },
   watch: {
     // Update URL when filters change
     searchQuery(newVal) {
+      this.first = 0
       this.updateUrlQuery('q', newVal)
     },
     ingredientFilter(newVal) {
+      this.first = 0
       this.updateUrlQuery('ing', newVal)
     },
     stockOnly(newVal) {
+      this.first = 0
       this.updateUrlQuery('stock', newVal ? '1' : null)
     },
     sortBy(newVal) {
+      this.first = 0
       this.updateUrlQuery('sort', newVal === 'name_asc' ? null : newVal)
     },
     '$route.meta.isMocktail'() {
@@ -126,6 +139,12 @@ export default {
     marginPercent(cocktail) {
       if (!(cocktail.sale_price > 0)) return null
       return ((cocktail.sale_price - (cocktail.total_cost || 0)) / cocktail.sale_price) * 100
+    },
+    onPage(event) {
+      this.first = event.first
+      this.pageSize = event.rows
+      // Jump back to the top so the new page starts from the first card.
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     },
     updateUrlQuery(key, value) {
       const query = { ...this.$route.query }
@@ -431,7 +450,7 @@ export default {
     <!-- GRID -->
     <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       <div
-        v-for="cocktail in filteredCocktails"
+        v-for="cocktail in pagedCocktails"
         :key="cocktail.recipe_id"
         class="bg-white rounded-lg shadow-sm border border-primary-100 overflow-hidden hover:shadow-md hover:border-primary-300 transition-all duration-200 cursor-pointer flex flex-col relative"
         @click="$router.push(`${basePath}/view/${cocktail.recipe_id}`)"
@@ -498,6 +517,17 @@ export default {
         </div>
       </div>
     </div>
+
+    <!-- PAGINATION -->
+    <Paginator
+      v-if="!loading && filteredCocktails.length > pageSize"
+      :first="first"
+      :rows="pageSize"
+      :totalRecords="filteredCocktails.length"
+      :rowsPerPageOptions="[12, 24, 48, 96]"
+      class="mt-6"
+      @page="onPage"
+    />
 
     <!-- EMPTY STATE -->
     <div v-if="!loading && filteredCocktails.length === 0" class="text-center py-20 text-gray-400">
