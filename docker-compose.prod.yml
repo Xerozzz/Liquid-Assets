@@ -22,6 +22,9 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    # Auto-start on VM reboot (unless explicitly stopped). `on-failure` did NOT
+    # survive a host restart, leaving the app down until a manual `up -d`.
+    restart: unless-stopped
 
   backend:
     # Prebuilt in CI and pulled from GHCR (the 1 GB VM can't build vite/npm without thrashing).
@@ -39,7 +42,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    restart: on-failure
+    restart: unless-stopped
     # No `ports:` — reachable only from other containers on this network, never from the host.
 
   frontend:
@@ -55,7 +58,7 @@ services:
       BASIC_AUTH_PASSWORD: ${BASIC_AUTH_PASSWORD:?BASIC_AUTH_PASSWORD is required for a public deployment}
     depends_on:
       - backend
-    restart: on-failure
+    restart: unless-stopped
     # No `ports:` — only Caddy is exposed to the internet; it reverse-proxies here internally.
 
   caddy:
@@ -71,7 +74,7 @@ services:
       - caddy_config:/config
     depends_on:
       - frontend
-    restart: on-failure
+    restart: unless-stopped
 
 volumes:
   db_data:
