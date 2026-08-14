@@ -9,6 +9,7 @@ import recipeHmIngredientsRouter from './routes/recipeHmIngredients.js'
 import cocktailsRouter from './routes/cocktails.js'
 import imagesRouter from './routes/images.js'
 import chatRouter from './routes/chat.js'
+import prisma from './prisma.js'
 
 const app = express()
 const PORT = process.env.PORT || 4000
@@ -16,7 +17,21 @@ const PORT = process.env.PORT || 4000
 app.use(cors())
 app.use(express.json({ limit: '2mb' }))
 
+// Liveness: the process is up (no dependencies checked).
 app.get('/health', (req, res) => res.json({ status: 'ok' }))
+
+// Readiness: reachable through the nginx `/api/` proxy and verifies the database
+// is actually connectable — so external uptime monitoring catches DB outages
+// (like the auth failure that silently took the app down), not just a live port.
+// Exempt from Basic Auth in nginx so a monitor can poll it without credentials.
+app.get('/api/health', async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`
+    res.json({ status: 'ok', db: 'ok' })
+  } catch {
+    res.status(503).json({ status: 'error', db: 'down' })
+  }
+})
 
 app.use('/api/ingredients', ingredientsRouter)
 app.use('/api/glassware', glasswareRouter)

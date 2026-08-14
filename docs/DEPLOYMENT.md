@@ -198,14 +198,37 @@ Click the **SSH** button on the instance page for an in-browser terminal (no key
 - **Updating**: `git pull`, then `docker compose -f docker-compose.prod.yml up --build -d`.
 - **Logs**: `docker compose -f docker-compose.prod.yml logs -f <service>` (`backend`, `frontend`,
   `caddy`, `db`).
-- **Backups**: the Postgres data lives in the `db_data` volume. Periodically:
+- **Backups**: `scripts/backup.sh` dumps the database to a gzipped, timestamped file and keeps the
+  14 most recent. Run it nightly via cron:
   ```bash
-  docker compose -f docker-compose.prod.yml exec db pg_dump -U postgres liquid_assets > backup.sql
+  ( crontab -l 2>/dev/null; echo "0 3 * * * $HOME/liquid-assets/scripts/backup.sh >> $HOME/backups/backup.log 2>&1" ) | crontab -
   ```
+  For a one-off manual dump: `docker compose -f docker-compose.prod.yml exec db pg_dump -U postgres liquid_assets > backup.sql`.
   Uploaded images live in the `images_data` volume — back up the volume itself (e.g.
   `docker run --rm -v liquid-assets_images_data:/data -v $(pwd):/backup alpine tar czf /backup/images.tar.gz /data`
-  — check the exact volume name with `docker volume ls` first; Compose prefixes it with the
-  project/directory name) if you want those covered too.
+  — check the exact volume name with `docker volume ls` first) if you want those covered too.
+- **Off-site backups (recommended)**: a local-only backup dies with the VM. On GCP, copy each dump
+  to Cloud Storage — the VM's service account authenticates automatically (no keys), and a
+  same-region bucket is free-tier and free-egress. One-time setup:
+  ```bash
+  # unique bucket name, same region as the VM
+  gcloud storage buckets create gs://liquid-assets-backups-<something-unique> --location=us-central1
+  # expire off-site copies after 30 days
+  printf '{"rule":[{"action":{"type":"Delete"},"condition":{"age":30}}]}' > /tmp/lifecycle.json
+  gcloud storage buckets update gs://liquid-assets-backups-<...> --lifecycle-file=/tmp/lifecycle.json
+  ```
+  Then point the cron job at it (`scripts/backup.sh` uploads when `GCS_BUCKET` is set):
+  ```bash
+  ( crontab -l 2>/dev/null | grep -v backup.sh; echo "0 3 * * * GCS_BUCKET=gs://liquid-assets-backups-<...> $HOME/liquid-assets/scripts/backup.sh >> $HOME/backups/backup.log 2>&1" ) | crontab -
+  ```
+  If uploads fail with a permissions error, grant the VM's service account write access:
+  `gcloud storage buckets add-iam-policy-binding gs://<bucket> --member=serviceAccount:<vm-sa-email> --role=roles/storage.objectAdmin`
+  (find the SA in the console under the instance's details, or `gcloud compute instances describe`).
+- **Uptime monitoring (recommended)**: the app exposes `GET /api/health` — reachable **without** Basic
+  Auth and backed by a live DB check (returns `200 {"status":"ok","db":"ok"}`, or `503` if the
+  database is unreachable). Point a free external monitor (e.g. UptimeRobot) at
+  `https://<your-domain>/api/health` on a 5-minute interval with email alerts. Because it checks the
+  DB, it catches silent outages (like a DB auth failure) that a plain port check would miss.
 - **Changing the Basic Auth password**: edit `.env`, then
   `docker compose -f docker-compose.prod.yml up -d --force-recreate frontend` (no rebuild needed —
   the hash is generated at container start, not baked into the image).
