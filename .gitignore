@@ -43,3 +43,11 @@ public/docs/index.html
 .env.production
 .env.test
 
+# Database dumps / backups — never commit data (migrations under
+# backend/prisma/migrations/ are named migration.sql and are unaffected).
+liquid_assets_full.sql
+liquid_assets-*.sql
+*.sql.gz
+*.dump
+backup*.sql
+
