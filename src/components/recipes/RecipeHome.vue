@@ -140,6 +140,11 @@ export default {
       if (!(cocktail.sale_price > 0)) return null
       return ((cocktail.sale_price - (cocktail.total_cost || 0)) / cocktail.sale_price) * 100
     },
+    // Combined raw + homemade ingredient names — the card and CSV previously showed
+    // only raw ingredients, hiding homemade components (e.g. a honey syrup).
+    ingredientsSummary(cocktail) {
+      return [cocktail.raw_ingredients_str, cocktail.hm_ingredients_str].filter(Boolean).join(', ')
+    },
     onPage(event) {
       this.first = event.first
       this.pageSize = event.rows
@@ -341,7 +346,7 @@ export default {
           Number(c.total_cost || 0).toFixed(2),
           c.sale_price != null ? Number(c.sale_price).toFixed(2) : '',
           margin != null ? margin.toFixed(0) : '',
-          c.raw_ingredients_str || '',
+          this.ingredientsSummary(c),
         ]
           .map(this.csvEscape)
           .join(',')
@@ -511,8 +516,8 @@ export default {
               </span>
             </template>
           </div>
-          <p v-if="cocktail.raw_ingredients_str" class="text-xs text-gray-400 mt-1 truncate">
-            {{ cocktail.raw_ingredients_str }}
+          <p v-if="ingredientsSummary(cocktail)" class="text-xs text-gray-400 mt-1 truncate">
+            {{ ingredientsSummary(cocktail) }}
           </p>
         </div>
       </div>
