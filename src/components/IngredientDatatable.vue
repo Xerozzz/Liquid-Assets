@@ -107,7 +107,9 @@ export default {
                   id="selected_quantity"
                   :suffix="` ${slotProps.data.unit}`"
                   fluid
-                  :min="1"
+                  :min="0"
+                  :minFractionDigits="0"
+                  :maxFractionDigits="2"
                   class="w-full"
                   @update:modelValue="
                     (value) => {

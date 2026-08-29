@@ -98,7 +98,14 @@ export default {
           </div>
           <div class="flex flex-col gap-1">
             <label class="font-semibold">Total Quantity Purchased</label>
-            <InputNumber name="totalquantity" placeholder="0" fluid />
+            <InputNumber
+              name="totalquantity"
+              placeholder="0"
+              :min="0"
+              :minFractionDigits="0"
+              :maxFractionDigits="2"
+              fluid
+            />
             <Message
               v-if="$form.totalquantity?.invalid"
               severity="error"

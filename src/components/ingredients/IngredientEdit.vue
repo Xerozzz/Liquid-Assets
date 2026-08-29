@@ -144,7 +144,14 @@ export default {
           </div>
           <div class="flex flex-col gap-1">
             <label class="text-sm font-semibold text-gray-700">New Quantity</label>
-            <InputNumber name="totalquantity" placeholder="Leave empty to keep current" fluid />
+            <InputNumber
+              name="totalquantity"
+              placeholder="Leave empty to keep current"
+              :min="0"
+              :minFractionDigits="0"
+              :maxFractionDigits="2"
+              fluid
+            />
           </div>
         </div>
       </div>
