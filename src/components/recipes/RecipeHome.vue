@@ -361,6 +361,22 @@ export default {
       link.click()
       URL.revokeObjectURL(url)
     },
+
+    // Jump to a random recipe from whatever is currently shown — so it respects
+    // the active filters (search / ingredient / in-stock). Great for "what should
+    // I make with what I've got?".
+    surpriseMe() {
+      const pool = this.filteredCocktails
+      if (pool.length === 0) {
+        this.notification.notify({
+          message: `No ${this.itemLabel.toLowerCase()}s to pick from — try clearing your filters.`,
+          severity: 'info',
+        })
+        return
+      }
+      const pick = pool[Math.floor(Math.random() * pool.length)]
+      this.$router.push(`${this.basePath}/view/${pick.recipe_id}`)
+    },
   },
   mounted() {
     this.retrieveCocktails()
@@ -374,6 +390,14 @@ export default {
       <button class="nav_button" @click="$router.push('/')">Back</button>
       <button class="nav_button" @click="$router.push(`${basePath}/create`)">
         Create {{ itemLabel }}
+      </button>
+      <button
+        class="nav_button"
+        @click="surpriseMe"
+        :disabled="filteredCocktails.length === 0"
+        :title="`Jump to a random ${itemLabel.toLowerCase()} from the current list`"
+      >
+        🎲 Surprise Me
       </button>
       <button class="nav_button" @click="exportMenuCsv" :disabled="filteredCocktails.length === 0">
         Export Menu (CSV)
