@@ -236,7 +236,7 @@ export default {
       :title="`Jump to another random ${itemLabel.toLowerCase()}`"
     >
       <span :class="{ 'inline-block animate-spin': rolling }">🎲</span>
-      {{ rolling ? 'Rolling…' : 'Surprise Me' }}
+      {{ rolling ? 'Rolling…' : 'Roll Again' }}
     </button>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-11">

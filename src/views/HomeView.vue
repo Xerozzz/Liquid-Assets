@@ -22,6 +22,8 @@ export default {
         { label: 'Rum', pattern: '\\brum\\b' },
         { label: 'Whisky', pattern: '\\bwhisk(?:e)?y\\b|bourbon|scotch|\\brye\\b' },
         { label: 'Tequila', pattern: 'tequila|mezcal' },
+        { label: 'Brandy', pattern: '\\bbrandy\\b|cognac|calvados|pisco' },
+        { label: 'Amaro', pattern: '\\bamaro\\b|campari|aperol' },
         { label: '🍋 Citrusy', pattern: 'lemon|lime|grapefruit|yuzu|orange|mandarin' },
       ],
       pages: [
