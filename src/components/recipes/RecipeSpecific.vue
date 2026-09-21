@@ -1,5 +1,5 @@
 <script>
-import { deleteRecipe, getRecipeById } from '@/api/recipe.js'
+import { deleteRecipe, getRecipeById, getRecipe } from '@/api/recipe.js'
 import { useNotificationStore } from '@/stores/notification.store'
 import { useImageStorage } from '@/composables/useImageStorage'
 import DeleteDialog from '../DeleteDialog.vue'
@@ -27,7 +27,17 @@ export default {
       totalCost: 0,
       actualVolume: 0,
       togglingId: null,
+      rolling: false,
     }
+  },
+  // Re-fetch when navigating between recipe detail pages (e.g. "Surprise Me" /
+  // roll again) — the route changes but the component is reused, so mounted()
+  // won't run again on its own.
+  watch: {
+    '$route.params.id'() {
+      this.loading = true
+      this.fetchCocktail()
+    },
   },
   computed: {
     isMocktail() {
@@ -80,7 +90,30 @@ export default {
         this.togglingId = null
       }
     },
+    // Roll again — jump to another random recipe of the same kind.
+    async surpriseMe() {
+      if (this.rolling) return
+      this.rolling = true
+      try {
+        const recipes = await getRecipe(this.isMocktail ? 'mocktail' : 'cocktail')
+        const others = recipes.filter((r) => String(r.recipe_id) !== String(this.$route.params.id))
+        const pool = others.length ? others : recipes
+        if (!pool.length) return
+        const pick = pool[Math.floor(Math.random() * pool.length)]
+        this.$router.push(`${this.basePath}/view/${pick.recipe_id}`)
+      } catch {
+        this.notification.notify({
+          message: 'Could not roll again — try again.',
+          severity: 'error',
+        })
+      } finally {
+        this.rolling = false
+      }
+    },
     async fetchCocktail() {
+      // Reset per-recipe state so a re-fetch (roll again) doesn't show stale bits.
+      this.displayImageUrl = null
+      this.error = null
       try {
         const cocktailId = this.$route.params.id
         const rows = await getRecipeById(cocktailId)
@@ -196,6 +229,15 @@ export default {
       Edit
     </router-link>
     <button class="nav_button" @click="confirmDelete">Delete</button>
+    <button
+      class="nav_button"
+      @click="surpriseMe"
+      :disabled="rolling"
+      :title="`Jump to another random ${itemLabel.toLowerCase()}`"
+    >
+      <span :class="{ 'inline-block animate-spin': rolling }">🎲</span>
+      {{ rolling ? 'Rolling…' : 'Surprise Me' }}
+    </button>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-11">
       <div class="sectionbox">
