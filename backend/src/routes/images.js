@@ -7,7 +7,13 @@ import crypto from 'node:crypto'
 const router = express.Router()
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || '/app/uploads'
-fs.mkdirSync(UPLOAD_DIR, { recursive: true })
+try {
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true })
+} catch {
+  // Read-only filesystem (e.g. a serverless platform like Vercel). Don't crash on
+  // module load — uploads to this dir just won't persist. Set UPLOAD_DIR=/tmp/uploads
+  // there; real image persistence needs object storage (see docs/VERCEL.md).
+}
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, UPLOAD_DIR),

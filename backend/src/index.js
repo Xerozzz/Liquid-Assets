@@ -43,9 +43,10 @@ app.use('/api/cocktails', cocktailsRouter)
 app.use('/api/images', imagesRouter)
 app.use('/api/chat', chatRouter)
 
-// Skip listening under the test runner so tests can import `app` and drive it via supertest
-// without also binding the port (vitest sets NODE_ENV=test by default).
-if (process.env.NODE_ENV !== 'test') {
+// Skip listening under the test runner (vitest sets NODE_ENV=test) and on serverless
+// platforms (Vercel sets VERCEL=1), where the exported `app` is invoked as a handler
+// rather than binding a port.
+if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`Backend listening on port ${PORT}`)
   })

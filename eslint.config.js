@@ -29,6 +29,16 @@ export default defineConfig([
     },
   },
 
+  {
+    // Vercel serverless function + edge middleware at the repo root.
+    files: ['api/**/*.js', 'middleware.js'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
+
   js.configs.recommended,
   ...pluginVue.configs['flat/essential'],
   skipFormatting,
