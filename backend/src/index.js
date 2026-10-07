@@ -41,6 +41,7 @@ app.use((req, res, next) => {
   const user = process.env.BASIC_AUTH_USER
   const pass = process.env.BASIC_AUTH_PASSWORD
   if (!user || !pass) return next()
+  if (req.method === 'OPTIONS') return next() // let CORS preflight through
   const [scheme, encoded] = (req.headers.authorization || '').split(' ')
   if (scheme === 'Basic' && encoded) {
     const decoded = Buffer.from(encoded, 'base64').toString('utf8')
