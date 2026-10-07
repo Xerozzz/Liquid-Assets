@@ -33,6 +33,29 @@ app.get('/api/health', async (req, res) => {
   }
 })
 
+// Basic Auth for every API route below (the two /health routes above stay public so uptime
+// monitors can reach them). No-op if the env vars aren't set. The SPA collects the
+// credentials via a login screen and sends them as an Authorization header — this lives here
+// rather than in Vercel Edge Middleware, which doesn't run in the multi-service layout.
+app.use((req, res, next) => {
+  const user = process.env.BASIC_AUTH_USER
+  const pass = process.env.BASIC_AUTH_PASSWORD
+  if (!user || !pass) return next()
+  const [scheme, encoded] = (req.headers.authorization || '').split(' ')
+  if (scheme === 'Basic' && encoded) {
+    const decoded = Buffer.from(encoded, 'base64').toString('utf8')
+    const idx = decoded.indexOf(':')
+    if (idx !== -1 && decoded.slice(0, idx) === user && decoded.slice(idx + 1) === pass) {
+      return next()
+    }
+  }
+  res.set('WWW-Authenticate', 'Basic realm="Liquid Assets"')
+  return res.status(401).json({ error: 'Authentication required' })
+})
+
+// Lightweight credential check for the login screen (protected by the middleware above).
+app.get('/api/auth-check', (req, res) => res.json({ ok: true }))
+
 app.use('/api/ingredients', ingredientsRouter)
 app.use('/api/glassware', glasswareRouter)
 app.use('/api/hm-ingredients', hmIngredientsRouter)
