@@ -30,8 +30,8 @@ export default defineConfig([
   },
 
   {
-    // Vercel serverless function + edge middleware at the repo root.
-    files: ['api/**/*.js', 'middleware.js'],
+    // Vercel Edge Middleware at the repo root.
+    files: ['middleware.js'],
     languageOptions: {
       globals: {
         ...globals.node,
