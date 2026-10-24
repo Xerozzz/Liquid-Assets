@@ -20,11 +20,13 @@ app.use(express.json({ limit: '2mb' }))
 // Liveness: the process is up (no dependencies checked).
 app.get('/health', (req, res) => res.json({ status: 'ok' }))
 
-// Readiness: reachable through the nginx `/api/` proxy and verifies the database
-// is actually connectable — so external uptime monitoring catches DB outages
-// (like the auth failure that silently took the app down), not just a live port.
-// Exempt from Basic Auth in nginx so a monitor can poll it without credentials.
+// Health check. By default it's LIVENESS ONLY and deliberately does NOT touch the database:
+// a monitor pinging this every few minutes must not keep a serverless Postgres (Neon) awake,
+// which otherwise runs 24/7 and burns the free CU-hour compute budget. Pass `?deep=1` for a
+// one-off readiness check that also verifies the DB is connectable. Exempt from auth so an
+// uptime monitor can poll it without credentials.
 app.get('/api/health', async (req, res) => {
+  if (!req.query.deep) return res.json({ status: 'ok' })
   try {
     await prisma.$queryRaw`SELECT 1`
     res.json({ status: 'ok', db: 'ok' })
