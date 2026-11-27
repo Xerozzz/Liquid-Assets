@@ -14,6 +14,13 @@ export default {
     return {
       notificationStore: null,
       unwatch: null,
+      // Top progress bar shown during route transitions (lazy chunk load + the next
+      // view's own mounted() fetch) so clicking e.g. "Create Cocktail" gives immediate
+      // feedback instead of a dead moment before the page appears.
+      navLoading: false,
+      removeNavBefore: null,
+      removeNavAfter: null,
+      removeNavError: null,
       // Auth gate. We verify on load via /api/auth-check:
       //  - Vercel: no credentials -> 401 -> show the login screen.
       //  - Docker/GCP: nginx already authed the browser, so the check passes and this
@@ -66,6 +73,19 @@ export default {
     window.addEventListener('auth-required', this.onAuthRequired)
     this.verifyAuth()
 
+    // Route-transition progress bar. afterEach fires once the (possibly lazy-loaded)
+    // target component is resolved; onError covers a failed chunk load so the bar
+    // never gets stuck on.
+    this.removeNavBefore = this.$router.beforeEach((to, from) => {
+      if (to.path !== from.path) this.navLoading = true
+    })
+    this.removeNavAfter = this.$router.afterEach(() => {
+      this.navLoading = false
+    })
+    this.removeNavError = this.$router.onError(() => {
+      this.navLoading = false
+    })
+
     // Initialize the store
     this.notificationStore = useNotificationStore()
 
@@ -94,12 +114,23 @@ export default {
     if (this.unwatch) {
       this.unwatch()
     }
+    if (this.removeNavBefore) this.removeNavBefore()
+    if (this.removeNavAfter) this.removeNavAfter()
+    if (this.removeNavError) this.removeNavError()
   },
 }
 </script>
 
 <template>
   <Toast />
+
+  <!-- Global route-transition progress bar -->
+  <div
+    v-if="navLoading"
+    class="fixed top-0 left-0 right-0 z-[60] h-1 overflow-hidden bg-primary-100"
+  >
+    <div class="h-full w-2/5 bg-primary-500 nav-progress-indeterminate"></div>
+  </div>
 
   <!-- While verifying credentials on load -->
   <div v-if="checkingAuth" class="fixed inset-0 flex items-center justify-center bg-primary-50">

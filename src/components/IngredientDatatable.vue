@@ -1,5 +1,6 @@
 <script>
 import { useNotificationStore } from '@/stores/notification.store'
+import { createIngredient } from '@/api/ingredients'
 
 export default {
   name: 'IngredientDatatable',
@@ -20,15 +21,25 @@ export default {
       type: Array,
       required: true,
     },
+    // When true, shows a "+ New" button to create a raw ingredient inline (without
+    // leaving the cocktail form). Only meaningful for the raw-ingredient picker.
+    allowCreate: {
+      type: Boolean,
+      default: false,
+    },
   },
   data() {
     return {
       ingredientInput: '',
       filteredIngredients: [],
-      // selectedIngredients: [],
+      // Inline "new ingredient" dialog state.
+      showCreate: false,
+      creating: false,
+      createError: '',
+      newIngredient: { name: '', unit: '', totalcost: null, totalquantity: null, inStock: true },
     }
   },
-  emits: ['selectedIngredients'],
+  emits: ['selectedIngredients', 'ingredient-created'],
   methods: {
     onSearch(event) {
       setTimeout(() => {
@@ -48,27 +59,64 @@ export default {
       })
       this.$emit('selectedIngredients', updatedIngredients)
     },
-    onIngredientSelect(event) {
-      const idKey = event.value.hm_ingredient_id ? 'hm_ingredient_id' : 'ingredient_id'
-      const selectedId = event.value[idKey]
-      const exists = this.selectedIngredients.some((item) => {
-        const itemId = item.hm_ingredient_id || item.ingredient_id
-        return itemId === selectedId
-      })
-
+    // Add an ingredient to the selected list (used by both search-select and inline-create).
+    selectIngredient(ingredient) {
+      const selectedId = ingredient.hm_ingredient_id || ingredient.ingredient_id
+      const exists = this.selectedIngredients.some(
+        (item) => (item.hm_ingredient_id || item.ingredient_id) === selectedId,
+      )
       if (!exists) {
-        const updatedIngredients = [
+        this.$emit('selectedIngredients', [
           ...this.selectedIngredients,
-          { selected_quantity: 1, ...event.value },
-        ]
-        console.log(updatedIngredients)
-
-        this.$emit('selectedIngredients', updatedIngredients)
-      } else {
-        console.log('Ingredient already exists in the list.')
+          { selected_quantity: 1, ...ingredient },
+        ])
       }
-
       this.ingredientInput = ''
+    },
+    onIngredientSelect(event) {
+      this.selectIngredient(event.value)
+    },
+    openCreate() {
+      this.newIngredient = {
+        name: '',
+        unit: '',
+        totalcost: null,
+        totalquantity: null,
+        inStock: true,
+      }
+      this.createError = ''
+      this.showCreate = true
+    },
+    async createNewIngredient() {
+      this.createError = ''
+      const { name, unit, totalcost, totalquantity, inStock } = this.newIngredient
+      if (!name?.trim() || !unit?.trim() || !totalcost || !totalquantity) {
+        this.createError = 'Name, unit, total cost, and quantity are all required.'
+        return
+      }
+      this.creating = true
+      try {
+        // Cost per unit, same formula as the full ingredient form.
+        const costPerUnit = parseFloat((Number(totalcost) / Number(totalquantity)).toFixed(4))
+        const created = await createIngredient(
+          name.trim(),
+          unit.trim(),
+          costPerUnit,
+          inStock ? 1 : 0,
+        )
+        this.$emit('ingredient-created', created) // parent adds it to the searchable list
+        this.selectIngredient(created) // and add it straight into this recipe
+        this.notification.notify({
+          message: `${created.name} created and added`,
+          severity: 'success',
+        })
+        this.showCreate = false
+      } catch (error) {
+        console.error(error)
+        this.createError = 'Could not create the ingredient — try again.'
+      } finally {
+        this.creating = false
+      }
     },
   },
 }
@@ -80,15 +128,24 @@ export default {
       <template #title>{{ title }}</template>
 
       <template #subtitle>
-        <AutoComplete
-          v-model="ingredientInput"
-          :suggestions="filteredIngredients"
-          optionLabel="name"
-          @complete="onSearch"
-          @option-select="onIngredientSelect"
-          class="w-full"
-          placeholder="Search Ingredients"
-        />
+        <div class="flex gap-2 items-center">
+          <AutoComplete
+            v-model="ingredientInput"
+            :suggestions="filteredIngredients"
+            optionLabel="name"
+            @complete="onSearch"
+            @option-select="onIngredientSelect"
+            class="flex-1"
+            placeholder="Search Ingredients"
+          />
+          <Button
+            v-if="allowCreate"
+            label="New"
+            icon="pi pi-plus"
+            severity="secondary"
+            @click="openCreate"
+          />
+        </div>
       </template>
 
       <template #content>
@@ -146,5 +203,59 @@ export default {
         <div class="py-8 text-center text-gray-500 font-semibold" v-else>No ingredient added</div>
       </template>
     </Card>
+
+    <!-- Inline create-ingredient dialog -->
+    <Dialog v-model:visible="showCreate" modal header="New Ingredient" :style="{ width: '28rem' }">
+      <div class="flex flex-col gap-3">
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-semibold">Name</label>
+          <InputText v-model="newIngredient.name" placeholder="e.g. Vodka" fluid />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-semibold">Unit</label>
+          <InputText v-model="newIngredient.unit" placeholder="e.g. ml, oz, gram" fluid />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-semibold">Total Cost ($)</label>
+            <InputNumber
+              v-model="newIngredient.totalcost"
+              placeholder="0.00"
+              :minFractionDigits="2"
+              fluid
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-semibold">Total Quantity</label>
+            <InputNumber
+              v-model="newIngredient.totalquantity"
+              placeholder="0"
+              :min="0"
+              :minFractionDigits="0"
+              :maxFractionDigits="2"
+              fluid
+            />
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <InputSwitch v-model="newIngredient.inStock" inputId="newInStock" />
+          <label for="newInStock" class="text-sm">In stock</label>
+        </div>
+        <p v-if="createError" class="text-sm text-red-600">{{ createError }}</p>
+      </div>
+      <template #footer>
+        <Button
+          label="Cancel"
+          severity="secondary"
+          :disabled="creating"
+          @click="showCreate = false"
+        />
+        <Button
+          :label="creating ? 'Creating…' : 'Create & Add'"
+          :loading="creating"
+          @click="createNewIngredient"
+        />
+      </template>
+    </Dialog>
   </div>
 </template>

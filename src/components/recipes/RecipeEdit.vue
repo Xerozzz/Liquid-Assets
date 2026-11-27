@@ -30,6 +30,7 @@ export default {
   data() {
     return {
       isLoading: true,
+      submitting: false,
       cocktailId: 0,
       cocktail: {},
       ingredients: [],
@@ -72,15 +73,22 @@ export default {
   methods: {
     async getData() {
       try {
-        await this.getIngredientData()
-        await this.getGlasswareData()
-        await this.getHmIngredientData()
-        await this.getCocktailData()
-        await this.getCocktailHmIngredient()
-        await this.getCocktailIngredient()
+        // Independent fetches — run in parallel instead of 6 sequential round-trips
+        // (each of which also pays the serverless DB wake-up cost when stacked).
+        await Promise.all([
+          this.getIngredientData(),
+          this.getGlasswareData(),
+          this.getHmIngredientData(),
+          this.getCocktailData(),
+          this.getCocktailHmIngredient(),
+          this.getCocktailIngredient(),
+        ])
       } finally {
         this.isLoading = false
       }
+    },
+    onIngredientCreated(ingredient) {
+      this.ingredients.push(ingredient)
     },
     async getIngredientData() {
       this.ingredients = await getIngredients()
@@ -180,6 +188,7 @@ export default {
           })
         }
         if (valid) {
+          this.submitting = true
           let imageValue = this.initialValues.image
           if (this.selectedFileRaw) {
             imageValue = await this.saveImage(this.selectedFileRaw)
@@ -229,6 +238,8 @@ export default {
           summary: 'Error',
           severity: 'error',
         })
+      } finally {
+        this.submitting = false
       }
     },
   },
@@ -381,7 +392,9 @@ export default {
           title="Ingredients"
           :ingredients="ingredients"
           :selectedIngredients="cocktailIngredients"
+          allowCreate
           @selectedIngredients="handleRecipeIngredients"
+          @ingredient-created="onIngredientCreated"
         />
 
         <IngredientDatatable
@@ -393,8 +406,19 @@ export default {
       </div>
 
       <div class="flex justify-center gap-4 mt-8">
-        <Button label="Cancel" severity="secondary" @click="$router.push(basePath)" />
-        <Button type="submit" label="Save Changes" class="w-48" />
+        <Button
+          label="Cancel"
+          severity="secondary"
+          :disabled="submitting"
+          @click="$router.push(basePath)"
+        />
+        <Button
+          type="submit"
+          :label="submitting ? 'Saving…' : 'Save Changes'"
+          class="w-48"
+          :loading="submitting"
+          :disabled="submitting"
+        />
       </div>
     </Form>
   </div>

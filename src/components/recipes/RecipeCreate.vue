@@ -23,6 +23,8 @@ export default {
   },
   data() {
     return {
+      isLoading: true,
+      submitting: false,
       ingredients: [],
       hm_ingredients: [],
       glassware: [],
@@ -56,9 +58,19 @@ export default {
   },
   methods: {
     async getData() {
-      await this.getIngredientData()
-      await this.getGlasswareData()
-      await this.getHmIngredientData()
+      try {
+        // Fetch in parallel — these are independent, so one round-trip instead of three.
+        await Promise.all([
+          this.getIngredientData(),
+          this.getGlasswareData(),
+          this.getHmIngredientData(),
+        ])
+      } finally {
+        this.isLoading = false
+      }
+    },
+    onIngredientCreated(ingredient) {
+      this.ingredients.push(ingredient)
     },
     async getIngredientData() {
       try {
@@ -123,6 +135,7 @@ export default {
         }
 
         if (valid) {
+          this.submitting = true
           let finalImageFilename = ''
 
           if (this.selectedFileRaw) {
@@ -172,6 +185,8 @@ export default {
           summary: 'Error',
           severity: 'error',
         })
+      } finally {
+        this.submitting = false
       }
     },
   },
@@ -182,7 +197,11 @@ export default {
 </script>
 
 <template>
-  <div class="max-w-5xl mx-auto py-10">
+  <div v-if="isLoading" class="flex justify-center items-center py-20">
+    <ProgressSpinner />
+  </div>
+
+  <div v-else class="max-w-5xl mx-auto py-10">
     <h1 class="text-2xl font-bold mb-6 text-center">Create New {{ itemLabel }}</h1>
 
     <Form
@@ -308,7 +327,9 @@ export default {
           title="Ingredients"
           :ingredients="ingredients"
           :selectedIngredients="recipe_ingredients"
+          allowCreate
           @selectedIngredients="handleRecipeIngredients"
+          @ingredient-created="onIngredientCreated"
         />
 
         <IngredientDatatable
@@ -320,8 +341,19 @@ export default {
       </div>
 
       <div class="flex justify-center gap-4 mt-8">
-        <Button label="Cancel" severity="secondary" @click="$router.push(basePath)" />
-        <Button type="submit" :label="`Create ${itemLabel}`" class="w-48" />
+        <Button
+          label="Cancel"
+          severity="secondary"
+          :disabled="submitting"
+          @click="$router.push(basePath)"
+        />
+        <Button
+          type="submit"
+          :label="submitting ? 'Creating…' : `Create ${itemLabel}`"
+          class="w-48"
+          :loading="submitting"
+          :disabled="submitting"
+        />
       </div>
     </Form>
   </div>
