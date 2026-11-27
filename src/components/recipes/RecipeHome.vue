@@ -1,5 +1,5 @@
 <script>
-import { getRecipe, importRecipeFromCSV } from '@/api/recipe.js'
+import { getRecipePage, importRecipeFromCSV } from '@/api/recipe.js'
 import { getIngredients } from '@/api/ingredients.js'
 import { useNotificationStore } from '@/stores/notification.store'
 import { useImageStorage } from '@/composables/useImageStorage'
@@ -16,21 +16,27 @@ export default {
   data() {
     return {
       loading: true,
-      queryResult: [],
+      // Server returns just the current page of rows plus the total matching count —
+      // the filtering/sorting/paging all happen on the backend now, so we never hold
+      // (or resolve images for) the whole menu at once.
+      rows: [],
+      total: 0,
       queryError: null,
+      // Guards against out-of-order responses: rapid filter changes fire several
+      // requests, and only the newest one may apply.
+      reqSeq: 0,
+      searchTimer: null,
       // Import State
       isImporting: false,
       importStats: { total: 0, success: 0, failed: 0, missingIngredients: [] },
 
-      // Pagination — the full filtered set is rendered one page at a time so we
-      // don't paint hundreds of cards (and their SVG placeholders) on every load.
+      // Pagination
       first: 0,
       pageSize: 24,
 
       // Filters
       searchQuery: '',
       stockOnly: false,
-      maxCost: null,
       ingredientFilter: '',
       sortBy: 'name_asc',
       sortOptions: [
@@ -57,79 +63,34 @@ export default {
     itemLabel() {
       return this.isMocktail ? 'Mocktail' : 'Cocktail'
     },
-    filteredCocktails() {
-      const filtered = this.queryResult.filter((cocktail) => {
-        // Search (Name)
-        const matchesSearch =
-          !this.searchQuery || cocktail.name.toLowerCase().includes(this.searchQuery.toLowerCase())
-
-        // Stock Filter (missing_count must be 0)
-        const matchesStock = !this.stockOnly || cocktail.missing_count === 0
-
-        // Ingredient Filter (Search in raw and hm ingredient strings)
-        const matchesIngredient =
-          !this.ingredientFilter ||
-          (cocktail.raw_ingredients_str &&
-            cocktail.raw_ingredients_str
-              .toLowerCase()
-              .includes(this.ingredientFilter.toLowerCase())) ||
-          (cocktail.hm_ingredients_str &&
-            cocktail.hm_ingredients_str.toLowerCase().includes(this.ingredientFilter.toLowerCase()))
-
-        return matchesSearch && matchesStock && matchesIngredient
-      })
-
-      const sorted = [...filtered]
-      switch (this.sortBy) {
-        case 'name_desc':
-          sorted.sort((a, b) => b.name.localeCompare(a.name))
-          break
-        case 'cost_asc':
-          sorted.sort((a, b) => (a.total_cost || 0) - (b.total_cost || 0))
-          break
-        case 'cost_desc':
-          sorted.sort((a, b) => (b.total_cost || 0) - (a.total_cost || 0))
-          break
-        case 'missing_desc':
-          sorted.sort((a, b) => (b.missing_count || 0) - (a.missing_count || 0))
-          break
-        case 'margin_asc':
-        case 'margin_desc': {
-          const priced = sorted.filter((c) => c.sale_price > 0)
-          const unpriced = sorted.filter((c) => !(c.sale_price > 0))
-          priced.sort((a, b) => {
-            const diff = this.marginPercent(a) - this.marginPercent(b)
-            return this.sortBy === 'margin_asc' ? diff : -diff
-          })
-          return [...priced, ...unpriced]
-        }
-        default:
-          sorted.sort((a, b) => a.name.localeCompare(b.name))
-      }
-      return sorted
+    hasActiveFilters() {
+      return Boolean(this.searchQuery || this.ingredientFilter || this.stockOnly)
     },
-    // The single page of cards actually rendered.
-    pagedCocktails() {
-      return this.filteredCocktails.slice(this.first, this.first + this.pageSize)
+    rangeStart() {
+      return this.total === 0 ? 0 : this.first + 1
+    },
+    rangeEnd() {
+      return Math.min(this.first + this.pageSize, this.total)
     },
   },
   watch: {
-    // Update URL when filters change
+    // Text filters: debounce so we don't fire a request (and wake the DB) per keystroke.
     searchQuery(newVal) {
-      this.first = 0
       this.updateUrlQuery('q', newVal)
+      this.debouncedReload()
     },
     ingredientFilter(newVal) {
-      this.first = 0
       this.updateUrlQuery('ing', newVal)
+      this.debouncedReload()
     },
+    // Toggles: apply immediately.
     stockOnly(newVal) {
-      this.first = 0
       this.updateUrlQuery('stock', newVal ? '1' : null)
+      this.reload()
     },
     sortBy(newVal) {
-      this.first = 0
       this.updateUrlQuery('sort', newVal === 'name_asc' ? null : newVal)
+      this.reload()
     },
     '$route.meta.isMocktail'() {
       this.retrieveCocktails()
@@ -145,9 +106,60 @@ export default {
     ingredientsSummary(cocktail) {
       return [cocktail.raw_ingredients_str, cocktail.hm_ingredients_str].filter(Boolean).join(', ')
     },
+    // The filter params shared by the page fetch, CSV export, and Surprise Me.
+    currentFilters() {
+      return {
+        type: this.isMocktail ? 'mocktail' : 'cocktail',
+        q: this.searchQuery || undefined,
+        ingredient: this.ingredientFilter || undefined,
+        stockOnly: this.stockOnly,
+        sort: this.sortBy,
+      }
+    },
+    debouncedReload() {
+      clearTimeout(this.searchTimer)
+      this.searchTimer = setTimeout(() => this.reload(), 350)
+    },
+    // Reset to the first page and fetch (used whenever a filter changes).
+    reload() {
+      this.first = 0
+      this.fetchPage()
+    },
+    async fetchPage() {
+      const seq = ++this.reqSeq
+      this.loading = true
+      try {
+        const res = await getRecipePage({
+          ...this.currentFilters(),
+          page: Math.floor(this.first / this.pageSize) + 1,
+          limit: this.pageSize,
+        })
+        if (seq !== this.reqSeq) return // a newer request superseded this one
+        const withImages = await Promise.all(
+          res.rows.map(async (cocktail) => ({
+            ...cocktail,
+            displayImageUrl: cocktail.image ? await this.getImageUrl(cocktail.image) : null,
+          })),
+        )
+        if (seq !== this.reqSeq) return
+        this.rows = withImages
+        this.total = res.total
+        this.queryError = null
+      } catch (error) {
+        if (seq !== this.reqSeq) return
+        this.queryError = error
+        this.notification.notify({
+          message: `Failed to load ${this.itemLabel.toLowerCase()}s`,
+          severity: 'error',
+        })
+      } finally {
+        if (seq === this.reqSeq) this.loading = false
+      }
+    },
     onPage(event) {
       this.first = event.first
       this.pageSize = event.rows
+      this.fetchPage()
       // Jump back to the top so the new page starts from the first card.
       window.scrollTo({ top: 0, behavior: 'smooth' })
     },
@@ -162,31 +174,14 @@ export default {
     },
 
     async retrieveCocktails() {
-      try {
-        this.loading = true
-        const rawResult = await getRecipe(this.isMocktail ? 'mocktail' : 'cocktail')
-        this.queryResult = await Promise.all(
-          rawResult.map(async (cocktail) => ({
-            ...cocktail,
-            displayImageUrl: cocktail.image ? await this.getImageUrl(cocktail.image) : null,
-          })),
-        )
-
-        // Restore filters from URL
-        const q = this.$route.query
-        if (q.q) this.searchQuery = q.q
-        if (q.ing) this.ingredientFilter = q.ing
-        if (q.stock) this.stockOnly = q.stock === '1'
-        if (q.sort) this.sortBy = q.sort
-      } catch (error) {
-        this.queryError = error
-        this.notification.notify({
-          message: `Failed to load ${this.itemLabel.toLowerCase()}s`,
-          severity: 'error',
-        })
-      } finally {
-        this.loading = false
-      }
+      // Restore filters from URL (without triggering a fetch per watcher), then load page 1.
+      const q = this.$route.query
+      if (q.q) this.searchQuery = q.q
+      if (q.ing) this.ingredientFilter = q.ing
+      if (q.stock) this.stockOnly = q.stock === '1'
+      if (q.sort) this.sortBy = q.sort
+      this.first = 0
+      await this.fetchPage()
     },
 
     // --- CSV IMPORT LOGIC ---
@@ -337,9 +332,18 @@ export default {
       return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str
     },
 
-    exportMenuCsv() {
+    // Export the whole filtered menu (not just the current page) — fetches the full
+    // matching set from the server, honoring the active filters and sort.
+    async exportMenuCsv() {
+      let data
+      try {
+        data = await getRecipePage({ ...this.currentFilters(), all: true })
+      } catch {
+        this.notification.notify({ message: 'Export failed — try again.', severity: 'error' })
+        return
+      }
       const headers = ['Name', 'Cost', 'Sale Price', 'Margin %', 'Ingredients']
-      const rows = this.filteredCocktails.map((c) => {
+      const rows = data.rows.map((c) => {
         const margin = this.marginPercent(c)
         return [
           c.name,
@@ -362,24 +366,32 @@ export default {
       URL.revokeObjectURL(url)
     },
 
-    // Jump to a random recipe from whatever is currently shown — so it respects
-    // the active filters (search / ingredient / in-stock). Great for "what should
-    // I make with what I've got?".
-    surpriseMe() {
-      const pool = this.filteredCocktails
-      if (pool.length === 0) {
+    // Jump to a random recipe matching the active filters (search / ingredient /
+    // in-stock). The server picks the random match so we needn't hold the whole set.
+    async surpriseMe() {
+      let data
+      try {
+        data = await getRecipePage({ ...this.currentFilters(), random: true })
+      } catch {
+        this.notification.notify({ message: 'Could not pick one — try again.', severity: 'error' })
+        return
+      }
+      const pick = data.rows[0]
+      if (!pick) {
         this.notification.notify({
           message: `No ${this.itemLabel.toLowerCase()}s to pick from — try clearing your filters.`,
           severity: 'info',
         })
         return
       }
-      const pick = pool[Math.floor(Math.random() * pool.length)]
       this.$router.push(`${this.basePath}/view/${pick.recipe_id}`)
     },
   },
   mounted() {
     this.retrieveCocktails()
+  },
+  beforeUnmount() {
+    clearTimeout(this.searchTimer)
   },
 }
 </script>
@@ -394,12 +406,12 @@ export default {
       <button
         class="nav_button"
         @click="surpriseMe"
-        :disabled="filteredCocktails.length === 0"
+        :disabled="total === 0"
         :title="`Jump to a random ${itemLabel.toLowerCase()} from the current list`"
       >
         🎲 Surprise Me
       </button>
-      <button class="nav_button" @click="exportMenuCsv" :disabled="filteredCocktails.length === 0">
+      <button class="nav_button" @click="exportMenuCsv" :disabled="total === 0">
         Export Menu (CSV)
       </button>
 
@@ -459,7 +471,8 @@ export default {
 
         <!-- Results Count -->
         <div class="flex items-center justify-end pt-5 text-sm text-gray-500">
-          Showing {{ filteredCocktails.length }} / {{ queryResult.length }}
+          <span v-if="total > 0">Showing {{ rangeStart }}–{{ rangeEnd }} of {{ total }}</span>
+          <span v-else>No matches</span>
         </div>
       </div>
     </div>
@@ -479,7 +492,7 @@ export default {
     <!-- GRID -->
     <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       <div
-        v-for="cocktail in pagedCocktails"
+        v-for="cocktail in rows"
         :key="cocktail.recipe_id"
         class="bg-white rounded-lg shadow-sm border border-primary-100 overflow-hidden hover:shadow-md hover:border-primary-300 transition-all duration-200 cursor-pointer flex flex-col relative"
         @click="$router.push(`${basePath}/view/${cocktail.recipe_id}`)"
@@ -549,18 +562,18 @@ export default {
 
     <!-- PAGINATION -->
     <Paginator
-      v-if="!loading && filteredCocktails.length > pageSize"
+      v-if="!loading && total > pageSize"
       :first="first"
       :rows="pageSize"
-      :totalRecords="filteredCocktails.length"
+      :totalRecords="total"
       :rowsPerPageOptions="[12, 24, 48, 96]"
       class="mt-6"
       @page="onPage"
     />
 
     <!-- EMPTY STATE -->
-    <div v-if="!loading && filteredCocktails.length === 0" class="text-center py-20 text-gray-400">
-      <p v-if="queryResult.length > 0">No matches found for your filters.</p>
+    <div v-if="!loading && total === 0" class="text-center py-20 text-gray-400">
+      <p v-if="hasActiveFilters">No matches found for your filters.</p>
       <p v-else>
         No {{ itemLabel.toLowerCase() }}s found. Click "Create {{ itemLabel }}" or "Import" to start
         mixing!

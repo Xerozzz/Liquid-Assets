@@ -10,6 +10,36 @@ export const getRecipe = async (type) => {
   return handleResponse(res)
 }
 
+// Paginated + server-filtered/sorted list for the menu page. Returns { rows, total, page,
+// page_size }. Pass `all: true` to get the whole filtered set (CSV export) or `random: true`
+// to get a single random match (Surprise Me) — both still honor the active filters.
+export const getRecipePage = async ({
+  type,
+  q,
+  ingredient,
+  stockOnly,
+  sort,
+  page,
+  limit,
+  all,
+  random,
+} = {}) => {
+  const params = new URLSearchParams()
+  if (type) params.set('type', type)
+  if (q) params.set('q', q)
+  if (ingredient) params.set('ingredient', ingredient)
+  if (stockOnly) params.set('stock_only', '1')
+  if (sort) params.set('sort', sort)
+  if (random) params.set('random', '1')
+  else if (all) params.set('all', '1')
+  else {
+    params.set('page', String(page || 1))
+    params.set('limit', String(limit || 24))
+  }
+  const res = await fetch(apiUrl(`/api/cocktails?${params.toString()}`))
+  return handleResponse(res)
+}
+
 export const getRecipeById = async (recipe_id) => {
   const res = await fetch(apiUrl(`/api/cocktails/${recipe_id}`))
   return handleResponse(res)

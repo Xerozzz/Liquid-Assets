@@ -6,12 +6,112 @@ import { importCocktail, computeRecipeCost } from '../services/cocktails.js'
 
 const router = express.Router()
 
+// Margin % for sorting (mirrors the frontend card). Unpriced recipes return null.
+function marginPercent(row) {
+  if (!(row.sale_price > 0)) return null
+  return ((row.sale_price - (row.total_cost || 0)) / row.sale_price) * 100
+}
+
+// Sort a mapped-rows array in place by one of the list page's sort keys. Cost, margin
+// and missing-count are computed values (not DB columns), so sorting happens here in JS
+// rather than via SQL ORDER BY.
+function sortRows(rows, sort) {
+  switch (sort) {
+    case 'name_desc':
+      return rows.sort((a, b) => b.name.localeCompare(a.name))
+    case 'cost_asc':
+      return rows.sort((a, b) => (a.total_cost || 0) - (b.total_cost || 0))
+    case 'cost_desc':
+      return rows.sort((a, b) => (b.total_cost || 0) - (a.total_cost || 0))
+    case 'missing_desc':
+      return rows.sort((a, b) => (b.missing_count || 0) - (a.missing_count || 0))
+    case 'margin_asc':
+    case 'margin_desc': {
+      // Priced recipes sorted by margin %, unpriced ones appended at the end.
+      const priced = rows.filter((c) => c.sale_price > 0)
+      const unpriced = rows.filter((c) => !(c.sale_price > 0))
+      priced.sort((a, b) => {
+        const diff = marginPercent(a) - marginPercent(b)
+        return sort === 'margin_asc' ? diff : -diff
+      })
+      return [...priced, ...unpriced]
+    }
+    default:
+      return rows.sort((a, b) => a.name.localeCompare(b.name))
+  }
+}
+
+function mapRow(r) {
+  const { totalCost, missingCount } = computeRecipeCost(r)
+  return {
+    recipe_id: r.id,
+    name: r.name,
+    glass_id: r.glassId,
+    step_to_make: r.stepToMake,
+    garnish: r.garnish,
+    notes: r.notes,
+    image: r.image,
+    created_at: r.createdAt,
+    missing_count: missingCount,
+    total_cost: totalCost,
+    sale_price: r.salePrice,
+    is_mocktail: r.isMocktail,
+    raw_ingredients_str: (r.ingredients || [])
+      .map((ri) => ri.ingredient?.name)
+      .filter(Boolean)
+      .join(', '),
+    hm_ingredients_str: (r.hmIngredients || [])
+      .map((hi) => hi.hmIngredient?.name)
+      .filter(Boolean)
+      .join(', '),
+  }
+}
+
 router.get(
   '/',
   asyncHandler(async (req, res) => {
+    const { type, q, ingredient, stock_only, sort, page, limit, all, random } = req.query
+
     const where = { isDeleted: false }
-    if (req.query.type === 'cocktail') where.isMocktail = false
-    if (req.query.type === 'mocktail') where.isMocktail = true
+    if (type === 'cocktail') where.isMocktail = false
+    if (type === 'mocktail') where.isMocktail = true
+
+    // Pagination is opt-in: the list page sends page/limit (or all/random), while the
+    // other callers (home stats, restock, prev/next nav) still get a plain array of every
+    // matching recipe. Only in paginated mode do the search/sort/filter params apply, and
+    // only then does the response become an { rows, total, ... } envelope.
+    const paginated =
+      page !== undefined || limit !== undefined || all !== undefined || random !== undefined
+
+    if (!paginated) {
+      const recipes = await prisma.recipe.findMany({
+        where,
+        include: {
+          ingredients: { include: { ingredient: true } },
+          hmIngredients: { include: { hmIngredient: true } },
+        },
+      })
+      return res.json(recipes.map(mapRow))
+    }
+
+    // Narrow at the DB where we can (name + ingredient name), so the set we load and
+    // cost-compute in JS is already trimmed for text searches.
+    if (q) where.name = { contains: String(q), mode: 'insensitive' }
+    if (ingredient) {
+      const needle = String(ingredient)
+      where.OR = [
+        {
+          ingredients: {
+            some: { ingredient: { name: { contains: needle, mode: 'insensitive' } } },
+          },
+        },
+        {
+          hmIngredients: {
+            some: { hmIngredient: { name: { contains: needle, mode: 'insensitive' } } },
+          },
+        },
+      ]
+    }
 
     const recipes = await prisma.recipe.findMany({
       where,
@@ -21,36 +121,34 @@ router.get(
       },
     })
 
-    const rows = recipes.map((r) => {
-      const rawItems = r.ingredients
-      const hmItems = r.hmIngredients
-      const { totalCost, missingCount } = computeRecipeCost(r)
+    let rows = recipes.map(mapRow)
 
-      return {
-        recipe_id: r.id,
-        name: r.name,
-        glass_id: r.glassId,
-        step_to_make: r.stepToMake,
-        garnish: r.garnish,
-        notes: r.notes,
-        image: r.image,
-        created_at: r.createdAt,
-        missing_count: missingCount,
-        total_cost: totalCost,
-        sale_price: r.salePrice,
-        is_mocktail: r.isMocktail,
-        raw_ingredients_str: rawItems
-          .map((ri) => ri.ingredient?.name)
-          .filter(Boolean)
-          .join(', '),
-        hm_ingredients_str: hmItems
-          .map((hi) => hi.hmIngredient?.name)
-          .filter(Boolean)
-          .join(', '),
-      }
-    })
+    // Stock filter depends on the computed missing_count, so it's applied after mapping.
+    if (stock_only === '1' || stock_only === 'true') {
+      rows = rows.filter((r) => r.missing_count === 0)
+    }
 
-    res.json(rows)
+    rows = sortRows(rows, sort)
+
+    const total = rows.length
+
+    // Surprise Me: one random recipe from the (filtered) set, respecting the active filters.
+    if (random !== undefined) {
+      const pick = total > 0 ? rows[Math.floor(Math.random() * total)] : null
+      return res.json({ rows: pick ? [pick] : [], total })
+    }
+
+    // CSV export wants the whole filtered set, unpaged.
+    if (all !== undefined) {
+      return res.json({ rows, total, page: 1, page_size: total })
+    }
+
+    const pageNum = Math.max(1, Number(page) || 1)
+    const pageSize = Math.min(200, Math.max(1, Number(limit) || 24))
+    const start = (pageNum - 1) * pageSize
+    const pageRows = rows.slice(start, start + pageSize)
+
+    res.json({ rows: pageRows, total, page: pageNum, page_size: pageSize })
   }, 'Failed to fetch cocktails'),
 )
 
